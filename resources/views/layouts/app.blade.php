@@ -7,4 +7,3 @@
       </main>
 
 @include('partials.footer')
-
