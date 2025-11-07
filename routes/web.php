@@ -8,6 +8,7 @@ Route::get('/', function () {
     return view('home');
 });
 
+
 // Registration routes
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
@@ -16,3 +17,9 @@ Route::post('/register', [RegisterController::class, 'store'])->name('register.s
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
+    Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+});
+
