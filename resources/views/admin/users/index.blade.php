@@ -3,23 +3,23 @@
 @section('content')
 <div class="container-fluid p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Users</h3>
-    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">Create User</a>
+    <h3 class="m-0">Tài khoản</h3>
+    <a href="{{ route('admin.users.create') }}" class="btn btn-primary">Tạo tài khoản</a>
   </div>
 
   <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
-      <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Search name or email">
+      <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Tìm kiếm tên hoặc email">
     </div>
     <div class="col-auto">
       <select name="is_admin" class="form-select">
-        <option value="">All Roles</option>
+        <option value="">Tất cả vai trò</option>
         <option value="1" {{ request('is_admin') == '1' ? 'selected' : '' }}>Admin</option>
         <option value="0" {{ request('is_admin') == '0' ? 'selected' : '' }}>User</option>
       </select>
     </div>
     <div class="col-auto">
-      <button class="btn btn-outline-secondary" type="submit">Search</button>
+      <button class="btn btn-outline-secondary" type="submit">Tìm kiếm</button>
     </div>
   </form>
 
@@ -35,12 +35,12 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Name</th>
+          <th>Tên</th>
           <th>Email</th>
-          <th>Role</th>
-          <th>Email Verified</th>
-          <th>Created At</th>
-          <th>Actions</th>
+          <th>Vai trò</th>
+          <th>Email xác thực</th>
+          <th>Ngày tạo</th>
+          <th>Hành động</th>
         </tr>
       </thead>
       <tbody>
@@ -60,22 +60,22 @@
               @if($user->email_verified_at)
                 <span class="text-success">✓ {{ $user->email_verified_at->format('d/m/Y') }}</span>
               @else
-                <span class="text-muted">Not verified</span>
+                <span class="text-muted">Chưa xác thực</span>
               @endif
             </td>
             <td>{{ $user->created_at->format('d/m/Y H:i') }}</td>
             <td class="d-flex gap-2">
-              <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-secondary">View</a>
-              <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">Edit</a>
-              <form action="{{ route('admin.users.destroy', $user) }}" method="post" onsubmit="return confirm('Delete this user?')">
+              <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-secondary">Xem</a>
+              <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">Sửa</a>
+              <form action="{{ route('admin.users.destroy', $user) }}" method="post" onsubmit="return confirm('Xóa tài khoản này?')">
                 @csrf
                 @method('DELETE')
-                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+                <button class="btn btn-sm btn-danger" type="submit">Xóa</button>
               </form>
             </td>
           </tr>
         @empty
-          <tr><td colspan="7" class="text-center">No users found</td></tr>
+          <tr><td colspan="7" class="text-center">Không tìm thấy tài khoản</td></tr>
         @endforelse
       </tbody>
     </table>
