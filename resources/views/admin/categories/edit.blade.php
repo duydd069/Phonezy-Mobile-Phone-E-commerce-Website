@@ -4,7 +4,7 @@
 <div class="container-fluid p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Edit Category</h3>
-    <a href="{{ route('categories.index') }}" class="btn btn-secondary">Back</a>
+    <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Back</a>
   </div>
 
   @if ($errors->any())
@@ -17,7 +17,7 @@
     </div>
   @endif
 
-  <form action="{{ route('categories.update', $category) }}" method="POST" class="card card-body shadow-sm">
+  <form action="{{ route('admin.categories.update', $category) }}" method="POST" class="card card-body shadow-sm">
     @csrf
     @method('PUT')
 

@@ -17,7 +17,7 @@
   </form>
 
   @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
+  <div class="alert alert-success">{{ session('success') }}</div>
   @endif
 
   <div class="table-responsive">
@@ -38,6 +38,8 @@
             <td>
               @if($brand->logo)
                 <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:32px">
+              @else
+                <span class="badge text-bg-secondary">Không có ảnh</span>
               @endif
             </td>
             <td>{{ $brand->name }}</td>
@@ -53,7 +55,9 @@
             </td>
           </tr>
         @empty
-          <tr><td colspan="5" class="text-center">No brands found</td></tr>
+        <tr>
+          <td colspan="5" class="text-center">No brands found</td>
+        </tr>
         @endforelse
       </tbody>
     </table>
@@ -62,5 +66,3 @@
   {{ $brands->links() }}
 </div>
 @endsection
-
-

@@ -47,7 +47,7 @@ class CategoryController extends Controller
         ]);
 
         // Chuyển hướng về trang danh sách kèm thông báo
-        return redirect()->route('categories.index')->with('success', 'Thêm danh mục thành công!');
+        return redirect()->route('admin.categories.index')->with('success', 'Thêm danh mục thành công!');
     }
     public function show(Category $category)
 {
@@ -74,13 +74,13 @@ public function update(Request $request, Category $category)
 
     $category->update($data);
 
-    return redirect()->route('categories.index')->with('success', 'update thành công danh mục!');
+    return redirect()->route('admin.categories.index')->with('success', 'update thành công danh mục!');
 }
 
 public function destroy(Category $category)
 {
     $category->delete();
-    return redirect()->route('categories.index')->with('success', 'Xóa danh mục thành công!');
+    return redirect()->route('admin.categories.index')->with('success', 'Xóa danh mục thành công!');
 }
 
 }

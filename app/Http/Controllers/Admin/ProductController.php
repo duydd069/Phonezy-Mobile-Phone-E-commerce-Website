@@ -61,6 +61,16 @@ class ProductController extends Controller
     return redirect()->route('admin.products.index')->with('success','Thêm sản phẩm thành công');
 }
 
+    public function show($id)
+    {
+        $product = Product::with(['category','brand'])->findOrFail($id);
+        // tăng lượt xem
+        $product->increment('views');
+        $product->refresh();
+
+        return view('admin.products.show', compact('product'));
+    }
+
     public function edit($id)
     {
         $product    = Product::findOrFail($id);
