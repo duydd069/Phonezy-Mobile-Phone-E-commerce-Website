@@ -48,9 +48,15 @@
                 </ul>
               </li>
               <li class="nav-item">
-                <a href="{{ route('brands.index') }}" class="nav-link">
+                <a href="{{ route('admin.brands.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
                   <p>Brands</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ route('admin.users.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-people"></i>
+                  <p>Users</p>
                 </a>
               </li>
               <li class="nav-header">EXAMPLES</li>
