@@ -48,13 +48,21 @@
                 </ul>
               </li>
               <li class="nav-item">
-                <a href="{{ route('brands.index') }}" class="nav-link">
+                <a href="{{ route('admin.brands.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
                   <p>Brands</p>
                 </a>
-                <a href="{{ route('admin.products.index') }}" class="nav-link">
+              </li>
+              <li class="nav-item">
+
+                <a href="{{ route('admin.categories.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
-                  <p>Products</p>
+                  <p>Categories</p>
+</a>
+                <a href="{{ route('admin.users.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-people"></i>
+                  <p>Users</p>
+
                 </a>
               </li>
               <li class="nav-header">EXAMPLES</li>

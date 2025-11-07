@@ -3,10 +3,11 @@
 @section('content')
 <div class="container-fluid p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Brands</h3>
-    <a href="{{ route('admin.brands.create') }}" class="btn btn-primary">Create Brand</a>
+    <h3 class="m-0">Categories</h3>
+    <a href="{{ route('categories.create') }}" class="btn btn-primary">Create Category</a>
   </div>
 
+  {{-- Form tìm kiếm --}}
   <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
       <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Search name or slug">
@@ -16,36 +17,32 @@
     </div>
   </form>
 
+  {{-- Thông báo thành công --}}
   @if(session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
   @endif
 
+  {{-- Bảng dữ liệu --}}
   <div class="table-responsive">
     <table class="table table-striped align-middle">
       <thead>
         <tr>
           <th>ID</th>
-          <th>Logo</th>
           <th>Name</th>
           <th>Slug</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        @forelse($brands as $brand)
+        @forelse($categories as $category)
           <tr>
-            <td>{{ $brand->id }}</td>
-            <td>
-              @if($brand->logo)
-                <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:32px">
-              @endif
-            </td>
-            <td>{{ $brand->name }}</td>
-            <td>{{ $brand->slug }}</td>
+            <td>{{ $category->id }}</td>
+            <td>{{ $category->name }}</td>
+            <td>{{ $category->slug }}</td>
             <td class="d-flex gap-2">
-              <a href="{{ route('admin.brands.show', $brand) }}" class="btn btn-sm btn-secondary">View</a>
-              <a href="{{ route('admin.brands.edit', $brand) }}" class="btn btn-sm btn-warning">Edit</a>
-              <form action="{{ route('admin.brands.destroy', $brand) }}" method="post" onsubmit="return confirm('Delete this brand?')">
+              <a href="{{ route('categories.show', $category) }}" class="btn btn-sm btn-secondary">View</a>
+              <a href="{{ route('categories.edit', $category) }}" class="btn btn-sm btn-warning">Edit</a>
+              <form action="{{ route('categories.destroy', $category) }}" method="post" onsubmit="return confirm('Delete this category?')">
                 @csrf
                 @method('DELETE')
                 <button class="btn btn-sm btn-danger" type="submit">Delete</button>
@@ -53,14 +50,13 @@
             </td>
           </tr>
         @empty
-          <tr><td colspan="5" class="text-center">No brands found</td></tr>
+          <tr><td colspan="4" class="text-center">No categories found</td></tr>
         @endforelse
       </tbody>
     </table>
   </div>
 
-  {{ $brands->links() }}
+  {{-- Phân trang --}}
+  {{ $categories->links() }}
 </div>
 @endsection
-
-
