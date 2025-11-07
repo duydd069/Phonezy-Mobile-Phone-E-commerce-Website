@@ -17,7 +17,7 @@
   </form>
 
   @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
+  <div class="alert alert-success">{{ session('success') }}</div>
   @endif
 
   <div class="table-responsive">
@@ -33,27 +33,29 @@
       </thead>
       <tbody>
         @forelse($brands as $brand)
-          <tr>
-            <td>{{ $brand->id }}</td>
-            <td>
-              @if($brand->logo)
-                <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:32px">
-              @endif
-            </td>
-            <td>{{ $brand->name }}</td>
-            <td>{{ $brand->slug }}</td>
-            <td class="d-flex gap-2">
-              <a href="{{ route('brands.show', $brand) }}" class="btn btn-sm btn-secondary">View</a>
-              <a href="{{ route('brands.edit', $brand) }}" class="btn btn-sm btn-warning">Edit</a>
-              <form action="{{ route('brands.destroy', $brand) }}" method="post" onsubmit="return confirm('Delete this brand?')">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-sm btn-danger" type="submit">Delete</button>
-              </form>
-            </td>
-          </tr>
+        <tr>
+          <td>{{ $brand->id }}</td>
+          <td>
+            @if($brand->logo)
+            <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:32px">
+            @endif
+          </td>
+          <td>{{ $brand->name }}</td>
+          <td>{{ $brand->slug }}</td>
+          <td class="d-flex gap-2">
+            <a href="{{ route('brands.show', $brand) }}" class="btn btn-sm btn-secondary">View</a>
+            <a href="{{ route('brands.edit', $brand) }}" class="btn btn-sm btn-warning">Edit</a>
+            <form action="{{ route('brands.destroy', $brand) }}" method="post" onsubmit="return confirm('Delete this brand?')">
+              @csrf
+              @method('DELETE')
+              <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
         @empty
-          <tr><td colspan="5" class="text-center">No brands found</td></tr>
+        <tr>
+          <td colspan="5" class="text-center">No brands found</td>
+        </tr>
         @endforelse
       </tbody>
     </table>
@@ -62,5 +64,3 @@
   {{ $brands->links() }}
 </div>
 @endsection
-
-

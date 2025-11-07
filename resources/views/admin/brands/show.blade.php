@@ -14,7 +14,7 @@
     <div class="row g-3 align-items-center">
       <div class="col-auto">
         @if($brand->logo)
-          <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:64px">
+        <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:64px">
         @endif
       </div>
       <div class="col">
@@ -25,5 +25,3 @@
   </div>
 </div>
 @endsection
-
-
