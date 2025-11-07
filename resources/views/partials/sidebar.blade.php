@@ -31,69 +31,34 @@
               id="navigation"
             >
               <li class="nav-item menu-open">
-                <a href="#" class="nav-link active">
-                  <i class="nav-icon bi bi-speedometer"></i>
-                  <p>
-                    Dashboard
-                    <i class="nav-arrow bi bi-chevron-right"></i>
-                  </p>
-                </a>
                 <ul class="nav nav-treeview">
                   <li class="nav-item">
                     <a href="{{ url('/') }}" class="nav-link active">
                       <i class="nav-icon bi bi-circle"></i>
-                      <p>Dashboard v1</p>
+                      <p>Dashboard </p>
                     </a>
                   </li>
                 </ul>
               </li>
               <li class="nav-item">
-                <a href="{{ route('brands.index') }}" class="nav-link">
+                <a href="{{ route('admin.brands.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
                   <p>Brands</p>
                 </a>
               </li>
-              <li class="nav-header">EXAMPLES</li>
               <li class="nav-item">
-                <a href="#" class="nav-link">
-                  <i class="nav-icon bi bi-box-arrow-in-right"></i>
-                  <p>
-                    Auth
-                    <i class="nav-arrow bi bi-chevron-right"></i>
-                  </p>
+
+                <a href="{{ route('admin.categories.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-tags"></i>
+                  <p>Categories</p>
+</a>
+                <a href="{{ route('admin.users.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-people"></i>
+                  <p>Users</p>
+
                 </a>
-                <ul class="nav nav-treeview">
-                  <li class="nav-item">
-                    {{-- <a href="#" class="nav-link">
-                      <i class="nav-icon bi bi-box-arrow-in-right"></i>
-                      <p>
-                        Version 2
-                        <i class="nav-arrow bi bi-chevron-right"></i>
-                      </p>
-                    </a> --}}
-                    <ul class="nav nav-treeview">
-                      <li class="nav-item">
-                        <a href="#" class="nav-link">
-                          <i class="nav-icon bi bi-circle"></i>
-                          <p>Login</p>
-                        </a>
-                      </li>
-                      <li class="nav-item">
-                        <a href="#" class="nav-link">
-                          <i class="nav-icon bi bi-circle"></i>
-                          <p>Register</p>
-                        </a>
-                      </li>
-                    </ul>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#" class="nav-link">
-                      <i class="nav-icon bi bi-circle"></i>
-                      <p>Lockscreen</p>
-                    </a>
-                  </li>
-                </ul>
               </li>
+              
             </ul>
             <!--end::Sidebar Menu-->
           </nav>

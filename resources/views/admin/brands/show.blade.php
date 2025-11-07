@@ -5,8 +5,8 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Brand #{{ $brand->id }}</h3>
     <div class="d-flex gap-2">
-      <a href="{{ route('brands.edit', $brand) }}" class="btn btn-warning">Edit</a>
-      <a href="{{ route('brands.index') }}" class="btn btn-secondary">Back</a>
+      <a href="{{ route('admin.brands.edit', $brand) }}" class="btn btn-warning">Edit</a>
+      <a href="{{ route('admin.brands.index') }}" class="btn btn-secondary">Back</a>
     </div>
   </div>
 
