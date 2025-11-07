@@ -30,20 +30,24 @@
               data-accordion="false"
               id="navigation"
             >
-              <li class="nav-item menu-open">
-                <ul class="nav nav-treeview">
+              
                   <li class="nav-item">
                     <a href="{{ url('/') }}" class="nav-link active">
                       <i class="nav-icon bi bi-circle"></i>
                       <p>Dashboard </p>
                     </a>
                   </li>
-                </ul>
-              </li>
+                
               <li class="nav-item">
                 <a href="{{ route('admin.brands.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
                   <p>Brands</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ route('admin.products.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-box"></i>
+                  <p>Products</p>
                 </a>
               </li>
               <li class="nav-item">

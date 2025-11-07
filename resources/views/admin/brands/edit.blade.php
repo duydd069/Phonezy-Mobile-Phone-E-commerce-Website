@@ -4,7 +4,7 @@
 <div class="container-fluid p-3">
   <h3 class="mb-3">Edit Brand</h3>
 
-  <form action="{{ route('admin.brands.update', $brand) }}" method="post" enctype="multipart/form-data">
+  <form action="{{ route('admin.brands.update', $brand) }}" method="post" enctype="multipart/form-data" novalidate>
     @csrf
     @method('PUT')
     @include('admin.brands._form', ['brand' => $brand])

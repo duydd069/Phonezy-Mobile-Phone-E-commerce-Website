@@ -38,6 +38,8 @@
             <td>
               @if($brand->logo)
                 <img src="{{ asset('storage/' . $brand->logo) }}" alt="logo" style="height:32px">
+              @else
+                <span class="badge text-bg-secondary">Không có ảnh</span>
               @endif
             </td>
             <td>{{ $brand->name }}</td>
