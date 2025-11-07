@@ -20,7 +20,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
+        'password_hash',
+        'role_id',
     ];
 
     /**
@@ -29,9 +30,25 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password',
+        'password_hash',
         'remember_token',
     ];
+
+    /**
+     * Get the password for the user.
+     */
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
+    }
+
+    /**
+     * Set the user's password.
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password_hash'] = $value;
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -42,7 +59,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password_hash' => 'hashed',
         ];
     }
 }

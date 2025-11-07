@@ -47,7 +47,7 @@ class BrandController extends Controller
 
         Brand::create($data);
 
-        return redirect()->route('brands.index')->with('success', 'Brand created');
+        return redirect()->route('admin.brands.index')->with('success', 'Brand created');
     }
 
     public function show(Brand $brand): View
@@ -74,13 +74,13 @@ class BrandController extends Controller
 
         $brand->update($data);
 
-        return redirect()->route('brands.index')->with('success', 'Brand updated');
+        return redirect()->route('admin.brands.index')->with('success', 'Brand updated');
     }
 
     public function destroy(Brand $brand): RedirectResponse
     {
         $brand->delete();
-        return redirect()->route('brands.index')->with('success', 'Brand deleted');
+        return redirect()->route('admin.brands.index')->with('success', 'Brand deleted');
     }
 }
 
