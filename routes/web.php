@@ -20,6 +20,9 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
+
+    Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
+
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
 });
 
