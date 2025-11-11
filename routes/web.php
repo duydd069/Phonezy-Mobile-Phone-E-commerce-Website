@@ -8,6 +8,17 @@ Route::get('/', function () {
     return view('home');
 });
 
+// Electro frontend routes (Client)
+Route::prefix('client')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('client.index');
+    Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('client.product.show');
+    Route::get('/store', function () {
+        return view('electro.store');
+    })->name('client.store');
+    Route::get('/checkout', function () {
+        return view('electro.checkout');
+    })->name('client.checkout');
+});
 
 Route::prefix('admin')->group(function () {
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
