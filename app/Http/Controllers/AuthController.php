@@ -34,7 +34,14 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-            return redirect()->intended('/');
+
+            $user = Auth::user();
+            if ($user && isset($user->role_id) && $user->role_id == 2) {
+                return redirect()->intended(route('client.index'));
+            }
+
+            // Default fallback for admins or other roles
+            return redirect()->intended('/admin');
         }
 
         return back()->withErrors(['email' => 'Email hoặc mật khẩu không đúng'])->onlyInput('email');

@@ -4,9 +4,11 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AuthController;
 
-Route::get('/', function () {
-    return view('home');
-});
+// Route::get('/', function () {
+//     return view('home');
+// });
+
+Route::get('/', function () { return redirect()->route('client.index'); });
 
 // Electro frontend routes (Client)
 Route::prefix('client')->group(function () {
@@ -18,6 +20,12 @@ Route::prefix('client')->group(function () {
     Route::get('/checkout', function () {
         return view('electro.checkout');
     })->name('client.checkout');
+    // Client auth (login / register) using existing controllers but client views
+    Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('client.login');
+    Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('client.login.post');
+
+    Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'show'])->name('client.register');
+    Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->name('client.register.store');
 });
 
 Route::prefix('admin')->group(function () {

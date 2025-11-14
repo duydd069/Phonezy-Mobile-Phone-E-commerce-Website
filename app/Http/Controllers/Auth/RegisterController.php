@@ -38,6 +38,11 @@ class RegisterController extends Controller
 
         auth()->login($user);
 
-        return redirect('/');
+        $user = auth()->user();
+        if ($user && isset($user->role_id) && $user->role_id == 2) {
+            return redirect()->intended(route('client.index'));
+        }
+
+        return redirect('/admin');
     }
 }
