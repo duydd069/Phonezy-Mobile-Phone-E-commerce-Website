@@ -18,7 +18,7 @@
     @endif
 
     {{-- Form thêm mới --}}
-    <form action="{{ route('categories.store') }}" method="POST">
+    <form action="{{ route('admin.categories.store') }}" method="POST">
         @csrf
         <div class="mb-3">
             <label for="name" class="form-label">Tên danh mục</label>
@@ -29,7 +29,7 @@
             <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug') }}" required>
         </div> --}}
         <button type="submit" class="btn btn-primary">Lưu danh mục</button>
-        <a href="{{ route('categories.index') }}" class="btn btn-secondary">Quay lại</a>
+        <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Quay lại</a>
     </form>
 </div>
 @endsection

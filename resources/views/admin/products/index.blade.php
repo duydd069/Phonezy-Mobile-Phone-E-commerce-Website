@@ -68,6 +68,7 @@
                         <td>{{ ucfirst($p->gender) }}</td>
                         <td>{{ $p->views }}</td>
                         <td>
+                            <a href="{{ route('admin.products.show', $p->id) }}" class="btn btn-sm btn-info">Xem</a>
                             <a href="{{ route('admin.products.edit', $p->id) }}" class="btn btn-sm btn-warning">Sửa</a>
 
                             <form action="{{ route('admin.products.destroy', $p->id) }}" method="POST"

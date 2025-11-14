@@ -4,7 +4,7 @@
 <div class="container-fluid p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="m-0">Categories</h3>
-    <a href="{{ route('categories.create') }}" class="btn btn-primary">Create Category</a>
+    <a href="{{ route('admin.categories.create') }}" class="btn btn-primary">Create Category</a>
   </div>
 
   {{-- Form tìm kiếm --}}
@@ -40,9 +40,9 @@
             <td>{{ $category->name }}</td>
             <td>{{ $category->slug }}</td>
             <td class="d-flex gap-2">
-              <a href="{{ route('categories.show', $category) }}" class="btn btn-sm btn-secondary">View</a>
-              <a href="{{ route('categories.edit', $category) }}" class="btn btn-sm btn-warning">Edit</a>
-              <form action="{{ route('categories.destroy', $category) }}" method="post" onsubmit="return confirm('Delete this category?')">
+              <a href="{{ route('admin.categories.show', $category) }}" class="btn btn-sm btn-secondary">View</a>
+              <a href="{{ route('admin.categories.edit', $category) }}" class="btn btn-sm btn-warning">Edit</a>
+              <form action="{{ route('admin.categories.destroy', $category) }}" method="post" onsubmit="return confirm('Delete this category?')">
                 @csrf
                 @method('DELETE')
                 <button class="btn btn-sm btn-danger" type="submit">Delete</button>

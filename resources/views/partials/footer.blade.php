@@ -54,6 +54,22 @@
       });
     </script>
     <!--end::OverlayScrollbars Configure-->
+    <script>
+      // Auto-dismiss Bootstrap alerts after 3 seconds (except those marked important)
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+          document.querySelectorAll('.alert').forEach(function (el) {
+            if (el.classList.contains('alert-important')) return;
+            try {
+              const instance = bootstrap.Alert.getOrCreateInstance(el);
+              instance.close();
+            } catch (e) {
+              el.remove();
+            }
+          });
+        }, 3000);
+      });
+    </script>
     <!-- OPTIONAL SCRIPTS -->
     <!-- sortablejs -->
     <script
