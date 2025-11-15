@@ -28,6 +28,28 @@ Route::prefix('client')->group(function () {
     Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->name('client.register.store');
 });
 
+use App\Http\Controllers\Client\CartController;
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+    Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
+    Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+    Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+});
+
+// Electro frontend routes (Client)
+Route::prefix('client')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('client.index');
+    Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('client.product.show');
+    Route::get('/store', function () {
+        return view('electro.store');
+    })->name('client.store');
+    Route::get('/checkout', function () {
+        return view('electro.checkout');
+    })->name('client.checkout');
+});
+
 Route::prefix('admin')->group(function () {
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     // Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
