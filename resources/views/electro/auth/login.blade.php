@@ -1,47 +1,50 @@
 @extends('electro.layout')
 
+@section('title', 'Đăng nhập')
+
 @section('content')
-<div class="container" style="padding: 40px 0;">
-  <div class="row justify-content-center">
-    <div class="col-md-6">
-      <div class="card">
-        <div class="card-body">
-          <h2 class="mb-4">Login</h2>
+<div class="section">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6 offset-md-3">
+        <div class="billing-details card" style="padding:24px; margin-top:30px;">
+          <h2 class="section-title">Login</h2>
 
           @if ($errors->any())
-          <div class="alert alert-danger">
-            <ul class="mb-0">
-              @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-              @endforeach
-            </ul>
-          </div>
+            <div class="alert alert-danger">
+              <ul class="mb-0">
+                @foreach ($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
+            </div>
           @endif
 
           <form method="POST" action="{{ route('client.login.post') }}">
             @csrf
 
-            <div class="form-group mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus class="form-control @error('email') is-invalid @enderror">
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus class="input">
             </div>
 
-            <div class="form-group mb-3">
-              <label for="password" class="form-label">Password</label>
-              <input id="password" type="password" name="password" required class="form-control @error('password') is-invalid @enderror">
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input id="password" type="password" name="password" required class="input">
             </div>
 
-            <div class="form-group form-check mb-3">
-              <input type="checkbox" name="remember" id="remember" class="form-check-input" {{ old('remember') ? 'checked' : '' }}>
-              <label for="remember" class="form-check-label">Remember me</label>
+            <div class="form-group">
+              <label class="checkbox-inline">
+                <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}> Remember me
+              </label>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100">Login</button>
+            <div class="form-group">
+              <button type="submit" class="primary-btn btn-block">Login</button>
+            </div>
           </form>
 
-          <p class="mt-3 text-center">
-            Don't have an account? <a href="{{ route('client.register') }}">Register now</a>
-          </p>
+          <p class="text-center">Do you not have an account? <a href="{{ route('client.register') }}">Register</a></p>
         </div>
       </div>
     </div>

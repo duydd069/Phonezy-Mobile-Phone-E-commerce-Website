@@ -47,11 +47,11 @@ Route::prefix('admin')->group(function () {
 });
 
 
-// Registration routes
+// Registration routes (show client-styled view)
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 
-// Login / Logout routes
+// Login / Logout routes (show client-styled view)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
