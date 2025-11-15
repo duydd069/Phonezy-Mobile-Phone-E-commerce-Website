@@ -32,7 +32,7 @@
             >
               
                   <li class="nav-item">
-                    <a href="{{ url('/') }}" class="nav-link active">
+                    <a href="{{ route('admin.dashboard') }}" class="nav-link active">
                       <i class="nav-icon bi bi-circle"></i>
                       <p>Dashboard </p>
                     </a>

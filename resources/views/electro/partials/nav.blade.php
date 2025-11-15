@@ -14,11 +14,11 @@
 
 			<ul class="nav navbar-nav navbar-right">
 				@guest
-					<li><a href="{{ route('client.login') }}">Đăng nhập</a></li>
-					<li><a href="{{ route('client.register') }}">Đăng ký</a></li>
+					<li><a href="{{ route('client.login') }}">Login</a></li>
+					<li><a href="{{ route('client.register') }}">Register</a></li>
 				@else
 					<li>
-						<a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Thoát</a>
+						<a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Logout</a>
 						<form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
 					</li>
 				@endguest

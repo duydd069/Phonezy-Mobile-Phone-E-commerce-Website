@@ -9,7 +9,7 @@ class AuthController extends Controller
 {
     public function register()
     {
-        return view('auth.register');
+        return view('electro.auth.register');
     }
 
     /**
@@ -17,7 +17,7 @@ class AuthController extends Controller
      */
     public function showLogin()
     {
-        return view('auth.login');
+        return view('electro.auth.login');
     }
 
     /**
@@ -36,12 +36,18 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             $user = Auth::user();
-            if ($user && isset($user->role_id) && $user->role_id == 2) {
-                return redirect()->intended(route('client.index'));
+            if ($user && isset($user->role_id)) {
+                if ($user->role_id == 1) {
+                    // Admin redirect
+                    return redirect()->intended(route('admin.dashboard'));
+                } elseif ($user->role_id == 2) {
+                    // User redirect to client
+                    return redirect()->intended(route('client.index'));
+                }
             }
 
-            // Default fallback for admins or other roles
-            return redirect()->intended('/admin');
+            // Default fallback
+            return redirect()->intended('/');
         }
 
         return back()->withErrors(['email' => 'Email hoặc mật khẩu không đúng'])->onlyInput('email');

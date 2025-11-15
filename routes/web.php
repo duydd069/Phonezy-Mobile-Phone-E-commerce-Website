@@ -58,6 +58,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Admin routes
 Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', function () {
+        return view('admin.dashboard');
+    })->name('dashboard');
+    
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
 
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
