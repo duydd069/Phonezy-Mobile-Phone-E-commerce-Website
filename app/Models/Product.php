@@ -13,6 +13,7 @@ class Product extends Model
 
     public function category() { return $this->belongsTo(Category::class); }
     public function brand()    { return $this->belongsTo(Brand::class); }
+    public function comments() { return $this->hasMany(Comment::class)->whereNull('parent_id')->orderBy('created_at', 'desc'); }
 
     public function getRouteKeyName()
     {

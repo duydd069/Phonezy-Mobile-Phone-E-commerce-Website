@@ -26,6 +26,10 @@ Route::prefix('client')->group(function () {
 
     Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'show'])->name('client.register');
     Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->name('client.register.store');
+    
+    // Comment routes
+    Route::get('/p/{product}/comments', [\App\Http\Controllers\Client\CommentController::class, 'index'])->name('client.comments.index');
+    Route::post('/p/{product}/comments', [\App\Http\Controllers\Client\CommentController::class, 'store'])->name('client.comments.store');
 });
 
 use App\Http\Controllers\Client\CartController;

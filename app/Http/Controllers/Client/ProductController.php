@@ -19,7 +19,7 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load(['category','brand']);
+        $product->load(['category','brand', 'comments.user', 'comments.replies.user']);
         $product->increment('views');
 
         return view('electro.product', compact('product'));
