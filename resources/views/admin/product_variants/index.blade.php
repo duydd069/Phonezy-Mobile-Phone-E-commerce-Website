@@ -2,41 +2,36 @@
 
 @section('content')
 <div class="container">
-    <h1>Chi tiết sản phẩm #{{ $product->id }}</h1>
-    <div class="card">
-        <div class="card-body">
-            <h3 class="card-title">{{ $product->name }}</h3>
-            <p class="text-muted">{{ $product->slug }}</p>
-            <p><strong>Giá:</strong> {{ number_format($product->price,0,',','.') }}</p>
-            <p><strong>Danh mục:</strong> {{ $product->category->name ?? '-' }}</p>
-            <p><strong>Thương hiệu:</strong> {{ $product->brand->name ?? '-' }}</p>
-            <div class="mb-3">
-                @if($product->image)
-                    @if(Str::startsWith($product->image, ['http://','https://']))
-                        <img src="{{ $product->image }}" style="max-width:240px">
-                    @else
-                        <img src="{{ asset('storage/'.$product->image) }}" style="max-width:240px">
-                    @endif
-                @endif
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h1 class="h3 mb-1">Biến thể sản phẩm</h1>
+            <div class="text-muted">
+                Sản phẩm: <strong>{{ $product->name }}</strong> (ID #{{ $product->id }})
             </div>
-            <p>{{ $product->description }}</p>
-            <a href="{{ route('admin.products.edit',$product->id) }}" class="btn btn-warning">Sửa</a>
-            <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">Quay lại</a>
-            <a href="{{ route('admin.products.variants.index', $product->id) }}" class="btn btn-primary">Quản lý biến thể</a>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">← Danh sách sản phẩm</a>
+            <a href="{{ route('admin.products.variants.create', $product->id) }}" class="btn btn-primary">+ Thêm biến thể</a>
         </div>
     </div>
 
-    <div class="card mt-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Biến thể</h5>
-            <a href="{{ route('admin.products.variants.create', $product->id) }}" class="btn btn-sm btn-outline-primary">+ Thêm biến thể</a>
-        </div>
+    @if(session('success'))
+        <div class="alert alert-success">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
+    @endif
+
+    @php($statusLabels = \App\Models\ProductVariant::statusOptions())
+
+    <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped mb-0">
-                    <thead>
+                <table class="table table-bordered table-hover mb-0 align-middle">
+                    <thead class="table-light">
                         <tr>
                             <th width="70">ID</th>
+                            <th width="80">Ảnh</th>
                             <th>SKU</th>
                             <th>Dung lượng</th>
                             <th>Phiên bản</th>
@@ -46,14 +41,22 @@
                             <th class="text-end">Tồn kho</th>
                             <th class="text-end">Đã bán</th>
                             <th>Trạng thái</th>
-                            <th width="120">Thao tác</th>
+                            <th width="160">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php($statusOptions = \App\Models\ProductVariant::statusOptions())
-                        @forelse($product->variants as $variant)
+                        @forelse($variants as $variant)
                             <tr>
                                 <td>{{ $variant->id }}</td>
+                                <td>
+                                    @if($variant->image)
+                                        <img src="{{ preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image) }}" 
+                                             alt="{{ $variant->sku }}" 
+                                             style="width: 60px; height: 60px; object-fit: contain; border: 1px solid #ddd; border-radius: 4px;">
+                                    @else
+                                        <span class="text-muted small">—</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <div class="fw-semibold">{{ $variant->sku }}</div>
                                     @if($variant->barcode)
@@ -91,20 +94,34 @@
                                 </td>
                                 <td class="text-end">{{ $variant->stock }}</td>
                                 <td class="text-end">{{ $variant->sold }}</td>
-                                <td>{{ $statusOptions[$variant->status] ?? $variant->status }}</td>
+                                <td>{{ $statusLabels[$variant->status] ?? $variant->status }}</td>
                                 <td>
-                                    <a href="{{ route('admin.products.variants.edit', [$product->id, $variant->id]) }}" class="btn btn-sm btn-outline-secondary">Sửa</a>
+                                    <a href="{{ route('admin.products.variants.edit', [$product->id, $variant->id]) }}" class="btn btn-sm btn-warning">Sửa</a>
+                                    <form action="{{ route('admin.products.variants.destroy', [$product->id, $variant->id]) }}"
+                                          method="POST"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Bạn có chắc muốn xoá biến thể này?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
+                                    </form>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center text-muted py-3">Chưa có biến thể nào.</td>
+                                <td colspan="12" class="text-center text-muted py-4">Chưa có biến thể.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
+        @if($variants instanceof \Illuminate\Contracts\Pagination\Paginator)
+            <div class="card-footer">
+                {{ $variants->links() }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection
+

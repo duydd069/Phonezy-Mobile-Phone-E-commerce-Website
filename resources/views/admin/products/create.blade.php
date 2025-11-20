@@ -46,19 +46,19 @@
             </select>
         </div>
 
-        <div class="col-md-4">
-            <label class="form-label">Giới tính</label>
-            <select name="gender" class="form-select">
-                <option value="unisex" @selected(old('gender')=='unisex')>unisex</option>
-                <option value="male"   @selected(old('gender')=='male')>male</option>
-                <option value="female" @selected(old('gender')=='female')>female</option>
-            </select>
-        </div>
-
-        <div class="col-md-8">
+        <div class="col-md-12">
             <label class="form-label">Ảnh đại diện</label>
             <input type="file" name="image" class="form-control">
             
+        </div>
+
+        <div class="col-md-12">
+            <label class="form-label d-flex justify-content-between">
+                <span>Ảnh phụ (tối đa 10 ảnh)</span>
+                <small class="text-muted">Có thể chọn nhiều ảnh cùng lúc</small>
+            </label>
+            <input type="file" name="extra_images[]" class="form-control" multiple>
+            <small class="text-muted">Ảnh sẽ xuất hiện trong album hiển thị quanh sản phẩm.</small>
         </div>
 
         <div class="col-12">

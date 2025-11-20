@@ -32,34 +32,60 @@
             >
               
                   <li class="nav-item">
+<<<<<<< HEAD
+                    <a href="{{ url('/') }}" class="nav-link">
+=======
                     <a href="{{ route('admin.dashboard') }}" class="nav-link active">
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
                       <i class="nav-icon bi bi-circle"></i>
-                      <p>Dashboard </p>
+                      <p>Bảng điều khiển</p>
                     </a>
                   </li>
                 
               <li class="nav-item">
                 <a href="{{ route('admin.brands.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
-                  <p>Brands</p>
+                  <p>Thương hiệu</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{{ route('admin.products.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-box"></i>
-                  <p>Products</p>
+                  <p>Sản phẩm</p>
                 </a>
               </li>
               <li class="nav-item">
-
                 <a href="{{ route('admin.categories.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tags"></i>
-                  <p>Categories</p>
-</a>
+                  <p>Danh mục</p>
+                </a>
+              </li>
+              
+              <li class="nav-item">
+                <a href="{{ route('admin.colors.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-palette"></i>
+                  <p>Màu sắc</p>
+                </a>
+              </li>
+              
+              <li class="nav-item">
+                <a href="{{ route('admin.storages.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-hdd"></i>
+                  <p>Dung lượng</p>
+                </a>
+              </li>
+              
+              <li class="nav-item">
+                <a href="{{ route('admin.versions.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-layers"></i>
+                  <p>Phiên bản</p>
+                </a>
+              </li>
+              
+              <li class="nav-item">
                 <a href="{{ route('admin.users.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-people"></i>
-                  <p>Users</p>
-
+                  <p>Người dùng</p>
                 </a>
               </li>
               

@@ -3,10 +3,10 @@
 @section('content')
 <div class="container-fluid p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Brand #{{ $brand->id }}</h3>
+    <h3 class="m-0">Thương hiệu #{{ $brand->id }}</h3>
     <div class="d-flex gap-2">
-      <a href="{{ route('admin.brands.edit', $brand) }}" class="btn btn-warning">Edit</a>
-      <a href="{{ route('admin.brands.index') }}" class="btn btn-secondary">Back</a>
+      <a href="{{ route('admin.brands.edit', $brand) }}" class="btn btn-warning">Sửa</a>
+      <a href="{{ route('admin.brands.index') }}" class="btn btn-secondary">Quay lại</a>
     </div>
   </div>
 
@@ -18,7 +18,7 @@
         @endif
       </div>
       <div class="col">
-        <div><strong>Name:</strong> {{ $brand->name }}</div>
+        <div><strong>Tên:</strong> {{ $brand->name }}</div>
         <div><strong>Slug:</strong> {{ $brand->slug }}</div>
       </div>
     </div>

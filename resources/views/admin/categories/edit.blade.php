@@ -3,8 +3,8 @@
 @section('content')
 <div class="container-fluid p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="m-0">Edit Category</h3>
-    <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Back</a>
+    <h3 class="m-0">Sửa danh mục</h3>
+    <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Quay lại</a>
   </div>
 
   @if ($errors->any())
@@ -22,22 +22,22 @@
     @method('PUT')
 
     <div class="mb-3">
-      <label class="form-label">Name</label>
+      <label class="form-label">Tên danh mục</label>
       <input type="text" name="name" value="{{ old('name', $category->name) }}" class="form-control" required>
     </div>
 
     <div class="mb-3">
       <label class="form-label">Slug</label>
       <input type="text" name="slug" value="{{ old('slug', $category->slug) }}" class="form-control">
-      <div class="form-text">If left blank, the slug will be generated automatically.</div>
+      <div class="form-text">Nếu để trống, slug sẽ được tạo tự động.</div>
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Description</label>
+      <label class="form-label">Mô tả</label>
       <textarea name="description" rows="3" class="form-control">{{ old('description', $category->description) }}</textarea>
     </div>
 
-    <button type="submit" class="btn btn-primary">Update</button>
+    <button type="submit" class="btn btn-primary">Cập nhật</button>
   </form>
 </div>
 @endsection

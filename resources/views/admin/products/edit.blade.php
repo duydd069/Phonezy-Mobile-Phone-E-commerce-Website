@@ -2,7 +2,10 @@
 
 @section('content')
 <div class="container">
-    <h1 class="mb-3">Sửa sản phẩm #{{ $product->id }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="mb-0">Sửa sản phẩm #{{ $product->id }}</h1>
+        <a href="{{ route('admin.products.variants.index', $product->id) }}" class="btn btn-outline-primary">Quản lý biến thể</a>
+    </div>
 
     @if ($errors->any())
         <div class="alert alert-danger">
@@ -44,16 +47,7 @@
             </select>
         </div>
 
-        <div class="col-md-4">
-            <label class="form-label">Giới tính</label>
-            <select name="gender" class="form-select">
-                <option value="unisex" @selected(old('gender',$product->gender)=='unisex')>unisex</option>
-                <option value="male"   @selected(old('gender',$product->gender)=='male')>male</option>
-                <option value="female" @selected(old('gender',$product->gender)=='female')>female</option>
-            </select>
-        </div>
-
-        <div class="col-md-8">
+        <div class="col-md-12">
             <label class="form-label">Ảnh hiện tại</label>
             <div class="mb-2">
                 @if($product->image)
@@ -69,6 +63,41 @@
             <label class="form-label">Đổi ảnh</label>
             <input type="file" name="image" class="form-control">
            
+        </div>
+
+        <div class="col-12">
+            <label class="form-label">Ảnh phụ hiện có</label>
+            @if($product->images && $product->images->count())
+                <div class="d-flex flex-wrap gap-3">
+                    @foreach($product->images as $img)
+                        <div class="border rounded p-2" style="width:140px;">
+                            @php
+                                $imgUrl = Str::startsWith($img->image_url, ['http://','https://'])
+                                    ? $img->image_url
+                                    : asset('storage/'.$img->image_url);
+                            @endphp
+                            <img src="{{ $imgUrl }}" class="img-fluid rounded mb-2" style="width:100%;height:100px;object-fit:cover;" alt="Extra image {{ $loop->iteration }}">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remove_image_{{ $img->id }}" name="remove_images[]" value="{{ $img->id }}">
+                                <label class="form-check-label small text-danger" for="remove_image_{{ $img->id }}">
+                                    Xoá ảnh này
+                                </label>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-muted">Chưa có ảnh phụ nào.</p>
+            @endif
+        </div>
+
+        <div class="col-12">
+            <label class="form-label d-flex justify-content-between">
+                <span>Thêm ảnh phụ mới</span>
+                <small class="text-muted">Có thể chọn nhiều ảnh (tối đa 10 mỗi lần)</small>
+            </label>
+            <input type="file" name="extra_images[]" class="form-control" multiple>
+            <small class="text-muted">Ảnh phụ sẽ hiển thị trong gallery sản phẩm.</small>
         </div>
 
         <div class="col-12">

@@ -3,13 +3,15 @@
 	<div class="container">
 		<div id="responsive-nav">
 			<ul class="main-nav nav navbar-nav">
-				<li class="active"><a href="{{ url('/electro') }}">Home</a></li>
-				<li><a href="#">Hot Deals</a></li>
-				<li><a href="#">Categories</a></li>
-				<li><a href="#">Laptops</a></li>
-				<li><a href="#">Smartphones</a></li>
-				<li><a href="#">Cameras</a></li>
-				<li><a href="#">Accessories</a></li>
+				<li class="{{ request()->routeIs('client.index') ? 'active' : '' }}">
+					<a href="{{ route('client.index') }}">Trang chủ</a>
+				</li>
+				<li class="{{ request()->routeIs('client.store') ? 'active' : '' }}">
+					<a href="{{ route('client.store') }}">Cửa hàng</a>
+				</li>
+				<li><a href="{{ route('client.index') }}#hot-deals">Khuyến mãi</a></li>
+				<li><a href="{{ route('client.index') }}#categories">Danh mục</a></li>
+				<li><a href="{{ route('client.index') }}#products">Sản phẩm</a></li>
 			</ul>
 
 			<ul class="nav navbar-nav navbar-right">

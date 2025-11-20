@@ -1,0 +1,146 @@
+[33mcommit 144481200beee90dce14e6413ce430dc78c97511[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mProductVariant[m[33m, [m[1;32mbrands[m[33m)[m
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Thu Nov 20 16:57:18 2025 +0700
+
+    bien the sp
+
+[33mcommit fbd72c13834da001b9f10bc02d6586ff9a1cb044[m[33m ([m[1;31morigin/brands[m[33m)[m
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Tue Nov 11 21:30:00 2025 +0700
+
+    template client+ chitietSP
+
+[33mcommit a0ef6cbcb9686af47feb910306e2bae7d10bf567[m
+Merge: 22c2361 be4efaf
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 21:20:44 2025 +0700
+
+    fix brand
+
+[33mcommit 22c23618c263a55c83a0d9499c5c1e8fc7a12c52[m
+Merge: c35dbb8 365f217
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 20:05:40 2025 +0700
+
+    Merge branch 'main' of https://github.com/duydd069/Phonezy-Mobile-Phone-E-commerce-Website into brands
+
+[33mcommit be4efaf166222ffa51217523edebb20698f0cc13[m[33m ([m[1;31morigin/main[m[33m)[m
+Merge: 365f217 53c22f8
+Author: anhytrytr <anhdnph49526@gmail.com>
+Date:   Fri Nov 7 19:13:39 2025 +0700
+
+    Merge pull request #5 from duydd069/products
+    
+    Products
+
+[33mcommit 53c22f8a16a091a172079e71844721db43878aac[m
+Merge: efcb10f 365f217
+Author: anhytrytr <anhdnph49526@gmail.com>
+Date:   Fri Nov 7 19:11:24 2025 +0700
+
+    Merge branch 'products' of https://github.com/duydd069/Phonezy-Mobile-Phone-E-commerce-Website into products
+
+[33mcommit efcb10f1bf51b421d40ffca30e0c743345be4a31[m
+Author: anhytrytr <anhdnph49526@gmail.com>
+Date:   Fri Nov 7 18:53:06 2025 +0700
+
+    products
+
+[33mcommit 365f217dc4c7a17adc65fd4e77f0b51b41510871[m
+Merge: 6fc4740 7df6687
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 17:35:23 2025 +0700
+
+    Merge pull request #4 from huanpvph52348-beep/Category
+    
+    Thêm category
+
+[33mcommit 7df6687bbba3e2a27ba0e6fa3e5a874d7c3ec134[m
+Merge: c20ea14 6fc4740
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 17:29:29 2025 +0700
+
+    Merge branch 'main' into Category
+
+[33mcommit c35dbb878d588c00876258785cde73e1efd02f0f[m
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 17:27:23 2025 +0700
+
+    fix anh brands
+
+[33mcommit 6fc474089e3db53b20eafb045714b2a86cf5bd12[m
+Merge: df96444 9eca12a
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 17:25:16 2025 +0700
+
+    Merge pull request #3 from duydd069/auth
+    
+    auth
+
+[33mcommit 9eca12ae317f8a8f6991797d8b9ee36898712eda[m
+Merge: 04e4fd5 df96444
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 17:01:25 2025 +0700
+
+    Merge branch 'main' into auth
+
+[33mcommit c20ea14641d3beae23c34021acf5af5fd29c03ab[m
+Author: huân <huanpvph52348@gmail.com>
+Date:   Fri Nov 7 16:57:26 2025 +0700
+
+    Thêm category
+
+[33mcommit df96444d5d609421cb91319defc52e31a1000f80[m
+Merge: 4c75060 18512d4
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Fri Nov 7 16:44:26 2025 +0700
+
+    Merge pull request #2 from duydd069/account
+    
+    Hoàn thành CRUD User (create, edit, delete, list)
+
+[33mcommit 18512d4c10f9abfe94f8c7726ad6c53fdafc0a7b[m
+Author: duydd069 <duyhiha3@gmail.com>
+Date:   Fri Nov 7 15:17:42 2025 +0700
+
+    Hoàn thành CRUD User (create, edit, delete, list)
+
+[33mcommit 04e4fd51cadac31e0668ffa02fbbc0147119244e[m
+Author: thanhtu0910 <tuantu091005@gmail.com>
+Date:   Thu Nov 6 19:21:53 2025 +0700
+
+    auth
+
+[33mcommit 4c75060354ef4f3bca2b21986f2594b050f8758d[m
+Merge: 439bea7 e7eb20f
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Tue Nov 4 18:49:55 2025 +0700
+
+    Merge pull request #1 from duydd069/brands
+    
+    brands
+
+[33mcommit e7eb20f75cb064aada4223d59db1a20543dc9ca1[m
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Tue Nov 4 18:48:37 2025 +0700
+
+    brands
+
+[33mcommit 439bea7b93fcad21dbe65b23e875c8b0db863e20[m[33m ([m[1;32mmain[m[33m)[m
+Merge: 8dab5cb 6fe0fc2
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Thu Oct 30 23:51:47 2025 +0700
+
+    template
+
+[33mcommit 8dab5cb3fa50123ae311acd6d86827da1e85e1be[m
+Author: quanm9677 <quanm9677@gmail.com>
+Date:   Thu Oct 30 19:34:21 2025 +0700
+
+    template
+
+[33mcommit 6fe0fc226f020b50084f22a3411196ceccd02bed[m
+Author: duydd069 <duyhiha3@gmail.com>
+Date:   Fri Oct 17 00:19:27 2025 +0700
+
+    Initial commit

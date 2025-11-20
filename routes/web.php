@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductVariantController;
 
 // Route::get('/', function () {
 //     return view('home');
@@ -54,7 +56,37 @@ Route::prefix('client')->group(function () {
     })->name('client.checkout');
 });
 
+<<<<<<< HEAD
+Route::prefix('admin')->group(function () {
+    Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
+    // Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
+});
+
+// TẠM THỜI bỏ middleware auth để test
+Route::prefix('admin')->group(function () {
+    Route::get('/products',            [ProductController::class, 'index'])->name('admin.products.index');
+    Route::get('/products/create',     [ProductController::class, 'create'])->name('admin.products.create');
+    Route::post('/products',           [ProductController::class, 'store'])->name('admin.products.store');
+    Route::get('/products/{id}',       [ProductController::class, 'show'])->name('admin.products.show');
+    Route::get('/products/{id}/edit',  [ProductController::class, 'edit'])->name('admin.products.edit');
+    Route::put('/products/{id}',       [ProductController::class, 'update'])->name('admin.products.update');
+    Route::delete('/products/{id}',    [ProductController::class, 'destroy'])->name('admin.products.destroy');
+
+    Route::prefix('products/{productId}/variants')->name('admin.products.variants.')->group(function () {
+        Route::get('/',                [ProductVariantController::class, 'index'])->name('index');
+        Route::get('/create',          [ProductVariantController::class, 'create'])->name('create');
+        Route::post('/',               [ProductVariantController::class, 'store'])->name('store');
+        Route::get('/{variantId}/edit',[ProductVariantController::class, 'edit'])->name('edit');
+        Route::put('/{variantId}',     [ProductVariantController::class, 'update'])->name('update');
+        Route::delete('/{variantId}',  [ProductVariantController::class, 'destroy'])->name('destroy');
+    });
+});
+
+
+// Registration routes
+=======
 // Registration routes (show client-styled view)
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 
@@ -77,6 +109,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
 
+<<<<<<< HEAD
+    Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
+
+    Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
+
+    Route::resource('versions', \App\Http\Controllers\Admin\VersionController::class);
+=======
     // Products routes
     Route::get('/products',            [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create',     [ProductController::class, 'create'])->name('products.create');
@@ -85,6 +124,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/products/{id}/edit',  [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{id}',       [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{id}',    [ProductController::class, 'destroy'])->name('products.destroy');
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
 });
 
 
