@@ -2,10 +2,19 @@
 
 namespace App\Models;
 
+<<<<<<< HEAD
+=======
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
 use Illuminate\Database\Eloquent\Model;
 
 class ProductVariant extends Model
 {
+<<<<<<< HEAD
+=======
+    use HasFactory;
+
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
     protected $table = 'product_variants';
 
     protected $fillable = [
@@ -16,6 +25,7 @@ class ProductVariant extends Model
         'sold',
         'sku',
         'barcode',
+<<<<<<< HEAD
         'storage_id',
         'version_id',
         'color_id',
@@ -47,10 +57,17 @@ class ProductVariant extends Model
         ];
     }
 
+=======
+        'description',
+        'status',
+    ];
+
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
+<<<<<<< HEAD
 
     public function storage()
     {
@@ -105,3 +122,6 @@ class ProductVariant extends Model
     }
 }
 
+=======
+}
+>>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf

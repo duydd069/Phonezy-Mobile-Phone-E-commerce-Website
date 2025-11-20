@@ -15,7 +15,7 @@ class RegisterController extends Controller
      */
     public function show()
     {
-        return view('auth.register');
+        return view('electro.auth.register');
     }
 
     /**
@@ -38,6 +38,11 @@ class RegisterController extends Controller
 
         auth()->login($user);
 
-        return redirect('/');
+        $user = auth()->user();
+        if ($user && isset($user->role_id) && $user->role_id == 2) {
+            return redirect()->intended(route('client.index'));
+        }
+
+        return redirect()->intended(route('admin.dashboard'));
     }
 }
