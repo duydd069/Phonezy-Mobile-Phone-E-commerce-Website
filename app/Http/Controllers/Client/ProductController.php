@@ -19,7 +19,6 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-<<<<<<< HEAD
         $product->load(['category','brand']);
         
         // Always load variants to check if product has variants
@@ -50,9 +49,6 @@ class ProductController extends Controller
             ->limit(4)
             ->get();
         
-=======
-        $product->load(['category','brand', 'comments.user', 'comments.replies.user']);
->>>>>>> ce7f9d05044b5923566136beda1ee9cb8285c6bf
         $product->increment('views');
 
         return view('electro.product', compact('product', 'relatedProducts'));
