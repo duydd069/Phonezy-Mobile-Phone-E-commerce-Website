@@ -33,7 +33,6 @@
                     <th>Danh mục</th>
                     <th>Thương hiệu</th>
                     <th class="text-end">Giá (VND)</th>
-                    <th>Giới tính</th>
                     <th>Views</th>
                     <th width="160">Thao tác</th>
                 </tr>
@@ -65,7 +64,6 @@
                         <td>{{ $p->category->name ?? '-' }}</td>
                         <td>{{ $p->brand->name ?? '-' }}</td>
                         <td class="text-end">{{ number_format($p->price, 0, ',', '.') }}</td>
-                        <td>{{ ucfirst($p->gender) }}</td>
                         <td>{{ $p->views }}</td>
                         <td>
                             <a href="{{ route('admin.products.show', $p->id) }}" class="btn btn-sm btn-info">Xem</a>
@@ -81,7 +79,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-3">Chưa có sản phẩm nào.</td>
+                        <td colspan="8" class="text-center text-muted py-3">Chưa có sản phẩm nào.</td>
                     </tr>
                 @endforelse
             </tbody>

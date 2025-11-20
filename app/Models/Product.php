@@ -8,11 +8,26 @@ class Product extends Model
 {
     protected $table = 'products';
     protected $fillable = [
-        'name','image','price','slug','description','gender','category_id','brand_id','views'
+        'name','image','price','slug','description','has_variant','category_id','brand_id','views'
+    ];
+
+    protected $casts = [
+        'has_variant' => 'boolean',
+        'views' => 'integer',
     ];
 
     public function category() { return $this->belongsTo(Category::class); }
     public function brand()    { return $this->belongsTo(Brand::class); }
+
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
+    }
 
     public function getRouteKeyName()
     {

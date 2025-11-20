@@ -1,5 +1,5 @@
 <div class="mb-3">
-  <label class="form-label">Name</label>
+  <label class="form-label">Tên thương hiệu</label>
   <input type="text" name="name" value="{{ old('name', $brand->name ?? '') }}" class="form-control">
   @error('name')<div class="text-danger small">{{ $message }}</div>@enderror
   </div>

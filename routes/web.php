@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductVariantController;
 
 Route::get('/', function () {
     return view('home');
@@ -25,8 +27,6 @@ Route::prefix('admin')->group(function () {
     // Route::resource('products', \App\Http\Controllers\Admin\ProductController::class);
 });
 
-use App\Http\Controllers\Admin\ProductController;
-
 // TẠM THỜI bỏ middleware auth để test
 Route::prefix('admin')->group(function () {
     Route::get('/products',            [ProductController::class, 'index'])->name('admin.products.index');
@@ -36,6 +36,15 @@ Route::prefix('admin')->group(function () {
     Route::get('/products/{id}/edit',  [ProductController::class, 'edit'])->name('admin.products.edit');
     Route::put('/products/{id}',       [ProductController::class, 'update'])->name('admin.products.update');
     Route::delete('/products/{id}',    [ProductController::class, 'destroy'])->name('admin.products.destroy');
+
+    Route::prefix('products/{productId}/variants')->name('admin.products.variants.')->group(function () {
+        Route::get('/',                [ProductVariantController::class, 'index'])->name('index');
+        Route::get('/create',          [ProductVariantController::class, 'create'])->name('create');
+        Route::post('/',               [ProductVariantController::class, 'store'])->name('store');
+        Route::get('/{variantId}/edit',[ProductVariantController::class, 'edit'])->name('edit');
+        Route::put('/{variantId}',     [ProductVariantController::class, 'update'])->name('update');
+        Route::delete('/{variantId}',  [ProductVariantController::class, 'destroy'])->name('destroy');
+    });
 });
 
 
@@ -55,6 +64,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
 
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+
+    Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
+
+    Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
+
+    Route::resource('versions', \App\Http\Controllers\Admin\VersionController::class);
 });
 
 
