@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use App\Models\Cart;
+use App\Models\Category;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
             $count = $cart ? $cart->items->sum('quantity') : 0;
 
             $view->with('cartCount', $count);
+            $view->with('categories', Category::all());
         });
     }
 }

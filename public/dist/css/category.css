@@ -1,0 +1,64 @@
+
+			/* Khung dropdown */
+			.dropdown.side-dropdown .custom-menu {
+				display: none;
+				position: absolute;
+				top: 100%;
+				left: 0;
+				min-width: 220px;
+				padding: 10px 0;
+				background: #ffffff;
+				border-radius: 8px;
+				box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+				z-index: 999;
+				animation: dropdownFade 0.2s ease;
+			}
+
+			/* Hiện khi hover */
+			.dropdown.side-dropdown:hover .custom-menu {
+				display: block;
+			}
+
+			/* Style danh sách */
+			.custom-menu .list-links {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			/* Item */
+			.custom-menu .list-links li {
+				padding: 8px 18px;
+			}
+
+			/* Text */
+			.custom-menu .list-links li a {
+				color: #333;
+				font-size: 15px;
+				display: block;
+				font-weight: 500;
+				transition: 0.2s ease;
+			}
+
+			/* Hover item */
+			.custom-menu .list-links li:hover {
+				background: #f7f7f7;
+			}
+
+			.custom-menu .list-links li a:hover {
+				color: #e3342f; /* màu đỏ đẹp */
+			}
+
+			/* Animation */
+			@keyframes dropdownFade {
+				from {
+					opacity: 0;
+					transform: translateY(8px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+

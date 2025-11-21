@@ -25,6 +25,9 @@ Route::prefix('client')->group(function () {
     // Comment routes
     Route::get('/p/{product}/comments', [\App\Http\Controllers\Client\CommentController::class, 'index'])->name('client.comments.index');
     Route::post('/p/{product}/comments', [\App\Http\Controllers\Client\CommentController::class, 'store'])->name('client.comments.store');
+
+    // Category routes
+    Route::get('/danh-muc/{slug}', [\App\Http\Controllers\Client\CategoryController::class, 'show'])->name('client.category.show');
 });
 
 // Cart routes
@@ -51,6 +54,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
+    
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
     Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
