@@ -3,7 +3,7 @@
 	<div class="container">
 		<div id="responsive-nav">
 			<ul class="main-nav nav navbar-nav">
-				<li class="active"><a href="{{ url('/electro') }}">Home</a></li>
+				<li class="active"><a href="{{ url('/client') }}">Home</a></li>
 				<li><a href="#">Hot Deals</a></li>
 				<li><a href="#">Categories</a></li>
 				<li><a href="#">Laptops</a></li>

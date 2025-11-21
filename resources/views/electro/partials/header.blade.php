@@ -10,7 +10,12 @@
             </ul>
             <ul class="header-links pull-right">
                 <li><a href="#"><i class="fa fa-dollar"></i> USD</a></li>
-                <li><a href="#"><i class="fa fa-user-o"></i> My Account</a></li>
+                @auth
+                    <li><a href="{{ route('client.orders.index') }}"><i class="fa fa-shopping-bag"></i> My Orders</a></li>
+                    <li><a href="#"><i class="fa fa-user-o"></i> {{ auth()->user()->name }}</a></li>
+                @else
+                    <li><a href="{{ route('client.login') }}"><i class="fa fa-user-o"></i> Login</a></li>
+                @endauth
             </ul>
         </div>
     </div>

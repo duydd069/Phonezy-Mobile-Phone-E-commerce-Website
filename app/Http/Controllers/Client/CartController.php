@@ -2,30 +2,14 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Http\Controllers\Concerns\HandlesActiveCart;
 use App\Http\Controllers\Controller;
-use App\Models\Cart;
 use App\Models\CartItem;
-use App\Models\Product;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
-    // Lấy hoặc tạo giỏ hàng active cho user hiện tại
-    protected function getOrCreateActiveCart()
-    {
-        // Nếu chưa có login thì tạm fix user_id = 1
-        $userId = auth()->check() ? auth()->id() : 1;
-
-        return Cart::firstOrCreate(
-            [
-                'user_id' => $userId,
-                'status'  => 'active',
-            ],
-            [
-                'status' => 'active',
-            ]
-        );
-    }
+    use HandlesActiveCart;
 
     // Hiển thị giỏ
     public function index()
@@ -83,7 +67,7 @@ class CartController extends Controller
             'quantity'     => 'required|integer|min:1',
         ]);
 
-        $userId = auth()->check() ? auth()->id() : 1;
+        $userId = $this->resolveCartUserId();
 
         $cartItem = CartItem::whereHas('cart', function ($q) use ($userId) {
             $q->where('user_id', $userId)->where('status', 'active');
@@ -102,7 +86,7 @@ class CartController extends Controller
             'cart_item_id' => 'required|integer|exists:cart_items,id',
         ]);
 
-        $userId = auth()->check() ? auth()->id() : 1;
+        $userId = $this->resolveCartUserId();
 
         $cartItem = CartItem::whereHas('cart', function ($q) use ($userId) {
             $q->where('user_id', $userId)->where('status', 'active');

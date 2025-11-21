@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Client\CheckoutController;
 
 // Route::get('/', function () {
 //     return view('home');
@@ -11,24 +12,26 @@ use App\Http\Controllers\AuthController;
 Route::get('/', function () { return redirect()->route('client.index'); });
 
 // Electro frontend routes (Client)
-Route::prefix('client')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('client.index');
-    Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('client.product.show');
+Route::prefix('client')->name('client.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('index');
+    Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('product.show');
     Route::get('/store', function () {
         return view('electro.store');
-    })->name('client.store');
-    Route::get('/checkout', function () {
-        return view('electro.checkout');
-    })->name('client.checkout');
-    // Client auth (login / register) using existing controllers but client views
-    Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('client.login');
-    Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('client.login.post');
+    })->name('store');
 
-    Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'show'])->name('client.register');
-    Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->name('client.register.store');
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+
+    Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.post');
+
+    Route::get('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'show'])->name('register');
+    Route::post('/register', [\App\Http\Controllers\Auth\RegisterController::class, 'store'])->name('register.store');
 });
 
 use App\Http\Controllers\Client\CartController;
+use App\Http\Controllers\Client\OrderController;
 
 Route::middleware(['web'])->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -38,16 +41,10 @@ Route::middleware(['web'])->group(function () {
     Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 });
 
-// Electro frontend routes (Client)
-Route::prefix('client')->group(function () {
-    Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('client.index');
-    Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('client.product.show');
-    Route::get('/store', function () {
-        return view('electro.store');
-    })->name('client.store');
-    Route::get('/checkout', function () {
-        return view('electro.checkout');
-    })->name('client.checkout');
+// Client Orders - Yêu cầu đăng nhập
+Route::middleware(['auth'])->prefix('client')->name('client.')->group(function () {
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 });
 
 // Registration routes (show client-styled view)
@@ -61,6 +58,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Admin routes - Yêu cầu đăng nhập và quyền admin
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
@@ -81,6 +79,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/products/{id}/edit',  [ProductController::class, 'edit'])->name('products.edit');
     Route::put('/products/{id}',       [ProductController::class, 'update'])->name('products.update');
     Route::delete('/products/{id}',    [ProductController::class, 'destroy'])->name('products.destroy');
+
+    // Orders routes
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
 });
 
 

@@ -20,6 +20,12 @@
                         </div>
                     @endif
 
+                    @if(session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     @if($items->isEmpty())
                         <p>Giỏ hàng đang trống.</p>
                         <a href="{{ url('/client') }}" class="primary-btn">
@@ -130,7 +136,7 @@
                             </div>
                         </div>
 
-                        <a href="{{ url('/client') }}" class="primary-btn order-submit">
+                        <a href="{{ route('client.checkout') }}" class="primary-btn order-submit">
                             Tiến hành thanh toán
                         </a>
 
