@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorageRequest;
 use App\Models\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,11 +21,9 @@ class StorageController extends Controller
         return view('admin.storages.create');
     }
 
-    public function store(Request $request)
+    public function store(StorageRequest $request)
     {
-        $validated = $request->validate([
-            'storage' => 'required|string|max:50|unique:storages,storage',
-        ]);
+        $validated = $request->validated();
 
         Storage::create($validated);
 
@@ -38,11 +37,9 @@ class StorageController extends Controller
         return view('admin.storages.edit', compact('storage'));
     }
 
-    public function update(Request $request, Storage $storage)
+    public function update(StorageRequest $request, Storage $storage)
     {
-        $validated = $request->validate([
-            'storage' => 'required|string|max:50|unique:storages,storage,' . $storage->id,
-        ]);
+        $validated = $request->validated();
 
         $storage->update($validated);
 

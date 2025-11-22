@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ProductVariantRequest;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Color;
@@ -39,11 +40,11 @@ class ProductVariantController extends Controller
         ]);
     }
 
-    public function store(Request $request, int $productId)
+    public function store(ProductVariantRequest $request, int $productId)
     {
         $product = Product::findOrFail($productId);
 
-        $validated = $this->validateData($request);
+        $validated = $this->processValidatedData($request);
         $validated['product_id'] = $product->id;
 
         ProductVariant::create($validated);
@@ -69,12 +70,12 @@ class ProductVariantController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $productId, int $variantId)
+    public function update(ProductVariantRequest $request, int $productId, int $variantId)
     {
         $product = Product::findOrFail($productId);
         $variant = $this->findVariantOrFail($product->id, $variantId);
 
-        $validated = $this->validateData($request, $variant->id);
+        $validated = $this->processValidatedData($request);
 
         // Handle image update - delete old image if new one is uploaded
         if ($request->hasFile('image')) {
@@ -151,36 +152,9 @@ class ProductVariantController extends Controller
         }
     }
 
-    protected function validateData(Request $request, ?int $ignoreVariantId = null): array
+    protected function processValidatedData(ProductVariantRequest $request): array
     {
-        $request->merge([
-            'price_sale' => $request->price_sale === '' ? null : $request->price_sale,
-            'sold'       => $request->sold === '' ? null : $request->sold,
-        ]);
-
-        $statusKeys = implode(',', array_keys(ProductVariant::statusOptions()));
-
-        $rules = [
-            'price'       => ['required', 'numeric', 'min:0'],
-            'storage_id'  => ['nullable', 'integer', 'exists:storages,id'],
-            'version_id'  => ['nullable', 'integer', 'exists:versions,id'],
-            'color_id'    => ['nullable', 'integer', 'exists:colors,id'],
-            'price_sale'  => ['nullable', 'numeric', 'min:0', 'lte:price'],
-            'stock'       => ['required', 'integer', 'min:0'],
-            'sold'        => ['nullable', 'integer', 'min:0'],
-            'sku'         => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('product_variants', 'sku')->ignore($ignoreVariantId),
-            ],
-            'barcode'     => ['nullable', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'image'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'status'      => ['required', 'in:' . $statusKeys],
-        ];
-
-        $data = $request->validate($rules);
+        $data = $request->validated();
 
         // Handle image upload
         if ($request->hasFile('image')) {
