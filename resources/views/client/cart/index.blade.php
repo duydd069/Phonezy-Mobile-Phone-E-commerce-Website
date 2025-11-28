@@ -130,7 +130,7 @@
                             </div>
                         </div>
 
-                        <a href="{{ url('/client') }}" class="primary-btn order-submit">
+                        <a href="{{ route('client.checkout') }}" class="primary-btn order-submit">
                             Tiến hành thanh toán
                         </a>
 

@@ -13,18 +13,41 @@ class CartController extends Controller
     // Lấy hoặc tạo giỏ hàng active cho user hiện tại
     protected function getOrCreateActiveCart()
     {
-        // Nếu chưa có login thì tạm fix user_id = 1
-        $userId = auth()->check() ? auth()->id() : 1;
+        if (auth()->check()) {
+            $userId = auth()->id();
+            return Cart::firstOrCreate(
+                [
+                    'user_id' => $userId,
+                    'status'  => 'active',
+                ],
+                [
+                    'status' => 'active',
+                ]
+            );
+        } else {
+            // Lưu giỏ hàng vào session cho người chưa đăng nhập
+            $sessionId = session()->getId();
+            $cartId = session()->get('cart_id');
 
-        return Cart::firstOrCreate(
-            [
-                'user_id' => $userId,
-                'status'  => 'active',
-            ],
-            [
+            if ($cartId) {
+                $cart = Cart::where('id', $cartId)
+                    ->whereNull('user_id')
+                    ->where('status', 'active')
+                    ->first();
+                if ($cart) {
+                    return $cart;
+                }
+            }
+
+            // Tạo giỏ hàng mới và lưu vào session
+            $cart = Cart::create([
+                'user_id' => null, // null cho người chưa đăng nhập
                 'status' => 'active',
-            ]
-        );
+            ]);
+
+            session()->put('cart_id', $cart->id);
+            return $cart;
+        }
     }
 
     // Hiển thị giỏ
@@ -83,11 +106,9 @@ class CartController extends Controller
             'quantity'     => 'required|integer|min:1',
         ]);
 
-        $userId = auth()->check() ? auth()->id() : 1;
-
-        $cartItem = CartItem::whereHas('cart', function ($q) use ($userId) {
-            $q->where('user_id', $userId)->where('status', 'active');
-        })->findOrFail($request->cart_item_id);
+        $cart = $this->getOrCreateActiveCart();
+        $cartItem = CartItem::where('cart_id', $cart->id)
+            ->findOrFail($request->cart_item_id);
 
         $cartItem->quantity = $request->quantity;
         $cartItem->save();
@@ -102,11 +123,9 @@ class CartController extends Controller
             'cart_item_id' => 'required|integer|exists:cart_items,id',
         ]);
 
-        $userId = auth()->check() ? auth()->id() : 1;
-
-        $cartItem = CartItem::whereHas('cart', function ($q) use ($userId) {
-            $q->where('user_id', $userId)->where('status', 'active');
-        })->findOrFail($request->cart_item_id);
+        $cart = $this->getOrCreateActiveCart();
+        $cartItem = CartItem::where('cart_id', $cart->id)
+            ->findOrFail($request->cart_item_id);
 
         $cartItem->delete();
 
