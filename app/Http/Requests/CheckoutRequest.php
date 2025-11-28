@@ -15,10 +15,11 @@ class CheckoutRequest extends FormRequest
     public function rules(): array
     {
         $paymentMethods = array_keys(config('checkout.payment_methods', []));
+        $isGuest = !auth()->check();
 
         return [
             'full_name'      => ['required', 'string', 'max:120'],
-            'email'          => ['nullable', 'email', 'max:150'],
+            'email'          => [$isGuest ? 'required' : 'nullable', 'email', 'max:150'],
             'phone'          => ['required', 'string', 'max:30'],
             'address'        => ['required', 'string', 'max:255'],
             'city'           => ['nullable', 'string', 'max:120'],

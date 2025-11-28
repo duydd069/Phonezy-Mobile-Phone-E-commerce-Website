@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Notifications\OrderConfirmationNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class CheckoutController extends Controller
 {
@@ -52,11 +54,12 @@ class CheckoutController extends Controller
 
         $summary = $this->buildSummary($items);
         $data = $request->validated();
+        $isGuest = !auth()->check();
 
-        $order = DB::transaction(function () use ($cart, $items, $summary, $data) {
+        $order = DB::transaction(function () use ($cart, $items, $summary, $data, $isGuest) {
             $order = Order::create([
                 'cart_id'             => $cart->id,
-                'user_id'             => $cart->user_id,
+                'user_id'             => $isGuest ? null : $cart->user_id,
                 'subtotal'            => $summary['subtotal'],
                 'shipping_fee'        => $summary['shipping_fee'],
                 'discount_amount'     => $summary['discount'],
@@ -96,6 +99,29 @@ class CheckoutController extends Controller
             return $order;
         });
 
+        // Lưu đơn hàng vào session nếu là guest
+        if ($isGuest) {
+            $sessionOrders = session('guest_orders', []);
+            $sessionOrders[] = [
+                'order_id' => $order->id,
+                'email' => $data['email'],
+                'created_at' => $order->created_at->toDateTimeString(),
+            ];
+            session(['guest_orders' => $sessionOrders]);
+        }
+
+        // Gửi email xác nhận đơn hàng
+        if (!empty($data['email'])) {
+            try {
+                // Sử dụng Notification::route để gửi email cho guest
+                Notification::route('mail', $data['email'])
+                    ->notify(new OrderConfirmationNotification($order));
+            } catch (\Exception $e) {
+                // Log lỗi nhưng không làm gián đoạn quá trình
+                \Log::error('Failed to send order confirmation email: ' . $e->getMessage());
+            }
+        }
+
         return redirect()
             ->route('client.checkout.success', $order)
             ->with('success', 'Đặt hàng thành công!');
@@ -103,13 +129,28 @@ class CheckoutController extends Controller
 
     public function success(Order $order)
     {
-        $userId = $this->resolveCartUserId();
+        $order->load('items');
+        $isAuthorized = false;
 
-        if ((int) $order->user_id !== $userId) {
-            abort(404);
+        // Kiểm tra nếu user đã đăng nhập
+        if (auth()->check() && $order->user_id && (int) $order->user_id === (int) auth()->id()) {
+            $isAuthorized = true;
         }
 
-        $order->load('items');
+        // Kiểm tra nếu là guest và đơn hàng có trong session
+        if (!$isAuthorized && !$order->user_id) {
+            $sessionOrders = session('guest_orders', []);
+            foreach ($sessionOrders as $sessionOrder) {
+                if (isset($sessionOrder['order_id']) && (int) $sessionOrder['order_id'] === (int) $order->id) {
+                    $isAuthorized = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$isAuthorized) {
+            abort(404);
+        }
 
         return view('electro.checkout-success', [
             'order'           => $order,
