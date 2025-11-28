@@ -6,7 +6,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Client\CartController;
-use App\Http\Controllers\Client\OrderController;
 
 Route::get('/', fn () => redirect()->route('client.index'));
 
@@ -15,12 +14,7 @@ Route::prefix('client')->group(function () {
     Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('client.index');
     Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('client.product.show');
     Route::get('/store', fn () => view('electro.store'))->name('client.store');
-
-    // Order routes
-    Route::get('/checkout', [OrderController::class, 'showCheckout'])->name('client.checkout');
-    Route::post('/checkout', [OrderController::class, 'store'])->name('client.checkout.store');
-    Route::get('/checkout/success', [OrderController::class, 'success'])->name('client.checkout.success');
-    Route::get('/order/verify/{token}', [OrderController::class, 'verifyEmail'])->name('client.order.verify');
+    Route::get('/checkout', fn () => view('electro.checkout'))->name('client.checkout');
 
     // Client auth (login / register) using existing controllers but client views
     Route::get('/login', [AuthController::class, 'showLogin'])->name('client.login');
@@ -60,7 +54,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
-
+    
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
     Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
