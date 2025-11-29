@@ -68,5 +68,35 @@ class OrderController extends Controller
             ->route('admin.orders.show', $order)
             ->with('success', "Order status updated from '{$oldStatus}' to '{$request->status}'.");
     }
+
+    /**
+     * Cập nhật trạng thái thanh toán
+     */
+    public function updatePaymentStatus(Request $request, Order $order): RedirectResponse
+    {
+        $request->validate([
+            'payment_status' => 'required|in:pending,paid,failed,refunded',
+        ]);
+
+        $oldPaymentStatus = $order->payment_status;
+        
+        $updateData = ['payment_status' => $request->payment_status];
+        
+        // Nếu thanh toán thành công, cập nhật paid_at
+        if ($request->payment_status === 'paid' && $order->payment_status !== 'paid') {
+            $updateData['paid_at'] = now();
+        }
+        
+        // Nếu hủy thanh toán, xóa paid_at
+        if ($request->payment_status !== 'paid') {
+            $updateData['paid_at'] = null;
+        }
+
+        $order->update($updateData);
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', "Payment status updated from '{$oldPaymentStatus}' to '{$request->payment_status}'.");
+    }
 }
 

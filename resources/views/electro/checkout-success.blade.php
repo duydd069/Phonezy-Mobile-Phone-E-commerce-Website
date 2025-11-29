@@ -33,8 +33,73 @@
                                 </li>
                             @endif
                             <li><strong>Phương thức thanh toán:</strong> {{ $paymentMethods[$order->payment_method] ?? strtoupper($order->payment_method) }}</li>
-                            <li><strong>Trạng thái thanh toán:</strong> {{ ucfirst($order->payment_status) }}</li>
+                            @if(config('bank.show_payment_status', false))
+                                <li><strong>Trạng thái thanh toán:</strong> {{ ucfirst($order->payment_status) }}</li>
+                            @endif
                         </ul>
+
+                        @if($order->payment_method === 'bank_transfer' && $order->payment_status === 'pending')
+                            <div class="bank-transfer-info" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; border: 2px solid #D10024;">
+                                <div class="section-title">
+                                    <h3 class="title" style="color: #D10024;">
+                                        <i class="fa fa-university"></i> Thông tin chuyển khoản
+                                    </h3>
+                                </div>
+                                
+                                <div style="background: #fff; padding: 20px; border-radius: 5px; margin-top: 15px;">
+                                    @php
+                                        $bankAccounts = config('bank.accounts', []);
+                                        $bankInstructions = config('bank.instructions', []);
+                                    @endphp
+                                    
+                                    @if(!empty($bankAccounts))
+                                        @foreach($bankAccounts as $account)
+                                            <div style="margin-bottom: 25px; {{ !$loop->last ? 'border-bottom: 1px solid #e0e0e0; padding-bottom: 20px;' : '' }}">
+                                                <h4 style="color: #D10024; margin-bottom: 15px;">
+                                                    <i class="fa fa-bank"></i> {{ $account['bank_name'] }}
+                                                </h4>
+                                                <div style="line-height: 2;">
+                                                    <div><strong>Số tài khoản:</strong> 
+                                                        <span style="font-size: 18px; color: #D10024; font-weight: bold;">{{ $account['account_number'] }}</span>
+                                                    </div>
+                                                    <div><strong>Chủ tài khoản:</strong> {{ $account['account_holder'] }}</div>
+                                                    @if(!empty($account['branch']))
+                                                        <div><strong>Chi nhánh:</strong> {{ $account['branch'] }}</div>
+                                                    @endif
+                                                    @if(!empty($account['qr_code']))
+                                                        <div style="margin-top: 15px;">
+                                                            <strong>QR Code:</strong><br>
+                                                            <img src="{{ $account['qr_code'] }}" alt="QR Code" style="max-width: 200px; margin-top: 10px; border: 1px solid #ddd; padding: 5px; background: #fff;">
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <div style="color: #666;">
+                                            <p>Vui lòng liên hệ với chúng tôi để nhận thông tin tài khoản ngân hàng.</p>
+                                        </div>
+                                    @endif
+                                    
+                                    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 3px;">
+                                        <strong style="color: #856404;">Hướng dẫn thanh toán:</strong>
+                                        <ul style="margin-top: 10px; margin-bottom: 0; padding-left: 20px; color: #856404;">
+                                            @foreach($bankInstructions as $instruction)
+                                                <li>{!! str_replace(['{amount}', '{order_id}'], [number_format($order->total, 0, ',', '.'), str_pad($order->id, 6, '0', STR_PAD_LEFT)], $instruction) !!}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    
+                                    <div style="margin-top: 20px; padding: 15px; background: #d1ecf1; border-left: 4px solid #0c5460; border-radius: 3px;">
+                                        <strong style="color: #0c5460;">Lưu ý quan trọng:</strong>
+                                        <p style="margin-top: 10px; margin-bottom: 0; color: #0c5460;">
+                                            Vui lòng chuyển khoản đúng số tiền <strong>{{ number_format($order->total, 0, ',', '.') }} ₫</strong> 
+                                            và ghi rõ nội dung: <strong>#{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}</strong>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
 
                         <div class="order-summary">
                             <div class="order-col">

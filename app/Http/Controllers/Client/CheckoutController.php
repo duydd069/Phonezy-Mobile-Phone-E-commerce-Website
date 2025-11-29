@@ -8,6 +8,7 @@ use App\Http\Requests\CheckoutRequest;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Notifications\OrderConfirmationNotification;
+use App\Services\MoMoService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -110,7 +111,32 @@ class CheckoutController extends Controller
             session(['guest_orders' => $sessionOrders]);
         }
 
-        // Gửi email xác nhận đơn hàng
+        // Xử lý thanh toán MoMo
+        if ($data['payment_method'] === 'momo') {
+            $momoService = app(MoMoService::class);
+            $orderInfo = "Thanh toán đơn hàng #{$order->id}";
+            $extraData = json_encode(['order_id' => $order->id]);
+            
+            $paymentResult = $momoService->createPayment(
+                (string) $order->id,
+                $order->total,
+                $orderInfo,
+                $extraData
+            );
+
+            if ($paymentResult['success'] ?? false) {
+                // Redirect đến MoMo để thanh toán
+                return redirect($paymentResult['payUrl']);
+            } else {
+                // Nếu tạo payment request thất bại, quay lại checkout với lỗi
+                return redirect()
+                    ->route('client.checkout')
+                    ->withInput()
+                    ->with('error', $paymentResult['message'] ?? 'Không thể tạo yêu cầu thanh toán MoMo. Vui lòng thử lại.');
+            }
+        }
+
+        // Gửi email xác nhận đơn hàng (cho COD và bank_transfer)
         if (!empty($data['email'])) {
             try {
                 // Sử dụng Notification::route để gửi email cho guest

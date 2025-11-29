@@ -181,6 +181,31 @@
                             {{ $order->paid_at->format('d/m/Y H:i') }}
                         </p>
                     @endif
+                    @if($order->transaction_id)
+                        <p>
+                            <strong>Transaction ID:</strong><br>
+                            {{ $order->transaction_id }}
+                        </p>
+                    @endif
+
+                    {{-- Update Payment Status Form --}}
+                    <form method="POST" action="{{ route('admin.orders.update-payment-status', $order) }}" class="mt-3">
+                        @csrf
+                        @method('PUT')
+                        <div class="mb-3">
+                            <label for="payment_status" class="form-label">Update Payment Status:</label>
+                            <select name="payment_status" id="payment_status" class="form-select" required>
+                                <option value="pending" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="paid" {{ $order->payment_status === 'paid' ? 'selected' : '' }}>Paid</option>
+                                <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>Failed</option>
+                                <option value="refunded" {{ $order->payment_status === 'refunded' ? 'selected' : '' }}>Refunded</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100" 
+                                onclick="return confirm('Bạn có chắc muốn cập nhật trạng thái thanh toán?');">
+                            <i class="fa fa-check"></i> Cập nhật trạng thái thanh toán
+                        </button>
+                    </form>
                 </div>
             </div>
 

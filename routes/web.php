@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Client\CheckoutController;
+use App\Http\Controllers\Client\PaymentController;
 
 // Route::get('/', function () {
 //     return view('home');
@@ -22,6 +23,22 @@ Route::prefix('client')->name('client.')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+
+    // MoMo Payment routes
+    Route::get('/payment/momo/return', [PaymentController::class, 'momoReturn'])->name('payment.momo.return');
+    Route::post('/payment/momo/notify', [PaymentController::class, 'momoNotify'])->name('payment.momo.notify');
+    
+    // MoMo Mock Payment routes (chỉ dùng để test)
+    Route::get('/payment/momo/mock', [PaymentController::class, 'momoMock'])->name('payment.momo.mock');
+    Route::post('/payment/momo/mock/process', [PaymentController::class, 'momoMockProcess'])->name('payment.momo.mock.process');
+    
+    // Bank Transfer Webhook (để tự động xác nhận khi nhận tiền)
+    Route::post('/payment/bank/webhook', [\App\Http\Controllers\Client\BankWebhookController::class, 'handle'])->name('payment.bank.webhook');
+    Route::post('/payment/bank/webhook/test', [\App\Http\Controllers\Client\BankWebhookController::class, 'test'])->name('payment.bank.webhook.test');
+    
+    // Bank Transfer Webhook (để tự động xác nhận khi nhận tiền)
+    Route::post('/payment/bank/webhook', [\App\Http\Controllers\Client\BankWebhookController::class, 'handle'])->name('payment.bank.webhook');
+    Route::post('/payment/bank/webhook/test', [\App\Http\Controllers\Client\BankWebhookController::class, 'test'])->name('payment.bank.webhook.test');
 
     Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.post');
@@ -70,6 +87,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
 
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+     Route::resource('coupons', \App\Http\Controllers\Admin\CouponController::class);
 
     // Products routes
     Route::get('/products',            [ProductController::class, 'index'])->name('products.index');
