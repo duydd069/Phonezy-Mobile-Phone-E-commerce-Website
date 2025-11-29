@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -30,20 +31,18 @@ class CategoryController extends Controller
     }
 
     // Lưu dữ liệu từ form vào database
-    public function store(Request $request)
+    public function store(CategoryRequest $request)
     {
-        // Kiểm tra dữ liệu
-        $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name',
-        ]);
+        $validated = $request->validated();
 
-        // Tạo slug tự động từ name
-        $slug = Str::slug($request->name);
+        $slug = $validated['slug'] ?? null;
+        $slug = Str::slug($slug ?: $validated['name']);
 
         // Tạo mới category
         Category::create([
-            'name' => $request->name,
+            'name' => $validated['name'],
             'slug' => $slug,
+            'description' => $validated['description'] ?? null,
         ]);
 
         // Chuyển hướng về trang danh sách kèm thông báo
@@ -59,15 +58,9 @@ public function edit(Category $category)
     return view('admin.categories.edit', compact('category'));
 }
 
-public function update(Request $request, Category $category)
+public function update(CategoryRequest $request, Category $category)
 {
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'slug' => 'nullable|string|max:255|unique:categories,slug,' . $category->id,
-        'description' => 'nullable|string',
-    ]);
-
-    $data = $request->only('name', 'slug', 'description');
+    $data = $request->validated();
     if (empty($data['slug'])) {
         $data['slug'] = Str::slug($data['name']);
     }

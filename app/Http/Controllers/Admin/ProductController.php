@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Brand;
@@ -36,19 +37,8 @@ class ProductController extends Controller
         return view('admin.products.create', compact('categories','brands'));
     }
 
-   public function store(Request $request)
+   public function store(ProductRequest $request)
 {
-    $request->validate([
-        'name'        => 'required|string|max:200',
-        'price'       => 'required|numeric|min:0',
-        'category_id' => 'required|exists:categories,id',
-        'brand_id'    => 'required|exists:brands,id',
-        'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-        'description' => 'nullable|string',
-        'extra_images' => 'nullable|array|max:10',
-        'extra_images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
-    ]);
-
     $data = $request->only(['name','price','description','category_id','brand_id']);
     $data['slug']  = \Illuminate\Support\Str::slug($request->name);
     $data['views'] = 0;
@@ -98,22 +88,9 @@ class ProductController extends Controller
         return view('admin.products.edit', compact('product','categories','brands'));
     }
 
-    public function update(Request $request, $id)
+    public function update(ProductRequest $request, $id)
 {
     $product = \App\Models\Product::findOrFail($id);
-
-    $request->validate([
-        'name'        => 'required|string|max:200',
-        'price'       => 'required|numeric|min:0',
-        'category_id' => 'required|exists:categories,id',
-        'brand_id'    => 'required|exists:brands,id',
-        'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096',
-        'description' => 'nullable|string',
-        'extra_images' => 'nullable|array|max:10',
-        'extra_images.*' => 'image|mimes:jpg,jpeg,png,webp|max:4096',
-        'remove_images' => 'nullable|array',
-        'remove_images.*' => 'integer|exists:product_images,id',
-    ]);
 
     $data = $request->only(['name','price','description','category_id','brand_id']);
     $data['slug'] = \Illuminate\Support\Str::slug($request->name);

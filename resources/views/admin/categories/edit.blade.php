@@ -22,13 +22,13 @@
     @method('PUT')
 
     <div class="mb-3">
-      <label class="form-label">Tên danh mục</label>
-      <input type="text" name="name" value="{{ old('name', $category->name) }}" class="form-control" required>
+      <label class="form-label" for="category-name">Tên danh mục</label>
+      <input type="text" id="category-name" name="name" value="{{ old('name', $category->name) }}" class="form-control" required>
     </div>
 
     <div class="mb-3">
-      <label class="form-label">Slug</label>
-      <input type="text" name="slug" value="{{ old('slug', $category->slug) }}" class="form-control">
+      <label class="form-label" for="category-slug">Slug</label>
+      <input type="text" id="category-slug" name="slug" value="{{ old('slug', $category->slug) }}" class="form-control">
       <div class="form-text">Nếu để trống, slug sẽ được tạo tự động.</div>
     </div>
 
@@ -40,4 +40,39 @@
     <button type="submit" class="btn btn-primary">Cập nhật</button>
   </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const nameInput = document.getElementById('category-name');
+  const slugInput = document.getElementById('category-slug');
+
+  if (!nameInput || !slugInput) return;
+
+  const slugify = (value) => value
+    .toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+
+  let manualSlug = slugInput.value.trim().length > 0;
+
+  slugInput.addEventListener('input', () => {
+    manualSlug = slugInput.value.trim().length > 0;
+  });
+
+  slugInput.addEventListener('blur', () => {
+    if (!slugInput.value.trim()) {
+      manualSlug = false;
+      slugInput.value = slugify(nameInput.value);
+    }
+  });
+
+  nameInput.addEventListener('input', () => {
+    if (manualSlug) return;
+    slugInput.value = slugify(nameInput.value);
+  });
+});
+</script>
 @endsection

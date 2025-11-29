@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\VersionRequest;
 use App\Models\Version;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,11 +21,9 @@ class VersionController extends Controller
         return view('admin.versions.create');
     }
 
-    public function store(Request $request)
+    public function store(VersionRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:versions,name',
-        ]);
+        $validated = $request->validated();
 
         Version::create($validated);
 
@@ -38,11 +37,9 @@ class VersionController extends Controller
         return view('admin.versions.edit', compact('version'));
     }
 
-    public function update(Request $request, Version $version)
+    public function update(VersionRequest $request, Version $version)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:versions,name,' . $version->id,
-        ]);
+        $validated = $request->validated();
 
         $version->update($validated);
 

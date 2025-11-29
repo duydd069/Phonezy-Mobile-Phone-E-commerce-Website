@@ -7,14 +7,14 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Client\CartController;
 
-Route::get('/', fn () => redirect()->route('client.index'));
+Route::get('/', fn() => redirect()->route('client.index'));
 
 // Electro frontend routes (Client)
 Route::prefix('client')->group(function () {
     Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('client.index');
     Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('client.product.show');
-    Route::get('/store', fn () => view('electro.store'))->name('client.store');
-    Route::get('/checkout', fn () => view('electro.checkout'))->name('client.checkout');
+    Route::get('/store', fn() => view('electro.store'))->name('client.store');
+    Route::get('/checkout', fn() => view('electro.checkout'))->name('client.checkout');
 
     // Client auth (login / register) using existing controllers but client views
     Route::get('/login', [AuthController::class, 'showLogin'])->name('client.login');
@@ -48,10 +48,12 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Admin routes - Yêu cầu đăng nhập và quyền admin
-Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/', fn () => view('admin.dashboard'))->name('dashboard');
+// Admin routes - tạm thời bỏ middleware auth/admin
+// Route::prefix('admin')->name('admin.')->group(function () {
+//     Route::get('/', fn () => view('admin.dashboard'))->name('dashboard');
 
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', fn() => view('admin.dashboard'))->name('dashboard');
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
     
@@ -74,9 +76,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/',                [ProductVariantController::class, 'index'])->name('index');
         Route::get('/create',          [ProductVariantController::class, 'create'])->name('create');
         Route::post('/',               [ProductVariantController::class, 'store'])->name('store');
-        Route::get('/{variantId}/edit',[ProductVariantController::class, 'edit'])->name('edit');
+        Route::get('/{variantId}/edit', [ProductVariantController::class, 'edit'])->name('edit');
         Route::put('/{variantId}',     [ProductVariantController::class, 'update'])->name('update');
         Route::delete('/{variantId}',  [ProductVariantController::class, 'destroy'])->name('destroy');
     });
 });
-

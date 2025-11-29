@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ColorRequest;
 use App\Models\Color;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,17 +21,9 @@ class ColorController extends Controller
         return view('admin.colors.create');
     }
 
-    public function store(Request $request)
+    public function store(ColorRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:colors,name',
-            'hex_code' => [
-                'nullable',
-                'string',
-                'max:10',
-                'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/',
-            ],
-        ]);
+        $validated = $request->validated();
 
         Color::create($validated);
 
@@ -44,17 +37,9 @@ class ColorController extends Controller
         return view('admin.colors.edit', compact('color'));
     }
 
-    public function update(Request $request, Color $color)
+    public function update(ColorRequest $request, Color $color)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:50|unique:colors,name,' . $color->id,
-            'hex_code' => [
-                'nullable',
-                'string',
-                'max:10',
-                'regex:/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/',
-            ],
-        ]);
+        $validated = $request->validated();
 
         $color->update($validated);
 
