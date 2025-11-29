@@ -385,6 +385,7 @@
 .btn-add-cart:disabled {
     background: #8D99AE;
     cursor: not-allowed;
+    opacity: 0.6;
 }
 .btn-buy-now {
     flex: 1;
@@ -397,6 +398,12 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+}
+.btn-buy-now:disabled {
+    background: #8D99AE;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
 }
 .btn-buy-now:hover {
     background: #1A1C2E;
@@ -510,6 +517,48 @@
 }
 #imageModal .carousel-item img {
     max-height: 70vh;
+}
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #fff;
+    padding: 15px 20px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 300px;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+.toast-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+.toast-notification i {
+    font-size: 18px;
+}
+.toast-success {
+    border-left: 4px solid #2E7D32;
+    color: #2E7D32;
+}
+.toast-success i {
+    color: #2E7D32;
+}
+.toast-error {
+    border-left: 4px solid #D10024;
+    color: #D10024;
+}
+.toast-error i {
+    color: #D10024;
+}
     object-fit: contain;
     background: #f8f9fa;
 }
@@ -882,17 +931,23 @@
                         @php
                             $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
                             $initialVariantId = null;
-                            if($hasVariants && isset($currentVariant) && $currentVariant) {
-                                $initialVariantId = $currentVariant->id;
-                            } elseif($hasVariants && $product->variants && $product->variants->count() > 0) {
-                                $initialVariantId = $product->variants->first()->id;
+                            
+                            // Lấy variant đầu tiên available làm mặc định
+                            if($hasVariants && $product->variants && $product->variants->count() > 0) {
+                                // Tìm variant đầu tiên có stock > 0 và status = available
+                                $firstAvailableVariant = $product->variants->firstWhere(function($v) {
+                                    return $v->status === 'available' && ($v->stock ?? 0) > 0;
+                                });
+                                
+                                // Nếu không có variant available, lấy variant đầu tiên
+                                $initialVariantId = $firstAvailableVariant ? $firstAvailableVariant->id : $product->variants->first()->id;
                             }
                         @endphp
-                        <button class="btn-add-cart" id="btn-add-cart" data-variant-id="{{ $initialVariantId }}">
+                        <button class="btn-add-cart" id="btn-add-cart" data-variant-id="{{ $initialVariantId ?? '' }}">
                             <i class="fa fa-shopping-cart"></i>
                             Thêm vào giỏ hàng
                         </button>
-                        <button class="btn-buy-now" id="btn-buy-now" data-variant-id="{{ $initialVariantId }}">
+                        <button class="btn-buy-now" id="btn-buy-now" data-variant-id="{{ $initialVariantId ?? '' }}">
                             Mua ngay
                         </button>
                     </div>
@@ -1611,6 +1666,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update color options based on selected combo
             updateColorOptions(comboKey, storageId, versionId);
+            
+            // Note: variant_id will be updated when first color option is auto-selected in updateColorOptions
         });
     });
     
@@ -1637,6 +1694,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const checkIcon = document.createElement('i');
             checkIcon.className = 'fa fa-check';
             this.insertBefore(checkIcon, this.firstChild);
+            
+            // Update variant ID immediately when color is selected
+            const variantId = this.getAttribute('data-variant-id');
+            if (variantId) {
+                selectedVariantId = variantId;
+                if (btnAddCart) {
+                    btnAddCart.setAttribute('data-variant-id', variantId);
+                    console.log('Updated variant ID after color selection:', variantId);
+                }
+                if (btnBuyNow) {
+                    btnBuyNow.setAttribute('data-variant-id', variantId);
+                }
+            }
             
             // Update product info based on selected color variant
             updateProductInfo(this);
@@ -1744,6 +1814,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const firstSku = firstColorOption.getAttribute('data-sku');
             if (firstSku && currentSku) {
                 currentSku.textContent = firstSku;
+            }
+            // Update variant ID and button immediately
+            const firstVariantId = firstColorOption.getAttribute('data-variant-id');
+            if (firstVariantId && btnAddCart) {
+                selectedVariantId = firstVariantId;
+                btnAddCart.setAttribute('data-variant-id', firstVariantId);
+                console.log('Updated variant ID after combo change:', firstVariantId);
+            }
+            if (firstVariantId && btnBuyNow) {
+                btnBuyNow.setAttribute('data-variant-id', firstVariantId);
             }
             updateProductInfo(firstColorOption);
         }
@@ -1992,11 +2072,35 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update variant ID
         selectedVariantId = variantElement.getAttribute('data-variant-id');
-        if (btnAddCart) {
+        console.log('updateProductInfoContinue - Updating variant ID to:', selectedVariantId);
+        const isAvailable = parseInt(variantElement.getAttribute('data-available')) === 1 && stock > 0;
+        
+        if (btnAddCart && selectedVariantId) {
             btnAddCart.setAttribute('data-variant-id', selectedVariantId);
+            console.log('Button data-variant-id updated to:', selectedVariantId);
+            // Enable/disable button based on availability
+            if (isAvailable) {
+                btnAddCart.disabled = false;
+                btnAddCart.style.opacity = '1';
+                btnAddCart.style.cursor = 'pointer';
+            } else {
+                btnAddCart.disabled = true;
+                btnAddCart.style.opacity = '0.6';
+                btnAddCart.style.cursor = 'not-allowed';
+            }
         }
         if (btnBuyNow) {
             btnBuyNow.setAttribute('data-variant-id', selectedVariantId);
+            // Enable/disable button based on availability
+            if (isAvailable) {
+                btnBuyNow.disabled = false;
+                btnBuyNow.style.opacity = '1';
+                btnBuyNow.style.cursor = 'pointer';
+            } else {
+                btnBuyNow.disabled = true;
+                btnBuyNow.style.opacity = '0.6';
+                btnBuyNow.style.cursor = 'not-allowed';
+            }
         }
         
         // Update quantity max
@@ -2004,6 +2108,11 @@ document.addEventListener('DOMContentLoaded', function() {
             quantityInput.setAttribute('max', stock);
             if (parseInt(quantityInput.value) > stock) {
                 quantityInput.value = stock;
+            }
+            if (stock === 0) {
+                quantityInput.disabled = true;
+            } else {
+                quantityInput.disabled = false;
             }
         }
     }
@@ -2028,20 +2137,142 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Function to show toast notification
+    function showToast(message, type = 'success') {
+        // Remove existing toast if any
+        const existingToast = document.querySelector('.toast-notification');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification toast-' + type;
+        toast.innerHTML = '<i class="fa fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + message;
+        document.body.appendChild(toast);
+        
+        // Show toast
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        // Hide and remove toast after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
+    
+    // Function to update cart count
+    function updateCartCount(addedQuantity = 1) {
+        const headerCartCount = document.querySelector('header .qty');
+        if (headerCartCount) {
+            const currentCount = parseInt(headerCartCount.textContent.trim()) || 0;
+            const newCount = currentCount + addedQuantity;
+            headerCartCount.textContent = newCount;
+            
+            // Add animation
+            headerCartCount.style.transform = 'scale(1.3)';
+            headerCartCount.style.transition = 'transform 0.3s';
+            setTimeout(() => {
+                headerCartCount.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+    
     // Add to cart
     if (btnAddCart) {
         btnAddCart.addEventListener('click', function() {
             const variantId = this.getAttribute('data-variant-id');
-            const quantity = parseInt(quantityInput.value);
+            const quantity = parseInt(quantityInput.value) || 1;
             
             const hasVariants = {{ ($product->has_variant || ($product->variants && $product->variants->count() > 0)) ? 'true' : 'false' }};
             if (!variantId && hasVariants) {
-                alert('Vui lòng chọn biến thể sản phẩm');
+                showToast('Vui lòng chọn biến thể sản phẩm (dung lượng, màu sắc, phiên bản)', 'error');
                 return;
             }
             
-            // TODO: Implement add to cart functionality
-            alert('Đã thêm vào giỏ hàng! (Tính năng đang phát triển)');
+            if (!variantId) {
+                showToast('Không thể thêm sản phẩm này vào giỏ hàng. Vui lòng liên hệ với chúng tôi.', 'error');
+                return;
+            }
+            
+            // Check if disabled (out of stock)
+            if (this.disabled) {
+                showToast('Sản phẩm này đã hết hàng!', 'error');
+                return;
+            }
+            
+            // Disable button during request
+            const originalText = btnAddCart.innerHTML;
+            const originalDisabled = btnAddCart.disabled;
+            btnAddCart.disabled = true;
+            btnAddCart.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang thêm...';
+            
+            // Debug: Log variant ID để kiểm tra
+            console.log('Adding to cart - Variant ID:', variantId, 'Quantity:', quantity);
+            
+            // Validate variant ID
+            if (!variantId || variantId === 'null' || variantId === 'undefined') {
+                showToast('Vui lòng chọn biến thể sản phẩm trước khi thêm vào giỏ hàng!', 'error');
+                btnAddCart.disabled = originalDisabled;
+                btnAddCart.innerHTML = originalText;
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('product_variant_id', variantId);
+            formData.append('quantity', quantity);
+            formData.append('_token', '{{ csrf_token() }}');
+            
+            // Send AJAX request
+            fetch('{{ route("cart.add") }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Có lỗi xảy ra');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    showToast('Đã thêm sản phẩm vào giỏ hàng!', 'success');
+                    
+                    // Update cart count
+                    updateCartCount(quantity);
+                    
+                    // Reset button
+                    btnAddCart.disabled = originalDisabled;
+                    btnAddCart.innerHTML = originalText;
+                    
+                    // Reset quantity to 1
+                    if (quantityInput) {
+                        quantityInput.value = 1;
+                    }
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng!', 'error');
+                    btnAddCart.disabled = originalDisabled;
+                    btnAddCart.innerHTML = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast(error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng!', 'error');
+                btnAddCart.disabled = originalDisabled;
+                btnAddCart.innerHTML = originalText;
+            });
         });
     }
     
@@ -2066,16 +2297,54 @@ document.addEventListener('DOMContentLoaded', function() {
     const firstColorVariant = document.querySelector('.color-variant.selected');
     if (firstColorVariant) {
         selectedVariantId = firstColorVariant.getAttribute('data-variant-id');
+        console.log('Initial variant from color-variant.selected:', selectedVariantId);
+        if (selectedVariantId && btnAddCart) {
+            btnAddCart.setAttribute('data-variant-id', selectedVariantId);
+        }
+        if (selectedVariantId && btnBuyNow) {
+            btnBuyNow.setAttribute('data-variant-id', selectedVariantId);
+        }
         updateProductInfo(firstColorVariant);
     } else if (variantOptions.length > 0) {
         const firstSelected = document.querySelector('.variant-option.selected');
         if (firstSelected) {
             selectedVariantId = firstSelected.getAttribute('data-variant-id');
+            console.log('Initial variant from variant-option.selected:', selectedVariantId);
+            if (selectedVariantId && btnAddCart) {
+                btnAddCart.setAttribute('data-variant-id', selectedVariantId);
+            }
+            if (selectedVariantId && btnBuyNow) {
+                btnBuyNow.setAttribute('data-variant-id', selectedVariantId);
+            }
+            // Check if it's a color variant with availability info
+            const isAvailable = parseInt(firstSelected.getAttribute('data-available')) === 1;
+            const stock = parseInt(firstSelected.getAttribute('data-stock')) || 0;
+            if (btnAddCart && (!isAvailable || stock === 0)) {
+                btnAddCart.disabled = true;
+                btnAddCart.style.opacity = '0.6';
+                btnAddCart.style.cursor = 'not-allowed';
+            }
+            if (btnBuyNow && (!isAvailable || stock === 0)) {
+                btnBuyNow.disabled = true;
+                btnBuyNow.style.opacity = '0.6';
+                btnBuyNow.style.cursor = 'not-allowed';
+            }
         }
     } else {
-        // No variants, use product ID
-        selectedVariantId = null;
+        // No variants - check if button has initial variant ID from server
+        const initialVariantId = btnAddCart ? btnAddCart.getAttribute('data-variant-id') : null;
+        if (initialVariantId && initialVariantId !== '') {
+            selectedVariantId = initialVariantId;
+            console.log('Initial variant from button data-variant-id:', selectedVariantId);
+        } else {
+            selectedVariantId = null;
+            console.log('No variant found - product may not have variants');
+        }
     }
+    
+    // Final check: Log current state
+    console.log('Final selectedVariantId:', selectedVariantId);
+    console.log('Button data-variant-id:', btnAddCart ? btnAddCart.getAttribute('data-variant-id') : 'N/A');
     
     // Ensure gallery is visible on load
     const galleryWrapper = document.getElementById('gallery-thumbs-wrapper');
@@ -2194,11 +2463,33 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update variant ID
             selectedVariantId = variantId;
+            const isAvailable = stock > 0;
+            
             if (btnAddCart) {
                 btnAddCart.setAttribute('data-variant-id', selectedVariantId);
+                // Enable/disable button based on availability
+                if (isAvailable) {
+                    btnAddCart.disabled = false;
+                    btnAddCart.style.opacity = '1';
+                    btnAddCart.style.cursor = 'pointer';
+                } else {
+                    btnAddCart.disabled = true;
+                    btnAddCart.style.opacity = '0.6';
+                    btnAddCart.style.cursor = 'not-allowed';
+                }
             }
             if (btnBuyNow) {
                 btnBuyNow.setAttribute('data-variant-id', selectedVariantId);
+                // Enable/disable button based on availability
+                if (isAvailable) {
+                    btnBuyNow.disabled = false;
+                    btnBuyNow.style.opacity = '1';
+                    btnBuyNow.style.cursor = 'pointer';
+                } else {
+                    btnBuyNow.disabled = true;
+                    btnBuyNow.style.opacity = '0.6';
+                    btnBuyNow.style.cursor = 'not-allowed';
+                }
             }
             
             // Update quantity max
@@ -2206,6 +2497,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 quantityInput.setAttribute('max', stock);
                 if (parseInt(quantityInput.value) > stock) {
                     quantityInput.value = stock;
+                }
+                if (stock === 0) {
+                    quantityInput.disabled = true;
+                } else {
+                    quantityInput.disabled = false;
                 }
             }
             

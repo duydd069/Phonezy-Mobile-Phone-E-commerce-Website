@@ -32,12 +32,14 @@ class CartController extends Controller
     {
         $cart = $this->getOrCreateActiveCart();
 
-        $items = $cart->items()->with('product')->get();
+        $items = $cart->items()->with(['variant.product', 'variant.storage', 'variant.version', 'variant.color'])->get();
 
         $total = 0;
         foreach ($items as $item) {
-            $price = $item->product->price ?? 0;
-            $total += $price * $item->quantity;
+            if ($item->variant) {
+                $price = $item->variant->price_sale ?? $item->variant->price ?? 0;
+                $total += $price * $item->quantity;
+            }
         }
 
         return view('client.cart.index', compact('cart', 'items', 'total'));
@@ -47,32 +49,66 @@ class CartController extends Controller
     public function add(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|integer|exists:products,id',
-            'quantity'   => 'nullable|integer|min:1',
+            'product_variant_id' => 'required|integer|exists:product_variants,id',
+            'quantity'           => 'nullable|integer|min:1',
         ]);
 
-        $quantity  = $request->quantity ?? 1;
-        $productId = $request->product_id;
+        $quantity = $request->quantity ?? 1;
+        $variantId = $request->product_variant_id;
+
+        // Kiểm tra variant có tồn tại và còn hàng không
+        $variant = \App\Models\ProductVariant::findOrFail($variantId);
+        
+        if ($variant->status !== 'available') {
+            $message = 'Sản phẩm này hiện không khả dụng!';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 400);
+            }
+            return redirect()->back()->with('error', $message);
+        }
+
+        if ($variant->stock < $quantity) {
+            $message = 'Số lượng sản phẩm không đủ!';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 400);
+            }
+            return redirect()->back()->with('error', $message);
+        }
 
         $cart = $this->getOrCreateActiveCart();
 
-        // dùng cột product_variant_id để lưu product_id
+        // Tìm item đã có trong giỏ (do có unique constraint trên cart_id + product_variant_id)
         $cartItem = $cart->items()
-            ->where('product_variant_id', $productId)
+            ->where('product_variant_id', $variantId)
             ->first();
 
         if ($cartItem) {
-            $cartItem->quantity += $quantity;
+            // Nếu đã có variant này trong giỏ, cộng dồn quantity
+            $newQuantity = $cartItem->quantity + $quantity;
+            // Kiểm tra tồn kho
+            if ($newQuantity > $variant->stock) {
+                $message = 'Số lượng trong giỏ hàng vượt quá tồn kho!';
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $message], 400);
+                }
+                return redirect()->back()->with('error', $message);
+            }
+            $cartItem->quantity = $newQuantity;
             $cartItem->save();
         } else {
+            // Nếu chưa có, tạo item mới
             CartItem::create([
                 'cart_id'            => $cart->id,
-                'product_variant_id' => $productId,
+                'product_variant_id' => $variantId,
                 'quantity'           => $quantity,
             ]);
         }
 
-        return redirect()->back()->with('success', 'Đã thêm sản phẩm vào giỏ hàng!');
+        $message = 'Đã thêm sản phẩm vào giỏ hàng!';
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
+        }
+        return redirect()->back()->with('success', $message);
     }
 
     // Cập nhật số lượng

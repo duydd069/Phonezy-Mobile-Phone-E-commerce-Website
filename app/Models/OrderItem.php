@@ -2,32 +2,37 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
-    protected $table = 'order_items';
-    
+    use HasFactory;
+
     protected $fillable = [
         'order_id',
-        'product_variant_id',
+        'product_id',
+        'product_name',
+        'product_image',
         'quantity',
-        'price_each',
-        'variant_sku',
-        'variant_volume_ml',
-        'variant_description',
-        'variant_status',
-        'variant_name',
+        'unit_price',
+        'total_price',
     ];
 
-    public function variant()
+    protected $casts = [
+        'quantity'    => 'int',
+        'unit_price'  => 'float',
+        'total_price' => 'float',
+    ];
+
+    public function order()
     {
-        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+        return $this->belongsTo(Order::class);
     }
 
-    // public function order()
-    // {
-    //     return $this->belongsTo(Order::class);
-    // }
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
 }
 

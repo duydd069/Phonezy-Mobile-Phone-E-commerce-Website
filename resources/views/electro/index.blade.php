@@ -133,20 +133,25 @@
                                         <div class="product-btns">
                                             <button class="add-to-wishlist"><i class="fa fa-heart-o"></i></button>
                                             <button class="add-to-compare"><i class="fa fa-exchange"></i></button>
-                                           <a href="{{ route('client.product.show', $product) }}"
-   class="quick-view-btn"
-   title="Xem nhanh">
-    <i class="fa fa-eye"></i>
-</a>
+                                            <a href="{{ route('client.product.show', $product) }}" class="quick-view-btn"
+                                                title="Xem nhanh">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
                                         </div>
                                     </div>
 
-                                    {{-- Add to cart --}}
+                                    {{-- FORM ADD TO CART --}}
                                     <div class="add-to-cart">
-                                        <button class="add-to-cart-btn">
-                                            <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
-                                        </button>
+                                        <form action="{{ route('cart.add') }}" method="POST">
+                                            @csrf
+                                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                            <input type="hidden" name="quantity" value="1">
+                                            <button type="submit" class="add-to-cart-btn">
+                                                <i class="fa fa-shopping-cart"></i> add to cart
+                                            </button>
+                                        </form>
                                     </div>
+                                    {{-- END FORM ADD TO CART --}}
                                 </article>
                             @endforeach
 
