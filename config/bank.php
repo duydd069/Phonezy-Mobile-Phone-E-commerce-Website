@@ -37,8 +37,8 @@ return [
     'instructions' => [
         'Bước 1: Chuyển khoản đúng số tiền: {amount}',
         'Bước 2: Nội dung chuyển khoản: Mã đơn hàng #{order_id}',
-        'Bước 3: Sau khi chuyển khoản, vui lòng gửi ảnh chứng từ (nếu có)',
-        'Bước 4: Chúng tôi sẽ xác nhận và xử lý đơn hàng trong vòng 24h',
+        // Đã bỏ bước 3 theo yêu cầu
+        'Bước 3: Chúng tôi sẽ xác nhận và xử lý đơn hàng trong vòng 24h',
     ],
 
     /*
