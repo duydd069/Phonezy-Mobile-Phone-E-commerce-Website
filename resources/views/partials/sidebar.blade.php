@@ -84,7 +84,13 @@
                   <p>Người dùng</p>
                 </a>
               </li>
-              
+
+              <li class="nav-item">
+                <a href="{{ route('admin.coupons.index') }}" class="nav-link">
+                 <i class="nav-icon fas fa-tags"></i>
+                  <p>khuyến mãi </p>
+                </a>
+              </li>
             </ul>
             <!--end::Sidebar Menu-->
           </nav>

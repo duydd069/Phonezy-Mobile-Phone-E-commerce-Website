@@ -29,26 +29,48 @@
                         <div class="shopping-cart">
                             @foreach($items as $item)
                                 @php
-                                    $product = $item->product;
-                                    $price   = $product->price ?? 0;
+                                    $variant = $item->variant;
+                                    $product = $variant ? $variant->product : null;
+                                    $price = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                                    
+                                    // Lấy ảnh từ variant hoặc product
+                                    $image = null;
+                                    if ($variant && $variant->image) {
+                                        $image = preg_match('/^https?:\/\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image);
+                                    } elseif ($product && $product->image) {
+                                        $image = preg_match('/^https?:\/\//', $product->image) ? $product->image : asset('storage/' . $product->image);
+                                    }
+                                    
+                                    // Tạo tên sản phẩm với thông tin variant
+                                    $productName = $product ? $product->name : 'Sản phẩm';
+                                    $variantInfo = [];
+                                    if ($variant) {
+                                        if ($variant->storage) $variantInfo[] = $variant->storage->storage;
+                                        if ($variant->version) $variantInfo[] = $variant->version->name;
+                                        if ($variant->color) $variantInfo[] = $variant->color->name;
+                                    }
+                                    if (!empty($variantInfo)) {
+                                        $productName .= ' (' . implode(', ', $variantInfo) . ')';
+                                    }
                                 @endphp
 
                                 <div class="product-widget" style="border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 15px;">
                                     <div class="product-img">
-                                        @if($product && $product->image)
-                                            <img
-                                                src="{{ preg_match('/^https?:\/\//', $product->image) ? $product->image : asset('storage/' . $product->image) }}"
-                                                alt="{{ $product->name }}">
+                                        @if($image)
+                                            <img src="{{ $image }}" alt="{{ $productName }}">
                                         @else
                                             <img src="{{ asset('electro/img/product01.png') }}" alt="">
                                         @endif
                                     </div>
                                     <div class="product-body">
                                         <h3 class="product-name">
-                                            <a href="#">
-                                                {{ $product->name ?? 'Sản phẩm' }}
+                                            <a href="{{ $product ? route('client.product.show', $product->slug) : '#' }}">
+                                                {{ $productName }}
                                             </a>
                                         </h3>
+                                        @if($variant && $variant->sku)
+                                            <p class="text-muted small" style="margin: 5px 0;">SKU: {{ $variant->sku }}</p>
+                                        @endif
 
                                         <h4 class="product-price">
                                             <span class="qty">{{ $item->quantity }}x</span>
@@ -111,11 +133,24 @@
                             <div class="order-products">
                                 @foreach($items as $item)
                                     @php
-                                        $product = $item->product;
-                                        $price   = $product->price ?? 0;
+                                        $variant = $item->variant;
+                                        $product = $variant ? $variant->product : null;
+                                        $price = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                                        $productName = $product ? $product->name : 'Sản phẩm';
+                                        
+                                        // Thêm thông tin variant vào tên
+                                        $variantInfo = [];
+                                        if ($variant) {
+                                            if ($variant->storage) $variantInfo[] = $variant->storage->storage;
+                                            if ($variant->version) $variantInfo[] = $variant->version->name;
+                                            if ($variant->color) $variantInfo[] = $variant->color->name;
+                                        }
+                                        if (!empty($variantInfo)) {
+                                            $productName .= ' (' . implode(', ', $variantInfo) . ')';
+                                        }
                                     @endphp
                                     <div class="order-col">
-                                        <div>{{ $item->quantity }}x {{ $product->name ?? 'Sản phẩm' }}</div>
+                                        <div>{{ $item->quantity }}x {{ $productName }}</div>
                                         <div>{{ number_format($price * $item->quantity, 0, ',', '.') }} ₫</div>
                                     </div>
                                 @endforeach
@@ -130,7 +165,7 @@
                             </div>
                         </div>
 
-                        <a href="{{ url('/client') }}" class="primary-btn order-submit">
+                        <a href="{{ route('client.checkout') }}" class="primary-btn order-submit">
                             Tiến hành thanh toán
                         </a>
 
