@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Nov 19, 2025 at 02:16 PM
+-- Generation Time: Dec 04, 2025 at 10:31 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.2.20
 
@@ -65,7 +65,9 @@ CREATE TABLE `carts` (
 --
 
 INSERT INTO `carts` (`id`, `user_id`, `status`, `created_at`, `updated_at`) VALUES
-(1, 2, 'active', '2025-10-31 14:14:23', '2025-10-31 14:14:23');
+(1, 2, 'active', '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
+(2, 1, 'active', '2025-11-21 03:09:40', '2025-11-21 03:09:40'),
+(9, 9, 'active', '2025-11-27 06:49:20', '2025-11-27 06:49:20');
 
 -- --------------------------------------------------------
 
@@ -88,7 +90,10 @@ CREATE TABLE `cart_items` (
 
 INSERT INTO `cart_items` (`id`, `cart_id`, `product_variant_id`, `quantity`, `created_at`, `updated_at`) VALUES
 (1, 1, 5, 2, '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
-(2, 1, 8, 1, '2025-10-31 14:14:23', '2025-10-31 14:14:23');
+(2, 1, 8, 1, '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
+(19, 9, 13, 2, '2025-11-27 08:35:04', '2025-11-29 02:15:49'),
+(20, 9, 14, 1, '2025-11-27 08:35:08', '2025-11-27 08:35:08'),
+(21, 2, 12, 1, '2025-11-29 02:25:52', '2025-11-29 02:25:52');
 
 -- --------------------------------------------------------
 
@@ -123,8 +128,8 @@ INSERT INTO `categories` (`id`, `name`, `slug`, `created_at`, `updated_at`) VALU
 
 CREATE TABLE `colors` (
   `id` bigint NOT NULL,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `hex_code` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hex_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -134,9 +139,39 @@ CREATE TABLE `colors` (
 INSERT INTO `colors` (`id`, `name`, `hex_code`) VALUES
 (1, 'Đen', '#000000'),
 (2, 'Trắng', '#FFFFFF'),
-(3, 'Xanh', '#0000FF'),
-(4, 'Bạc', '#C0C0C0'),
-(5, 'Đỏ', '#FF0000');
+(3, 'Xanh', '#CED5D9'),
+(4, 'Hồng', '#E3C8CA'),
+(5, 'Đỏ', '#FF0000'),
+(6, 'Xanh lá cây', '#CAD4C5'),
+(7, 'Vàng', '#E5E0C1'),
+(8, 'Xanh Titan', '#2F4452');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `comments`
+--
+
+CREATE TABLE `comments` (
+  `id` bigint NOT NULL,
+  `product_id` bigint NOT NULL COMMENT 'ID của sản phẩm được bình luận',
+  `user_id` bigint DEFAULT NULL COMMENT 'ID của người dùng bình luận (NULL nếu là khách)',
+  `parent_id` bigint DEFAULT NULL COMMENT 'ID của bình luận cha (dùng cho trả lời bình luận)',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nội dung bình luận',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Bảng lưu trữ bình luận sản phẩm';
+
+--
+-- Dumping data for table `comments`
+--
+
+INSERT INTO `comments` (`id`, `product_id`, `user_id`, `parent_id`, `content`, `created_at`, `updated_at`) VALUES
+(1, 2, 4, NULL, 'hihi', '2025-11-13 23:40:23', '2025-11-13 23:40:23'),
+(15, 2, 5, 1, 'Hi?', '2025-11-14 00:29:24', '2025-11-14 00:29:24'),
+(16, 2, 4, NULL, 'hello', '2025-11-14 00:37:43', '2025-11-14 00:37:43'),
+(17, 2, 4, 16, 'Hello', '2025-11-14 00:37:51', '2025-11-14 00:37:51'),
+(18, 2, 4, NULL, 'Ôi', '2025-11-14 01:15:19', '2025-11-14 01:15:19');
 
 -- --------------------------------------------------------
 
@@ -199,7 +234,7 @@ INSERT INTO `inventory_logs` (`id`, `warehouse_id`, `product_variant_id`, `quant
 
 CREATE TABLE `migrations` (
   `id` int UNSIGNED NOT NULL,
-  `migration` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `batch` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -212,10 +247,26 @@ CREATE TABLE `migrations` (
 CREATE TABLE `orders` (
   `id` bigint NOT NULL,
   `user_id` bigint NOT NULL,
+  `cart_id` bigint UNSIGNED DEFAULT NULL,
   `coupon_id` bigint DEFAULT NULL,
+  `subtotal` decimal(12,2) DEFAULT NULL,
+  `shipping_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total` decimal(12,2) DEFAULT NULL,
+  `payment_method` varchar(50) DEFAULT NULL,
+  `transaction_id` varchar(255) DEFAULT NULL,
+  `payment_status` varchar(50) NOT NULL DEFAULT 'pending',
+  `shipping_full_name` varchar(120) DEFAULT NULL,
+  `shipping_email` varchar(150) DEFAULT NULL,
+  `shipping_phone` varchar(30) DEFAULT NULL,
+  `shipping_city` varchar(120) DEFAULT NULL,
+  `shipping_district` varchar(120) DEFAULT NULL,
+  `shipping_ward` varchar(120) DEFAULT NULL,
+  `shipping_address` text,
   `total_price` decimal(12,2) NOT NULL,
-  `status` enum('pending','processing','completed','cancelled') DEFAULT 'pending',
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
   `notes` text,
+  `paid_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -224,8 +275,8 @@ CREATE TABLE `orders` (
 -- Dumping data for table `orders`
 --
 
-INSERT INTO `orders` (`id`, `user_id`, `coupon_id`, `total_price`, `status`, `notes`, `created_at`, `updated_at`) VALUES
-(1, 2, 1, '14373000.00', 'processing', 'Giao trong giờ hành chính', '2025-10-31 14:14:23', '2025-10-31 14:14:23');
+INSERT INTO `orders` (`id`, `user_id`, `cart_id`, `coupon_id`, `subtotal`, `shipping_fee`, `discount_amount`, `total`, `payment_method`, `transaction_id`, `payment_status`, `shipping_full_name`, `shipping_email`, `shipping_phone`, `shipping_city`, `shipping_district`, `shipping_ward`, `shipping_address`, `total_price`, `status`, `notes`, `paid_at`, `created_at`, `updated_at`) VALUES
+(1, 2, NULL, 1, NULL, '0.00', '0.00', NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '14373000.00', 'processing', 'Giao trong giờ hành chính', NULL, '2025-10-31 14:14:23', '2025-10-31 14:14:23');
 
 -- --------------------------------------------------------
 
@@ -327,15 +378,13 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `image`, `price`, `slug`, `description`, `has_variant`, `category_id`, `brand_id`, `views`, `created_at`, `updated_at`) VALUES
-(1, 'iPhone 15 Pro 256GB', 'products/75B73Bgvi6D8y6j2WtvMFjr6aD4GZ1ZXVKJa5FBl.webp', '27990000', 'iphone-15-pro-256gb', 'Flagship Apple', 0, 1, 1, 131, '2025-10-31 14:14:23', '2025-11-19 07:00:16'),
+(1, 'iPhone 15 Pro 256GB', 'products/75B73Bgvi6D8y6j2WtvMFjr6aD4GZ1ZXVKJa5FBl.webp', '27990000', 'iphone-15-pro-256gb', 'Flagship Apple', 0, 1, 1, 134, '2025-10-31 14:14:23', '2025-11-20 04:19:38'),
 (2, 'Samsung Galaxy S24 256GB', 'https://example.com/s24.jpg', '20990000', 'samsung-galaxy-s24-256gb', 'Flagship Samsung', 0, 1, 2, 90, '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
 (3, 'Xiaomi Redmi Note 13', 'https://example.com/rn13.jpg', '5990000', 'xiaomi-redmi-note-13', 'Giá tốt', 0, 1, 3, 81, '2025-10-31 14:14:23', '2025-11-11 07:21:08'),
 (4, 'OPPO Reno 12', 'products/itw42M7gY1n0eHYbIKIOaK1LmKIRYtp9ILG5I6qa.jpg', '12990000', 'oppo-reno-12', 'Thiết kế đẹp', 0, 1, 4, 65, '2025-10-31 14:14:23', '2025-11-11 07:28:08'),
 (5, 'iPad Air M2 11\"', 'products/vAXyJQK8YrOYHzHQj69L23JjnKAEZo8Kc4nUdZ2W.png', '16990000', 'ipad-air-m2-11', 'iPad Air chip M2', 0, 2, 1, 40, '2025-10-31 14:14:23', '2025-11-11 07:27:00'),
-(6, 'AirPods Pro 2', 'products/hGDWOedX6woyqsJ9NU5OizXxyvykFtVxpvT7YHbt.png', '5290000', 'airpods-pro-2', 'Tai nghe chống ồn', 0, 4, 1, 174, '2025-10-31 14:14:23', '2025-11-19 06:52:04'),
-(7, 'test', 'products/6iiIfcfutY2sCFMXgCiXDz6q4OFKFR4c0m2dq21m.jpg', '1350000', 'test', NULL, 0, 1, 1, 9, '2025-11-14 07:32:17', '2025-11-19 06:53:19'),
-(8, 'Samsung Galaxy Tab S9', 'https://example.com/tab_s9.jpg', '15990000', 'samsung-galaxy-tab-s9', 'Máy tính bảng cao cấp Samsung', 0, 2, 2, 1, '2025-11-19 13:58:20', '2025-11-19 06:59:37'),
-(9, 'iPhone 15 Pro Max', 'https://example.com/ip15promax.jpg', '0', 'iphone-15-pro-max', 'Flagship Apple với nhiều tùy chọn màu và bộ nhớ', 1, 1, 1, 2, '2025-11-19 13:58:20', '2025-11-19 06:59:48');
+(6, 'AirPods Pro 2', 'products/FdV6RDER1jlgAvZZ8DxdlYL9jg84qyQkjN3QOlxX.png', '6190000', 'airpods-pro-2', 'Tai nghe chống ồn', 0, 4, 1, 176, '2025-10-31 14:14:23', '2025-12-01 07:00:20'),
+(9, 'iPhone 15', 'products/UejXoqYAFA1Ir0sONBAhYoS83SWkSNWVkuijOo24.webp', '16990000', 'iphone-15', '📱 Thông số cơ bản & Thiết kế\r\n\r\nMàn hình: 6.1 inch OLED “Super Retina XDR”, độ phân giải 2556×1179 px, mật độ điểm ảnh ~460 ppi. Màn hình hỗ trợ HDR, True Tone, dải màu rộng P3, Haptic Touch, và có “Dynamic Island” thay cho notch. \r\nHỗ Trợ Apple\r\n+1\r\n\r\nChất liệu: Khung nhôm, mặt trước kính bảo vệ “Ceramic Shield”, mặt sau là kính pha màu. \r\nHỗ Trợ Apple\r\n\r\nKích thước & trọng lượng: 147.6 mm × 71.6 mm × 7.80 mm; nặng khoảng 171 g. \r\nHỗ Trợ Apple\r\n+1\r\n\r\nMàu sắc: Có các lựa chọn màu: Đen, Xanh Dương, Xanh Lá, Vàng, Hồng. \r\nHỗ Trợ Apple\r\n\r\nBộ nhớ: 128 GB, 256 GB hoặc 512 GB. \r\nHỗ Trợ Apple\r\n\r\n⚙️ Phần cứng & Hiệu năng\r\n\r\nChip xử lý: A16 Bionic — CPU 6 lõi (2 lõi hiệu năng + 4 lõi tiết kiệm điện), GPU 5 lõi, Neural Engine 16 lõi. \r\nHỗ Trợ Apple\r\n+1\r\n\r\nNhờ vậy máy đủ mạnh để xử lý đa nhiệm, chỉnh ảnh/video, chơi game, và các tác vụ nặng mà vẫn tiết kiệm pin. \r\nApple\r\n+1\r\n\r\nCổng/ Sạc: chuyển sang sử dụng USB-C thay cho Lightning — thuận tiện, phổ quát hơn. \r\nTechRadar\r\n+1\r\n\r\n📸 Camera & Ảnh / Video\r\n\r\nCamera sau kép:\r\n\r\nCamera chính: 48 MP, khẩu độ ƒ/1.6, hỗ trợ chống rung cảm biến (sensor-shift OIS), cho ảnh chất lượng cao, chi tiết tốt. \r\nHỗ Trợ Apple\r\n+1\r\n\r\nCamera góc rộng (Ultra Wide): 12 MP, giúp chụp ảnh góc rộng, phong cảnh, nhóm người. \r\nHỗ Trợ Apple\r\n\r\nHỗ trợ nhiều tính năng nhiếp ảnh: HDR, chế độ ban đêm (Night mode), Smart HDR, Photonic Engine, chụp panorama, Portrait mode, Live Photos, v.v. \r\nHỗ Trợ Apple\r\n+1\r\n\r\nCamera trước (selfie) chuẩn chất lượng — đủ tốt cho video call, selfie, Face ID,... \r\n9meters\r\n+1\r\n\r\n🌐 Các tính năng khác\r\n\r\nKháng nước & bụi: đạt chuẩn IP68 — tức có thể chịu nước ở độ sâu tới 6 mét trong 30 phút. \r\nHỗ Trợ Apple\r\n+1\r\n\r\nKết nối hiện đại: hỗ trợ 5G, Wi-Fi, Bluetooth, eSIM — thuận tiện khi đi du lịch hoặc di chuyển quốc tế. \r\nApple\r\n+1\r\n\r\nTính năng an toàn & định vị: Có chip Ultra Wideband thế hệ 2, giúp cải thiện khả năng định vị chính xác trong các tính năng như “Find My” / tìm bạn bè, tìm thiết bị. \r\nApple\r\n+1\r\n\r\n🎯 Ưu & nhược điểm tổng quan\r\n\r\nƯu điểm\r\n\r\nMàn hình OLED sáng, hiển thị đẹp, có Dynamic Island — trải nghiệm hiện đại.\r\n\r\nHiệu năng mạnh mẽ, đáp ứng tốt cả công việc, giải trí, chỉnh ảnh/video.\r\n\r\nCamera cải tiến rõ với cảm biến 48 MP — ảnh chi tiết, đa dụng.\r\n\r\nUSB-C phổ quát, dễ sạc & đồng bộ với nhiều thiết bị.\r\n\r\nThiết kế gọn, nhẹ, màu sắc đa dạng, kháng nước/bụi.\r\n\r\nHạn chế / điểm cần lưu ý\r\n\r\nMàn hình ở mức 60 Hz — không “mượt” bằng các máy 120 Hz / 144 Hz khi cuộn/lướt.\r\n\r\nNếu bạn cần zoom quang học mạnh hoặc tính năng Pro nâng cao — bản tiêu chuẩn có thể không đủ; cần bản Pro / Pro Max.\r\n\r\nMột số tính năng “Pro-level” sẽ chỉ có ở bản cao hơn.', 1, 1, 1, 50, '2025-11-19 13:58:20', '2025-12-01 07:23:04');
 
 -- --------------------------------------------------------
 
@@ -364,7 +413,17 @@ INSERT INTO `product_images` (`id`, `product_id`, `image_url`, `created_at`, `up
 (6, 5, 'https://example.com/ipadair_1.jpg', '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
 (7, 6, 'https://example.com/airpodspro2_1.jpg', '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
 (8, 9, 'https://example.com/ip15pm_1.jpg', '2025-11-19 13:58:20', '2025-11-19 13:58:20'),
-(9, 9, 'https://example.com/ip15pm_2.jpg', '2025-11-19 13:58:20', '2025-11-19 13:58:20');
+(10, 9, 'product_images/1Np6XJeZFrl9zQFghP7a6KccBVjUET95hfLPDSEJ.webp', '2025-11-21 05:38:41', '2025-11-21 05:38:41'),
+(11, 9, 'product_images/Vd0GjI8G07pIq2ZS41ALI7wIkEXrTivFZPOcCmRI.webp', '2025-11-21 05:38:41', '2025-11-21 05:38:41'),
+(12, 9, 'product_images/Qb69fZBcvsNbASnaci3e0BBsSrDEst95Mr3uCgLa.webp', '2025-11-21 05:38:41', '2025-11-21 05:38:41'),
+(13, 9, 'product_images/igJHwfyfWMBMWqXs5968fHibPKoI8sZkDiVwaZ2B.webp', '2025-11-21 05:38:41', '2025-11-21 05:38:41'),
+(14, 9, 'product_images/NADoOR21lEG9PwJhZQEIGq8A5CZvXT3oCXXtNxbe.webp', '2025-11-21 05:38:41', '2025-11-21 05:38:41'),
+(15, 6, 'product_images/tROXQsYtznSrKdQvkz4Huw0ipmFpk382tiWVMsa9.webp', '2025-12-01 06:55:12', '2025-12-01 06:55:12'),
+(16, 6, 'product_images/XWL2y1QYL5MaiN4qbfQU7SN1tnIG4MaxWQ0nSkgY.webp', '2025-12-01 06:55:12', '2025-12-01 06:55:12'),
+(17, 6, 'product_images/DweoVEbm00dovt5uFxo4CQCy60ifffh6pSNNbUaq.webp', '2025-12-01 06:55:12', '2025-12-01 06:55:12'),
+(18, 6, 'product_images/dEB0AK8qS5CC0qwxo1MXGlvKFw6KlCqQt4BQqXf1.webp', '2025-12-01 06:55:12', '2025-12-01 06:55:12'),
+(19, 6, 'product_images/VgedpqzYdYmHjiel09kM9fxbqbbETnHD7CHdNhyf.webp', '2025-12-01 06:55:12', '2025-12-01 06:55:12'),
+(20, 6, 'product_images/ud2S1CxoW3BI5iMiW9ZiuUT6A1OU32iGarYef0KV.webp', '2025-12-01 06:55:12', '2025-12-01 06:55:12');
 
 -- --------------------------------------------------------
 
@@ -403,11 +462,14 @@ INSERT INTO `product_variants` (`id`, `product_id`, `price`, `price_sale`, `stoc
 (5, 3, '5990000', '5490000', 40, 20, 'RN13-128-BLU', '3333333333331', NULL, NULL, NULL, 'Xanh 128GB', NULL, 'available', '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
 (6, 4, '12990000', NULL, 18, 4, 'RENO12-256-SLV', '4444444444441', NULL, NULL, NULL, 'Bạc 256GB', NULL, 'available', '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
 (7, 5, '16990000', NULL, 10, 1, 'IPAD-AIR-M2-11-128', '5555555555551', NULL, NULL, NULL, 'M2 11-inch 128GB', NULL, 'available', '2025-10-31 14:14:23', '2025-10-31 14:14:23'),
-(8, 6, '5290000', '4990000', 50, 35, 'AirPods Pro 2 (Lightning)', '6666666666661', NULL, NULL, NULL, 'AirPods Pro 2 (Lightning)', 'product_variants/fVZ3gdad519L3TM7GXWXjwmnh16DFAKmQMoFmUeD.png', 'available', '2025-10-31 14:14:23', '2025-11-13 03:43:33'),
-(9, 6, '1350000', NULL, 111, 1, 'AirPods Pro 2 (USB-C)', '132456789', NULL, NULL, NULL, 'Đạt chuẩn IP54 (chống bụi và nước tốt hơn)\r\nHỗ trợ Âm thanh thích ứng (Adaptive Audio), Nhận biết cuộc hội thoại (Conversation Awareness) (yêu cầu iOS 17 trở lên)\r\nHỗ trợ âm thanh Lossless với độ trễ cực thấp khi kết nối với Apple Vision Pro', NULL, 'available', '2025-11-13 01:58:15', '2025-11-13 03:17:47'),
-(10, 7, '1000000', NULL, 2, 1, 'test biến thể sp', '111111reshgf', NULL, NULL, NULL, NULL, 'product_variants/2ode8xgWNw0P5iVQHIJEVQjvblXIOUHQapHL7o33.png', 'available', '2025-11-14 07:35:05', '2025-11-14 07:35:05'),
-(11, 9, '30990000', '29990000', 15, 0, 'IP15PM-256-BLK', '7777777777771', NULL, NULL, NULL, 'Màu đen 256GB', 'https://example.com/ip15pm_black.jpg', 'available', '2025-11-19 13:58:20', '2025-11-19 13:58:20'),
-(12, 9, '31990000', NULL, 10, 0, 'IP15PM-512-SLV', '7777777777772', NULL, NULL, NULL, 'Màu bạc 512GB', 'https://example.com/ip15pm_silver.jpg', 'available', '2025-11-19 13:58:20', '2025-11-19 13:58:20');
+(8, 6, '6190000', '5690000', 50, 35, 'AirPods Pro 2 (Lightning)', '6666666666661', NULL, 6, NULL, 'AirPods Pro 2 (Lightning)', 'product_variants/XqJOdABcgk4sN4cbQBX9OCDnJVWtPY20znVjn9sP.webp', 'available', '2025-10-31 14:14:23', '2025-12-01 06:57:14'),
+(9, 6, '6190000', '5190000', 20, 10, 'AirPods Pro 2 (USB-C)', '132456789', NULL, 5, NULL, 'Đạt chuẩn IP54 (chống bụi và nước tốt hơn)\r\nHỗ trợ Âm thanh thích ứng (Adaptive Audio), Nhận biết cuộc hội thoại (Conversation Awareness) (yêu cầu iOS 17 trở lên)\r\nHỗ trợ âm thanh Lossless với độ trễ cực thấp khi kết nối với Apple Vision Pro', 'product_variants/5qeFUNz71ygSmEi0HTIIIhhXPxPaehIvqsjoM6gr.webp', 'available', '2025-11-13 01:58:15', '2025-12-01 06:58:03'),
+(11, 9, '19990000', '17990000', 15, 3, 'IP15-128-H', '7777777777771', 2, 4, 4, 'Màu Hồng 128GB', 'product_variants/xkgyrNRJiXXgejQdPGIkc3L32TWBh432YbuNTHZX.webp', 'available', '2025-11-19 13:58:20', '2025-12-01 06:40:50'),
+(12, 9, '19990000', '16990000', 10, 2, 'IP15-128-D', '7777777777772', 2, 4, 1, NULL, 'product_variants/at0JZh7RTFba3k3iDp0aHL9VZgCGeNXvuEA4DlIO.webp', 'available', '2025-11-19 13:58:20', '2025-11-21 05:46:26'),
+(13, 9, '19990000', '16990000', 10, 2, 'IP15-128-X', '20112025', 2, 4, 3, NULL, 'product_variants/Ks3h4mqYQuw6781ZZG6HrH7WpFf1rtc07kywROjt.webp', 'available', '2025-11-21 05:47:54', '2025-11-21 05:47:54'),
+(14, 9, '22990000', '20490000', 14, 3, 'IP15-256-H', '155622', 3, 4, 4, NULL, 'product_variants/FnJPAjaEGl3sqSag8QSFtyt76Asayht9jx0K83IC.webp', 'available', '2025-11-21 05:50:52', '2025-11-27 07:57:33'),
+(15, 9, '19900000', '16990000', 10, 2, 'IP15-128-V', '01122025', 2, 4, 7, NULL, 'product_variants/lMd9nRUqikC3AEjdKruD27CVMBjP0jMJ1tTbLPte.webp', 'available', '2025-12-01 06:40:38', '2025-12-01 06:40:38'),
+(16, 9, '19900000', '16990000', 10, 10, 'IP15-128-XL', '20112025', 2, 4, 6, NULL, 'product_variants/t8OpRNjoVTWEcXrB6GLY31EbWpekuwN9dOSvCadT.png', 'available', '2025-12-01 06:41:55', '2025-12-01 06:41:55');
 
 -- --------------------------------------------------------
 
@@ -429,6 +491,42 @@ CREATE TABLE `roles` (
 INSERT INTO `roles` (`id`, `name`, `created_at`, `updated_at`) VALUES
 (1, 'admin', '2025-10-31 14:14:22', '2025-10-31 14:14:22'),
 (2, 'customer', '2025-10-31 14:14:22', '2025-10-31 14:14:22');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `role_user`
+--
+
+CREATE TABLE `role_user` (
+  `id` bigint NOT NULL,
+  `role_id` bigint DEFAULT NULL,
+  `user_id` bigint DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sessions`
+--
+
+CREATE TABLE `sessions` (
+  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` bigint UNSIGNED DEFAULT NULL,
+  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user_agent` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_activity` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `sessions`
+--
+
+INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+('BytgEBsfdmAS3kQN9EcQ0zQsIZPFqhShxTE2ZfRO', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQ1hmR0FBN0JkOXJLZm1qWVBZWFgweTlVUVBEblhTVDAwUDhXZklhZyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mzc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9jbGllbnQvY2hlY2tvdXQiO3M6NToicm91dGUiO3M6MTU6ImNsaWVudC5jaGVja291dCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1764844063);
 
 -- --------------------------------------------------------
 
@@ -462,7 +560,7 @@ INSERT INTO `shipping_tracking` (`id`, `order_id`, `status`, `tracking_number`, 
 
 CREATE TABLE `storages` (
   `id` bigint NOT NULL,
-  `storage` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL
+  `storage` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -483,23 +581,32 @@ INSERT INTO `storages` (`id`, `storage`) VALUES
 
 CREATE TABLE `users` (
   `id` bigint NOT NULL,
-  `name` varchar(100) NOT NULL,
-  `email` varchar(150) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `avatar` varchar(255) DEFAULT NULL,
   `phone` varchar(30) DEFAULT NULL,
-  `role_id` bigint NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `password_hash` varchar(255) DEFAULT NULL,
+  `role_id` tinyint DEFAULT NULL,
+  `email_verified_at` timestamp NULL DEFAULT NULL,
+  `status` enum('active','banned','inactive') DEFAULT 'active',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `phone`, `role_id`, `created_at`, `updated_at`) VALUES
-(1, 'Admin', 'admin@phonezy.local', '$2y$10$hash_admin', '0900000000', 1, '2025-10-31 14:14:22', '2025-10-31 14:14:22'),
-(2, 'Nguyen Van A', 'a@example.com', '$2y$10$hash_user_a', '0911111111', 2, '2025-10-31 14:14:22', '2025-10-31 14:14:22'),
-(3, 'Trư', 'quanm9677@gmail.com', '$2y$12$XRCrkLezethU7XshddSNAuCCQwGIF7k5Gg.pie0apE3Mt6LGU3k4W', NULL, 2, '2025-11-07 07:08:41', '2025-11-07 07:08:41');
+INSERT INTO `users` (`id`, `name`, `email`, `avatar`, `phone`, `password_hash`, `role_id`, `email_verified_at`, `status`, `deleted_at`, `created_at`, `updated_at`) VALUES
+(1, 'Nguyen Van A', 'vana@example.com', NULL, NULL, 'hashed_password_123', 0, '2025-11-16 04:07:16', 'active', NULL, '2025-11-07 08:09:49', '2025-11-16 05:01:56'),
+(2, 'Nguyen Van A', 'duyhiha4@gmail.com', NULL, NULL, '$2y$12$d9TwyFEP95B3H1T09ychfOpJ8odvdGHp69oTZehVja43XbBqAeUzi', 1, '2025-11-16 05:02:10', 'active', NULL, '2025-11-14 06:19:09', '2025-11-16 05:02:10'),
+(3, 'Nguyen Van A', 'duyhiha5@gmail.com', NULL, NULL, '$2y$12$aLo3c/3F0wLwo8W6/ofhYulRroMQTJUO/D4u8vmj/KeerUwlsiBfK', 2, NULL, 'active', NULL, '2025-11-16 04:13:07', '2025-11-16 04:13:07'),
+(4, 'Admin', 'admin@phonezy.local', NULL, '0900000000', '$2y$10$hash_admin', 1, NULL, 'active', NULL, '2025-10-31 14:14:22', '2025-10-31 14:14:22'),
+(5, 'Nguyen Van A', 'a@example.com', NULL, '0911111111', '$2y$10$hash_user_a', 2, NULL, 'active', NULL, '2025-10-31 14:14:22', '2025-10-31 14:14:22'),
+(6, 'Trư', 'quanm9677@gmail.com', NULL, NULL, '$2y$12$XRCrkLezethU7XshddSNAuCCQwGIF7k5Gg.pie0apE3Mt6LGU3k4W', 2, NULL, 'active', NULL, '2025-11-07 07:08:41', '2025-11-07 07:08:41'),
+(8, 'tester', 'tester@gmail.com', NULL, '1234567891', '12345678', 1, '2025-11-21 11:58:36', 'active', NULL, NULL, NULL),
+(9, 'Quân Trương M', 'tam@gmail.com', NULL, NULL, '$2y$12$VKxqZa8.JDuJyvfPScGre.ep.yTQNKIM7fTsH8yYaC7eLR3YadXrW', 1, NULL, 'active', NULL, '2025-11-21 06:59:48', '2025-11-21 06:59:48');
 
 -- --------------------------------------------------------
 
@@ -510,7 +617,7 @@ INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `phone`, `role_id`,
 CREATE TABLE `variant_images` (
   `id` bigint NOT NULL,
   `variant_id` bigint NOT NULL,
-  `image_url` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `image_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -530,7 +637,7 @@ INSERT INTO `variant_images` (`id`, `variant_id`, `image_url`, `created_at`) VAL
 
 CREATE TABLE `versions` (
   `id` bigint NOT NULL,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL
+  `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -540,7 +647,10 @@ CREATE TABLE `versions` (
 INSERT INTO `versions` (`id`, `name`) VALUES
 (1, 'Standard'),
 (2, 'Pro'),
-(3, 'Pro Max');
+(3, 'Pro Max'),
+(4, 'Thường'),
+(5, 'USB-C'),
+(6, 'Lightning');
 
 -- --------------------------------------------------------
 
@@ -724,6 +834,14 @@ ALTER TABLE `roles`
   ADD UNIQUE KEY `name` (`name`);
 
 --
+-- Indexes for table `sessions`
+--
+ALTER TABLE `sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `sessions_user_id_index` (`user_id`),
+  ADD KEY `sessions_last_activity_index` (`last_activity`);
+
+--
 -- Indexes for table `shipping_tracking`
 --
 ALTER TABLE `shipping_tracking`
@@ -741,8 +859,7 @@ ALTER TABLE `storages`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `email` (`email`),
-  ADD KEY `fk_users_role` (`role_id`);
+  ADD UNIQUE KEY `email` (`email`);
 
 --
 -- Indexes for table `variant_images`
@@ -785,13 +902,13 @@ ALTER TABLE `brands`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `cart_items`
 --
 ALTER TABLE `cart_items`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `categories`
@@ -803,7 +920,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `colors`
 --
 ALTER TABLE `colors`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `coupons`
@@ -851,19 +968,19 @@ ALTER TABLE `payments`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `product_images`
 --
 ALTER TABLE `product_images`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `product_variants`
 --
 ALTER TABLE `product_variants`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -887,7 +1004,7 @@ ALTER TABLE `storages`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `variant_images`
@@ -899,7 +1016,7 @@ ALTER TABLE `variant_images`
 -- AUTO_INCREMENT for table `versions`
 --
 ALTER TABLE `versions`
-  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `warehouses`
@@ -990,12 +1107,6 @@ ALTER TABLE `product_variants`
 --
 ALTER TABLE `shipping_tracking`
   ADD CONSTRAINT `fk_ship_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
-
---
--- Constraints for table `users`
---
-ALTER TABLE `users`
-  ADD CONSTRAINT `fk_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
 
 --
 -- Constraints for table `variant_images`

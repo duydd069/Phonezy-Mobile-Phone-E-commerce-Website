@@ -26,6 +26,7 @@ class CheckoutRequest extends FormRequest
             'ward'           => ['nullable', 'string', 'max:120'],
             'notes'          => ['nullable', 'string', 'max:500'],
             'payment_method' => ['required', Rule::in($paymentMethods)],
+            'coupon_code'    => ['nullable', 'string', 'max:50'],
         ];
     }
 
@@ -41,6 +42,7 @@ class CheckoutRequest extends FormRequest
             'ward'           => 'phường/xã',
             'notes'          => 'ghi chú',
             'payment_method' => 'phương thức thanh toán',
+            'coupon_code'    => 'mã khuyến mãi',
         ];
     }
 }

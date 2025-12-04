@@ -5,6 +5,8 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
+		<meta name="csrf-token" content="{{ csrf_token() }}">
+		
 		<!-- Primary Meta Tags -->
 		<title>@yield('title', 'Electro - Cửa hàng điện tử hàng đầu Việt Nam')</title>
 		<meta name="title" content="@yield('meta_title', 'Electro - Cửa hàng điện tử hàng đầu Việt Nam')">
@@ -61,6 +63,7 @@
 		@include('electro.partials.nav')
 		@yield('content')
 		@include('electro.partials.footer')
+		@include('electro.partials.chatbot-widget')
 		<script src="{{ asset('electro/js/jquery.min.js') }}"></script>
 		<script src="{{ asset('electro/js/bootstrap.min.js') }}"></script>
 		<script src="{{ asset('electro/js/slick.min.js') }}"></script>

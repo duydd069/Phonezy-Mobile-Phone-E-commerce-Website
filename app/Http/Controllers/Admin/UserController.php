@@ -88,17 +88,22 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully');
     }
 
-    public function destroy(User $user): RedirectResponse
+    /**
+     * Ban a user
+     */
+    public function ban(User $user): RedirectResponse
     {
-        try {
-            $user->delete();
+        $user->update(['is_banned' => 1]);
+        return redirect()->route('admin.users.index')->with('success', 'User banned successfully');
+    }
 
-            return redirect()->route('admin.users.index')->with('success', 'User deleted successfully');
-        } catch (QueryException $exception) {
-            return redirect()
-                ->route('admin.users.index')
-                ->with('error', 'Không thể xóa người dùng vì đã phát sinh dữ liệu liên quan (ví dụ: orders).');
-        }
+    /**
+     * Unban a user
+     */
+    public function unban(User $user): RedirectResponse
+    {
+        $user->update(['is_banned' => 0]);
+        return redirect()->route('admin.users.index')->with('success', 'User unbanned successfully');
     }
 }
 

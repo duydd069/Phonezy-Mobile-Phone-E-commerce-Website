@@ -18,7 +18,7 @@ class OrderController extends Controller
         }
 
         $query = Order::where('user_id', $user->id)
-            ->with(['items'])
+            ->with(['items', 'coupon'])
             ->orderByDesc('created_at');
 
         // Lọc theo trạng thái
@@ -40,7 +40,7 @@ class OrderController extends Controller
             abort(403, 'You do not have permission to view this order.');
         }
 
-        $order->load(['items', 'user']);
+        $order->load(['items', 'user', 'coupon']);
         $paymentMethods = config('checkout.payment_methods', []);
 
         return view('electro.orders.show', compact('order', 'paymentMethods'));
