@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable = [
         'cart_id',
         'user_id',
+        'coupon_id',
         'subtotal',
         'shipping_fee',
         'discount_amount',
@@ -51,6 +52,11 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
     }
 
     /**

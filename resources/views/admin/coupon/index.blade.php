@@ -14,6 +14,7 @@
             <tr>
                 <th>ID</th>
                 <th>Mã</th>
+                <th>Loại</th>
                 <th>Loại giảm</th>
                 <th>Giá trị</th>
                 <th>Ngày hết hạn</th>
@@ -25,6 +26,16 @@
             <tr>
                 <td>{{ $coupon->id }}</td>
                 <td>{{ $coupon->code }}</td>
+                <td>
+                    @if(($coupon->type ?? 'public') == 'private')
+                        <span class="badge bg-warning">Riêng tư</span>
+                        @if($coupon->users->count() > 0)
+                            <br><small>({{ $coupon->users->count() }} user)</small>
+                        @endif
+                    @else
+                        <span class="badge bg-success">Công khai</span>
+                    @endif
+                </td>
                 <td>{{ $coupon->discount_type === 'percent' ? 'Giảm %' : 'Giảm tiền' }}</td>
                 <td>
                     @if($coupon->discount_type === 'percent')
@@ -44,7 +55,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="6" class="text-center">Chưa có mã khuyến mãi nào</td></tr>
+            <tr><td colspan="7" class="text-center">Chưa có mã khuyến mãi nào</td></tr>
         @endforelse
         </tbody>
     </table>
