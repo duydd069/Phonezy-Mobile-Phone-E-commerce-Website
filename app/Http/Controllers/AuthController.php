@@ -33,9 +33,21 @@ class AuthController extends Controller
         $remember = $request->has('remember');
 
         if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+            
+            // Check if user is banned
+            if ($user && $user->is_banned) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
+                return back()->withErrors([
+                    'email' => 'Tài khoản của bạn đã bị cấm. Vui lòng liên hệ quản trị viên.'
+                ])->onlyInput('email');
+            }
+            
             $request->session()->regenerate();
 
-            $user = Auth::user();
             if ($user && isset($user->role_id)) {
                 if ($user->role_id == 1) {
                     // Admin redirect
@@ -52,6 +64,7 @@ class AuthController extends Controller
 
         return back()->withErrors(['email' => 'Email hoặc mật khẩu không đúng'])->onlyInput('email');
     }
+
 
     /**
      * Log the user out.
