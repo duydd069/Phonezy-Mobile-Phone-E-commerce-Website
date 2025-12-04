@@ -29,20 +29,34 @@ class RegisterController extends Controller
             'password_hash' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        // Generate verification token
+        $verificationToken = \Illuminate\Support\Str::random(64);
+        $verificationExpires = now()->addHours(24);
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'password_hash' => Hash::make($data['password_hash']),
+            'password_hash' => \Illuminate\Support\Facades\Hash::make($data['password_hash']),
             'role_id' => 2, // 2 = normal user
+            'verification_token' => $verificationToken,
+            'verification_expires_at' => $verificationExpires,
         ]);
 
-        auth()->login($user);
+        // Generate verification URL
+        $verificationUrl = route('email.verify', ['token' => $verificationToken]);
 
-        $user = auth()->user();
-        if ($user && isset($user->role_id) && $user->role_id == 2) {
-            return redirect()->intended(route('client.index'));
+        // Send verification email
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)
+                ->send(new \App\Mail\VerificationEmail($verificationUrl, $user->name));
+        } catch (\Exception $e) {
+            // Log error but don't block registration
+            \Illuminate\Support\Facades\Log::error('Failed to send verification email: ' . $e->getMessage());
         }
 
-        return redirect()->intended(route('admin.dashboard'));
+        // Redirect to verification-sent page instead of auto-login
+        return redirect()->route('verification.sent')
+            ->with('email', $user->email);
     }
+
 }

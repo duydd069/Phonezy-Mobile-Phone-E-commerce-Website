@@ -48,6 +48,13 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Email verification routes
+Route::get('/email/verify/{token}', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'verify'])->name('email.verify');
+Route::get('/verification-sent', function () {
+    return view('electro.auth.verification-sent');
+})->name('verification.sent');
+
+
 // Admin routes - tạm thời bỏ middleware auth/admin
 // Route::prefix('admin')->name('admin.')->group(function () {
 //     Route::get('/', fn () => view('admin.dashboard'))->name('dashboard');
@@ -57,10 +64,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
     
+    
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+    Route::patch('users/{user}/ban', [\App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
+    Route::patch('users/{user}/unban', [\App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
     Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
     Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
     Route::resource('versions', \App\Http\Controllers\Admin\VersionController::class);
+
 
     // Products
     Route::get('/products',            [ProductController::class, 'index'])->name('products.index');

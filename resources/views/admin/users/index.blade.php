@@ -12,10 +12,10 @@
       <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Tìm theo tên hoặc email">
     </div>
     <div class="col-auto">
-      <select name="is_admin" class="form-select">
+      <select name="role_id" class="form-select">
         <option value="">Tất cả vai trò</option>
-        <option value="1" {{ request('is_admin') == '1' ? 'selected' : '' }}>Quản trị viên</option>
-        <option value="0" {{ request('is_admin') == '0' ? 'selected' : '' }}>Người dùng</option>
+        <option value="1" {{ request('role_id') == '1' ? 'selected' : '' }}>Quản trị viên</option>
+        <option value="2" {{ request('role_id') == '2' ? 'selected' : '' }}>Khách hàng</option>
       </select>
     </div>
     <div class="col-auto">
@@ -23,14 +23,8 @@
     </div>
   </form>
 
-  @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-  @endif
-  @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-  @endif
-
   <div class="table-responsive">
+
     <table class="table table-striped align-middle">
       <thead>
         <tr>
@@ -38,6 +32,7 @@
           <th>Tên</th>
           <th>Email</th>
           <th>Vai trò</th>
+          <th>Trạng thái</th>
           <th>Xác thực email</th>
           <th>Ngày tạo</th>
           <th>Thao tác</th>
@@ -50,10 +45,17 @@
             <td>{{ $user->name }}</td>
             <td>{{ $user->email }}</td>
             <td>
-              @if($user->is_admin)
+              @if($user->role_id == 1)
                 <span class="badge bg-danger">Quản trị viên</span>
               @else
-                <span class="badge bg-secondary">Người dùng</span>
+                <span class="badge bg-secondary">Khách hàng</span>
+              @endif
+            </td>
+            <td>
+              @if($user->is_banned)
+                <span class="badge bg-dark">Đã cấm</span>
+              @else
+                <span class="badge bg-success">Hoạt động</span>
               @endif
             </td>
             <td>
@@ -67,15 +69,23 @@
             <td class="d-flex gap-2">
               <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-secondary">Xem</a>
               <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">Sửa</a>
-              <form action="{{ route('admin.users.destroy', $user) }}" method="post" onsubmit="return confirm('Bạn có chắc muốn xóa người dùng này?')">
-                @csrf
-                @method('DELETE')
-                <button class="btn btn-sm btn-danger" type="submit">Xóa</button>
-              </form>
+              @if($user->is_banned)
+                <form action="{{ route('admin.users.unban', $user) }}" method="post">
+                  @csrf
+                  @method('PATCH')
+                  <button class="btn btn-sm btn-success" type="submit">Bỏ cấm</button>
+                </form>
+              @else
+                <form action="{{ route('admin.users.ban', $user) }}" method="post" onsubmit="return confirm('Bạn có chắc muốn cấm người dùng này?')">
+                  @csrf
+                  @method('PATCH')
+                  <button class="btn btn-sm btn-danger" type="submit">Cấm</button>
+                </form>
+              @endif
             </td>
           </tr>
         @empty
-          <tr><td colspan="7" class="text-center text-muted py-3">Chưa có người dùng nào.</td></tr>
+          <tr><td colspan="8" class="text-center text-muted py-3">Chưa có người dùng nào.</td></tr>
         @endforelse
       </tbody>
     </table>

@@ -28,10 +28,22 @@
         <div class="mb-3">
           <strong>Vai trò:</strong>
           <div>
-            @if($user->is_admin)
+            @if($user->role_id == 1)
               <span class="badge bg-danger">Quản trị viên</span>
             @else
-              <span class="badge bg-secondary">Người dùng</span>
+              <span class="badge bg-secondary">Khách hàng</span>
+            @endif
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="mb-3">
+          <strong>Trạng thái:</strong>
+          <div>
+            @if($user->is_banned)
+              <span class="badge bg-dark">Đã cấm</span>
+            @else
+              <span class="badge bg-success">Hoạt động</span>
             @endif
           </div>
         </div>

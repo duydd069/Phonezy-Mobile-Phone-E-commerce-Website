@@ -4,14 +4,6 @@
 <div class="container">
     <h1 class="mb-3">Danh sách sản phẩm</h1>
 
-    {{-- Thông báo thành công / lỗi --}}
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
     {{-- Thanh tìm kiếm + nút thêm sản phẩm --}}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <form class="d-flex" method="GET" action="{{ route('admin.products.index') }}">

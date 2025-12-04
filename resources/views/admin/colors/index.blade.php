@@ -7,14 +7,6 @@
     <a href="{{ route('admin.colors.create') }}" class="btn btn-primary">+ Thêm màu sắc</a>
   </div>
 
-  {{-- Thông báo --}}
-  @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-  @endif
-  @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-  @endif
-
   {{-- Bảng dữ liệu --}}
   <div class="table-responsive">
     <table class="table table-striped align-middle">

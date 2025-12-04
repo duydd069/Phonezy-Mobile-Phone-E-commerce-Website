@@ -24,8 +24,9 @@ class UserController extends Controller
             });
         }
 
-        if ($request->has('is_admin')) {
-            $query->where('is_admin', $request->boolean('is_admin'));
+        // Filter by role_id instead of is_admin
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->input('role_id'));
         }
 
         $users = $query->orderByDesc('id')->paginate(15)->withQueryString();
@@ -42,15 +43,14 @@ class UserController extends Controller
     {
         $data = $request->validated();
         
+        // Hash password
         if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+            $data['password_hash'] = Hash::make($data['password']);
+            unset($data['password']);
         }
 
-        $data['is_admin'] = $request->has('is_admin') ? 1 : 0;
-        
-        if (empty($data['email_verified_at'])) {
-            $data['email_verified_at'] = null;
-        }
+        // Set role_id (default to 2 = customer if not provided)
+        $data['role_id'] = $request->input('role_id', 2);
 
         User::create($data);
 
@@ -71,14 +71,18 @@ class UserController extends Controller
     {
         $data = $request->validated();
 
+        // Only update password if provided
         if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
+            $data['password_hash'] = Hash::make($data['password']);
+            unset($data['password']);
         } else {
             unset($data['password']);
         }
 
-        $data['is_admin'] = $request->has('is_admin') ? 1 : 0;
+        // Update role_id
+        $data['role_id'] = $request->input('role_id', $user->role_id);
         
+        // Handle email_verified_at
         if (empty($data['email_verified_at'])) {
             $data['email_verified_at'] = null;
         }
@@ -88,17 +92,22 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User updated successfully');
     }
 
-    public function destroy(User $user): RedirectResponse
+    /**
+     * Ban a user
+     */
+    public function ban(User $user): RedirectResponse
     {
-        try {
-            $user->delete();
+        $user->update(['is_banned' => 1]);
+        return redirect()->route('admin.users.index')->with('success', 'User banned successfully');
+    }
 
-            return redirect()->route('admin.users.index')->with('success', 'User deleted successfully');
-        } catch (QueryException $exception) {
-            return redirect()
-                ->route('admin.users.index')
-                ->with('error', 'Không thể xóa người dùng vì đã phát sinh dữ liệu liên quan (ví dụ: orders).');
-        }
+    /**
+     * Unban a user
+     */
+    public function unban(User $user): RedirectResponse
+    {
+        $user->update(['is_banned' => 0]);
+        return redirect()->route('admin.users.index')->with('success', 'User unbanned successfully');
     }
 }
 

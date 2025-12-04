@@ -7,14 +7,6 @@
     <a href="{{ route('admin.storages.create') }}" class="btn btn-primary">+ Thêm dung lượng</a>
   </div>
 
-  {{-- Thông báo --}}
-  @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-  @endif
-  @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-  @endif
-
   {{-- Bảng dữ liệu --}}
   <div class="table-responsive">
     <table class="table table-striped align-middle">
