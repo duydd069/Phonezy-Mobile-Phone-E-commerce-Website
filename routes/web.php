@@ -64,11 +64,19 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
     
-    
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
     Route::patch('users/{user}/ban', [\App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
     Route::patch('users/{user}/unban', [\App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
+    
+    // Comments management
+    Route::get('comments', [\App\Http\Controllers\Admin\CommentController::class, 'index'])->name('comments.index');
+    Route::get('comments/{product}', [\App\Http\Controllers\Admin\CommentController::class, 'show'])->name('comments.show');
+    Route::post('comments/{comment}/reply', [\App\Http\Controllers\Admin\CommentController::class, 'reply'])->name('comments.reply');
+    Route::delete('comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'destroy'])->name('comments.destroy');
+    
     Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
+
+
     Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
     Route::resource('versions', \App\Http\Controllers\Admin\VersionController::class);
 
