@@ -260,25 +260,33 @@ class CheckoutController extends Controller
         $code = request('code');
         $userId = auth()->id();
         
-        if (!$code) {
+        // Lấy giỏ hàng để tính summary
+        $cart = $this->getOrCreateActiveCart();
+        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        
+        // Nếu không có code hoặc code rỗng, trả về summary không có coupon
+        if (!$code || trim($code) === '') {
+            $summary = $this->buildSummary($items, null);
             return response()->json([
                 'valid' => false,
-                'message' => 'Vui lòng nhập mã khuyến mãi',
+                'message' => 'Đã bỏ chọn mã khuyến mãi',
+                'summary' => $summary,
             ]);
         }
 
         $coupon = Coupon::validateCode($code, $userId);
         
         if (!$coupon) {
+            // Vẫn trả về summary không có coupon khi coupon không hợp lệ
+            $summary = $this->buildSummary($items, null);
             return response()->json([
                 'valid' => false,
                 'message' => 'Mã khuyến mãi không hợp lệ, đã hết hạn hoặc bạn không có quyền sử dụng',
+                'summary' => $summary,
             ]);
         }
 
-        // Lấy giỏ hàng để tính discount
-        $cart = $this->getOrCreateActiveCart();
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        // Tính summary với coupon
         $summary = $this->buildSummary($items, $coupon);
 
         $discountText = '';

@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="m-0">Order Management</h3>
+        <h3 class="m-0">Quản Lý Đơn Hàng</h3>
     </div>
 
     @if(session('success'))
@@ -18,29 +18,29 @@
     <form method="GET" action="{{ route('admin.orders.index') }}" class="row g-2 mb-3">
         <div class="col-auto">
             <input type="text" name="q" value="{{ request('q') }}" class="form-control" 
-                   placeholder="Search by ID, name, phone, email...">
+                   placeholder="Tìm kiếm theo ID, tên, số điện thoại, email...">
         </div>
         <div class="col-auto">
             <select name="status" class="form-select">
-                <option value="">All Status</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing</option>
-                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                <option value="">Tất cả trạng thái</option>
+                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Chờ xử lý</option>
+                <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Đang xử lý</option>
+                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Hoàn thành</option>
+                <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
             </select>
         </div>
         <div class="col-auto">
             <select name="payment_status" class="form-select">
-                <option value="">All Payment Status</option>
-                <option value="pending" {{ request('payment_status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Paid</option>
-                <option value="failed" {{ request('payment_status') === 'failed' ? 'selected' : '' }}>Failed</option>
+                <option value="">Tất cả trạng thái thanh toán</option>
+                <option value="pending" {{ request('payment_status') === 'pending' ? 'selected' : '' }}>Chờ thanh toán</option>
+                <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>Đã thanh toán</option>
+                <option value="failed" {{ request('payment_status') === 'failed' ? 'selected' : '' }}>Thanh toán thất bại</option>
             </select>
         </div>
         <div class="col-auto">
-            <button type="submit" class="btn btn-outline-primary">Search</button>
+            <button type="submit" class="btn btn-outline-primary">Tìm kiếm</button>
             @if(request('q') || request('status') || request('payment_status'))
-                <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Clear Filter</a>
+                <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">Xóa bộ lọc</a>
             @endif
         </div>
     </form>
@@ -50,14 +50,14 @@
         <table class="table table-striped align-middle">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Customer</th>
-                    <th>Phone</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                    <th>Order Date</th>
-                    <th>Actions</th>
+                    <th>Mã đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Số điện thoại</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Thanh toán</th>
+                    <th>Ngày đặt</th>
+                    <th>Thao tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,7 +70,7 @@
                                 <small class="text-muted">{{ $order->shipping_email }}</small>
                             @endif
                             @if($order->user)
-                                <small class="text-muted d-block">User ID: {{ $order->user_id }}</small>
+                                <small class="text-muted d-block">Mã người dùng: {{ $order->user_id }}</small>
                             @endif
                         </td>
                         <td>{{ $order->shipping_phone }}</td>
@@ -92,12 +92,12 @@
                         <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
                         <td>
                             <a href="{{ route('admin.orders.show', $order->id) }}" 
-                               class="btn btn-sm btn-primary">View Details</a>
+                               class="btn btn-sm btn-primary">Xem chi tiết</a>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-3">No orders found.</td>
+                        <td colspan="8" class="text-center text-muted py-3">Không tìm thấy đơn hàng nào.</td>
                     </tr>
                 @endforelse
             </tbody>
