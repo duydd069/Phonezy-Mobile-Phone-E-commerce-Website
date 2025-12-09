@@ -31,28 +31,44 @@
               id="navigation"
             >
               
-                  <li class="nav-item">
-                    <a href="{{ route('admin.dashboard') }}" class="nav-link ">
-                      <i class="nav-icon bi bi-circle"></i>
-                      <p>Bảng điều khiển</p>
-                    </a>
-                  </li>
-                
               <li class="nav-item">
-                <a href="{{ route('admin.brands.index') }}" class="nav-link">
-                  <i class="nav-icon bi bi-tags"></i>
-                  <p>Thương hiệu</p>
+                <a href="{{ route('admin.dashboard') }}" class="nav-link">
+                  <i class="nav-icon bi bi-speedometer2"></i>
+                  <p>Bảng điều khiển</p>
                 </a>
               </li>
+              
+              <li class="nav-item">
+                <a href="{{ route('admin.revenue.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-graph-up"></i>
+                  <p>Báo Cáo Doanh Thu</p>
+                </a>
+              </li>
+
+              <li class="nav-item">
+                <a href="{{ route('admin.orders.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-cart-check"></i>
+                  <p>Đơn Hàng</p>
+                </a>
+              </li>
+              
               <li class="nav-item">
                 <a href="{{ route('admin.products.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-box"></i>
                   <p>Sản phẩm</p>
                 </a>
               </li>
+              
+              <li class="nav-item">
+                <a href="{{ route('admin.brands.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-award"></i>
+                  <p>Thương hiệu</p>
+                </a>
+              </li>
+              
               <li class="nav-item">
                 <a href="{{ route('admin.categories.index') }}" class="nav-link">
-                  <i class="nav-icon bi bi-tags"></i>
+                  <i class="nav-icon bi bi-grid"></i>
                   <p>Danh mục</p>
                 </a>
               </li>
@@ -79,16 +95,16 @@
               </li>
               
               <li class="nav-item">
+                <a href="{{ route('admin.coupons.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-tag"></i>
+                  <p>Khuyến mãi</p>
+                </a>
+              </li>
+              
+              <li class="nav-item">
                 <a href="{{ route('admin.users.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-people"></i>
                   <p>Người dùng</p>
-                </a>
-              </li>
-
-              <li class="nav-item">
-                <a href="{{ route('admin.coupons.index') }}" class="nav-link">
-                 <i class="nav-icon fas fa-tags"></i>
-                  <p>khuyến mãi </p>
                 </a>
               </li>
             </ul>

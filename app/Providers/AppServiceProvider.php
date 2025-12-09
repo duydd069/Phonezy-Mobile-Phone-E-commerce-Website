@@ -35,7 +35,11 @@ class AppServiceProvider extends ServiceProvider
             $count = $cart ? $cart->items->sum('quantity') : 0;
 
             $view->with('cartCount', $count);
-            $view->with('categories', Category::all());
+            
+            // Chỉ set categories nếu controller chưa set (để tránh ghi đè pagination)
+            if (!$view->offsetExists('categories')) {
+                $view->with('categories', Category::all());
+            }
         });
     }
 }

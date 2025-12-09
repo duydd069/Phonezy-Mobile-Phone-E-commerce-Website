@@ -45,6 +45,20 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title text-white">
+                        <i class="bi bi-graph-up me-2"></i>Báo Cáo Doanh Thu
+                    </h5>
+                    <p class="card-text">
+                        <a href="{{ route('admin.revenue.index') }}" class="text-white text-decoration-none">
+                            Xem báo cáo doanh thu
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
 
     </div>
 </div>

@@ -60,15 +60,15 @@ class Order extends Model
     }
 
     /**
-     * Get status label in English
+     * Get status label in Vietnamese
      */
     public function getStatusLabelAttribute(): string
     {
         return match($this->status) {
-            'pending' => 'Pending',
-            'processing' => 'Processing',
-            'completed' => 'Completed',
-            'cancelled' => 'Cancelled',
+            'pending' => 'Chờ xử lý',
+            'processing' => 'Đang xử lý',
+            'completed' => 'Hoàn thành',
+            'cancelled' => 'Đã hủy',
             default => ucfirst($this->status),
         };
     }
@@ -88,15 +88,15 @@ class Order extends Model
     }
 
     /**
-     * Get payment status label in English
+     * Get payment status label in Vietnamese
      */
     public function getPaymentStatusLabelAttribute(): string
     {
         return match($this->payment_status) {
-            'pending' => 'Pending',
-            'paid' => 'Paid',
-            'failed' => 'Failed',
-            'refunded' => 'Refunded',
+            'pending' => 'Chờ thanh toán',
+            'paid' => 'Đã thanh toán',
+            'failed' => 'Thanh toán thất bại',
+            'refunded' => 'Đã hoàn tiền',
             default => ucfirst($this->payment_status),
         };
     }

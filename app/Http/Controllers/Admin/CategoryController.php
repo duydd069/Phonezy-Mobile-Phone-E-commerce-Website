@@ -13,17 +13,18 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        
-          $query = Category::query();
+        $query = Category::query();
 
-    if ($search = $request->q) {
-        $query->where('name', 'like', "%{$search}%")
-              ->orWhere('slug', 'like', "%{$search}%");
-    }
+        if ($search = $request->q) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        }
 
-    $categories = $query->orderBy('id', 'desc')->paginate(10);
+        $categories = $query->orderBy('id', 'desc')->paginate(10);
 
-    return view('admin.categories.index', compact('categories'));
+        return view('admin.categories.index', compact('categories'));
     }
     public function create()
     {

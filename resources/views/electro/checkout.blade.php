@@ -94,6 +94,7 @@
                                                 $typeLabel = ($availableCoupon->type ?? 'public') === 'private' ? ' (Riêng tư)' : '';
                                             @endphp
                                             <div class="coupon-item" 
+                                                 data-code="{{ $availableCoupon->code }}"
                                                  style="border: 2px solid {{ $isSelected ? '#4CAF50' : '#e0e0e0' }}; 
                                                         border-radius: 8px; 
                                                         padding: 12px; 
@@ -101,8 +102,8 @@
                                                         background: {{ $isSelected ? '#f1f8f4' : '#fff' }};
                                                         transition: all 0.3s;"
                                                  onclick="selectCoupon('{{ $availableCoupon->code }}')"
-                                                 onmouseover="this.style.borderColor='#4CAF50'; this.style.background='#f1f8f4';"
-                                                 onmouseout="this.style.borderColor='{{ $isSelected ? '#4CAF50' : '#e0e0e0' }}'; this.style.background='{{ $isSelected ? '#f1f8f4' : '#fff' }}';">
+                                                 onmouseover="if(!this.querySelector('.check-mark')) { this.style.borderColor='#4CAF50'; this.style.background='#f1f8f4'; }"
+                                                 onmouseout="if(!this.querySelector('.check-mark')) { this.style.borderColor='{{ $isSelected ? '#4CAF50' : '#e0e0e0' }}'; this.style.background='{{ $isSelected ? '#f1f8f4' : '#fff' }}'; }">
                                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                                     <div>
                                                         <strong style="font-size: 16px; color: #4CAF50;">{{ $availableCoupon->code }}</strong>
@@ -148,16 +149,6 @@
                                 </button>
                             </div>
                             <div id="coupon-message" style="margin-top: 10px;"></div>
-                            @if(isset($coupon) && $coupon)
-                                <div class="alert alert-success" style="margin-top: 10px;">
-                                    <strong>Mã khuyến mãi đã áp dụng:</strong> {{ $coupon->code }}
-                                    @if($coupon->discount_type === 'percent')
-                                        - Giảm {{ $coupon->discount_value }}%
-                                    @else
-                                        - Giảm {{ number_format($coupon->discount_value, 0, ',', '.') }} ₫
-                                    @endif
-                                </div>
-                            @endif
                             @error('coupon_code') <small class="text-danger">{{ $message }}</small> @enderror
                         </div>
 
@@ -241,12 +232,52 @@
     </div>
 
     <script>
+        // Định nghĩa function selectCoupon trước để có thể gọi từ onclick
+        function selectCoupon(code) {
+            // Kiểm tra xem function đã được export chưa
+            if (typeof window.selectCoupon === 'function') {
+                window.selectCoupon(code);
+            } else {
+                // Nếu chưa, đợi một chút rồi thử lại
+                setTimeout(function() {
+                    if (typeof window.selectCoupon === 'function') {
+                        window.selectCoupon(code);
+                    } else {
+                        // Fallback: kiểm tra xem coupon đã được chọn chưa
+                        const currentSelected = typeof window.getCurrentSelectedCoupon === 'function' 
+                            ? window.getCurrentSelectedCoupon() 
+                            : null;
+                        
+                        if (currentSelected === code) {
+                            // Nếu đã chọn, bỏ chọn
+                            if (typeof window.removeCoupon === 'function') {
+                                window.removeCoupon();
+                            }
+                        } else {
+                            // Nếu chưa chọn, set giá trị và trigger apply button
+                            const couponCodeInput = document.getElementById('coupon_code');
+                            if (couponCodeInput) {
+                                couponCodeInput.value = code;
+                                const applyCouponBtn = document.getElementById('apply-coupon-btn');
+                                if (applyCouponBtn) {
+                                    applyCouponBtn.click();
+                                }
+                            }
+                        }
+                    }
+                }, 100);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const couponCodeInput = document.getElementById('coupon_code');
             const applyCouponBtn = document.getElementById('apply-coupon-btn');
             const couponMessage = document.getElementById('coupon-message');
             const discountAmount = document.getElementById('discount-amount');
             const totalAmount = document.getElementById('total-amount');
+            
+            // Biến để track coupon hiện tại đã chọn
+            let currentSelectedCoupon = null;
 
             function formatNumber(num) {
                 return new Intl.NumberFormat('vi-VN').format(num);
@@ -265,9 +296,7 @@
                 couponMessage.innerHTML = '<div class="alert alert-' + type + '">' + message + '</div>';
             }
 
-            applyCouponBtn.addEventListener('click', function() {
-                const code = couponCodeInput.value.trim().toUpperCase();
-                
+            function applyCoupon(code) {
                 if (!code) {
                     showMessage('Vui lòng nhập mã khuyến mãi', 'danger');
                     return;
@@ -292,10 +321,10 @@
                         if (data.summary) {
                             updateSummary(data.summary);
                         }
-                        // Reload page to apply coupon
-                        setTimeout(() => {
-                            window.location.href = '{{ route("client.checkout") }}?coupon_code=' + code;
-                        }, 1000);
+                        // Lưu coupon hiện tại đã chọn
+                        currentSelectedCoupon = data.coupon.code;
+                        // Cập nhật trạng thái các coupon item
+                        updateCouponItemsState(data.coupon.code);
                     } else {
                         showMessage(data.message, 'danger');
                         if (data.summary) {
@@ -311,6 +340,72 @@
                     applyCouponBtn.disabled = false;
                     applyCouponBtn.textContent = 'Áp dụng';
                 });
+            }
+
+            function removeCoupon() {
+                // Xóa coupon khỏi input
+                couponCodeInput.value = '';
+                // Reset coupon hiện tại đã chọn
+                currentSelectedCoupon = null;
+                
+                // Tính lại summary không có coupon - sử dụng giá trị ban đầu
+                const originalSummary = {!! json_encode($summary) !!};
+                const summaryWithoutCoupon = {
+                    subtotal: originalSummary.subtotal,
+                    discount: 0,
+                    shipping_fee: originalSummary.shipping_fee,
+                    total: originalSummary.subtotal + originalSummary.shipping_fee
+                };
+                
+                updateSummary(summaryWithoutCoupon);
+                
+                // Reset trạng thái các coupon item
+                updateCouponItemsState(null);
+                showMessage('Đã bỏ chọn mã khuyến mãi', 'info');
+            }
+
+            function updateCouponItemsState(selectedCode) {
+                // Cập nhật trạng thái visual của các coupon items
+                document.querySelectorAll('.coupon-item').forEach(item => {
+                    const code = item.getAttribute('data-code');
+                    if (selectedCode && code === selectedCode) {
+                        item.style.borderColor = '#4CAF50';
+                        item.style.background = '#f1f8f4';
+                        const button = item.querySelector('button');
+                        if (button) {
+                            button.style.display = 'none';
+                        }
+                        // Thêm dấu check nếu chưa có
+                        let checkMark = item.querySelector('.check-mark');
+                        if (!checkMark) {
+                            checkMark = document.createElement('span');
+                            checkMark.className = 'check-mark';
+                            checkMark.style.cssText = 'color: #4CAF50; font-weight: bold; margin-left: auto;';
+                            checkMark.textContent = '✓ Đã chọn';
+                            const contentDiv = item.querySelector('div[style*="display: flex"]');
+                            if (contentDiv) {
+                                contentDiv.appendChild(checkMark);
+                            }
+                        }
+                    } else {
+                        item.style.borderColor = '#e0e0e0';
+                        item.style.background = '#fff';
+                        const button = item.querySelector('button');
+                        if (button) {
+                            button.style.display = 'block';
+                        }
+                        // Xóa dấu check
+                        const checkMark = item.querySelector('.check-mark');
+                        if (checkMark) {
+                            checkMark.remove();
+                        }
+                    }
+                });
+            }
+
+            applyCouponBtn.addEventListener('click', function() {
+                const code = couponCodeInput.value.trim().toUpperCase();
+                applyCoupon(code);
             });
 
             // Allow Enter key to apply coupon
@@ -320,18 +415,36 @@
                     applyCouponBtn.click();
                 }
             });
+
+            // Export functions để có thể gọi từ bên ngoài
+            window.applyCoupon = applyCoupon;
+            window.removeCoupon = removeCoupon;
+            window.selectCoupon = function(code) {
+                const couponCodeInput = document.getElementById('coupon_code');
+                if (couponCodeInput) {
+                    // Kiểm tra nếu coupon này đã được chọn, thì bỏ chọn
+                    if (currentSelectedCoupon === code) {
+                        removeCoupon();
+                    } else {
+                        // Nếu chưa chọn, thì chọn và áp dụng
+                        couponCodeInput.value = code;
+                        applyCoupon(code);
+                    }
+                }
+            };
+            
+            // Export biến để có thể truy cập từ bên ngoài
+            window.getCurrentSelectedCoupon = function() {
+                return currentSelectedCoupon;
+            };
+
+            // Khởi tạo trạng thái coupon khi trang load
+            @if(isset($coupon) && $coupon)
+                const initialCouponCode = '{{ $coupon->code }}';
+                currentSelectedCoupon = initialCouponCode; // Lưu coupon ban đầu
+                updateCouponItemsState(initialCouponCode);
+            @endif
         });
 
-        function selectCoupon(code) {
-            const couponCodeInput = document.getElementById('coupon_code');
-            if (couponCodeInput) {
-                couponCodeInput.value = code;
-                // Tự động áp dụng coupon khi chọn
-                const applyCouponBtn = document.getElementById('apply-coupon-btn');
-                if (applyCouponBtn) {
-                    applyCouponBtn.click();
-                }
-            }
-        }
     </script>
 @endsection
