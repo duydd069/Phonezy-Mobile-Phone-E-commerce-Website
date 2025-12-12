@@ -31,6 +31,8 @@ Route::prefix('client')->name('client.')->group(function () {
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
     Route::post('/checkout/validate-coupon', [CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
+    Route::get('/payment/vnpay/return', [\App\Http\Controllers\Client\VnpayController::class, 'return'])->name('vnpay.return');
+    Route::post('/payment/vnpay/ipn', [\App\Http\Controllers\Client\VnpayController::class, 'ipn'])->name('vnpay.ipn');
 
     // Comments routes
     Route::post('/comments/{product}', [\App\Http\Controllers\Client\CommentController::class, 'store'])->name('comments.store');
@@ -45,6 +47,7 @@ Route::prefix('client')->name('client.')->group(function () {
 
 use App\Http\Controllers\Client\CartController;
 use App\Http\Controllers\Client\OrderController;
+use App\Http\Controllers\Client\VnpayController;
 
 Route::middleware(['web'])->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');

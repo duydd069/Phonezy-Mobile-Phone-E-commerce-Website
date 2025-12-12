@@ -701,17 +701,11 @@
                     
                     <div class="product-price-section">
                         @php
-                            // Logic: Nếu có variant -> lấy giá từ variant, không thì lấy từ product
-                            $currentPrice = $product->price;
-                            $currentPriceSale = null;
-                            $currentVariant = null;
+                            // Luôn lấy giá từ biến thể (product gốc không chứa giá)
+                            $currentVariant = $product->variants->first();
+                            $currentPrice = $currentVariant->price ?? 0;
+                            $currentPriceSale = $currentVariant->price_sale ?? null;
                             $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
-                            
-                            if($hasVariants && $product->variants && $product->variants->count() > 0) {
-                                $currentVariant = $product->variants->first();
-                                $currentPrice = $currentVariant->price;
-                                $currentPriceSale = $currentVariant->price_sale;
-                            }
                             
                             // Giá hiển thị: ưu tiên giá sale, nếu không có thì dùng giá gốc
                             $displayPrice = $currentPriceSale ?? $currentPrice;
@@ -921,8 +915,19 @@
                     <div class="quantity-selector">
                         <label class="variant-label" style="margin: 0;">Số lượng:</label>
                         <div class="quantity-input-group">
+                            @php
+                                $initialStock = $currentVariant->stock ?? 0;
+                                $initialMax = max(1, $initialStock);
+                                $quantityDisabled = $initialStock <= 0 ? 'disabled' : '';
+                            @endphp
                             <button type="button" class="quantity-btn" id="quantity-decrease">-</button>
-                            <input type="number" class="quantity-input" id="quantity-input" value="1" min="1" max="100">
+                            <input type="number"
+                                   class="quantity-input"
+                                   id="quantity-input"
+                                   value="1"
+                                   min="1"
+                                   max="{{ $initialMax }}"
+                                   {{ $quantityDisabled }}>
                             <button type="button" class="quantity-btn" id="quantity-increase">+</button>
                         </div>
                     </div>
@@ -1526,6 +1531,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const quantityDecrease = document.getElementById('quantity-decrease');
     const quantityIncrease = document.getElementById('quantity-increase');
     let selectedVariantId = null;
+
+    function updateStockUI(stock) {
+        if (stockBadge) {
+            if (stock > 0) {
+                stockBadge.className = 'stock-badge in-stock';
+                stockBadge.innerHTML = '<i class="fa fa-check-circle"></i> Còn hàng (' + stock + ' sản phẩm)';
+            } else {
+                stockBadge.className = 'stock-badge out-of-stock';
+                stockBadge.innerHTML = '<i class="fa fa-times-circle"></i> Đã hết hàng';
+            }
+        }
+        if (quantityInput) {
+            const max = Math.max(1, stock);
+            quantityInput.setAttribute('max', max);
+            if (parseInt(quantityInput.value) > stock) {
+                quantityInput.value = stock > 0 ? stock : 1;
+            }
+            quantityInput.disabled = stock === 0;
+        }
+    }
     
     // Gallery thumbnails navigation
     const galleryThumbsContainer = document.getElementById('product-gallery-thumbs');
@@ -2046,15 +2071,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update stock
         const stock = parseInt(variantElement.getAttribute('data-stock'));
-        if (stockBadge) {
-            if (stock > 0) {
-                stockBadge.className = 'stock-badge in-stock';
-                stockBadge.innerHTML = '<i class="fa fa-check-circle"></i> Còn hàng (' + stock + ' sản phẩm)';
-            } else {
-                stockBadge.className = 'stock-badge out-of-stock';
-                stockBadge.innerHTML = '<i class="fa fa-times-circle"></i> Đã hết hàng';
-            }
-        }
+        updateStockUI(stock);
         
         // Update SKU
         const sku = variantElement.getAttribute('data-sku');
@@ -2104,17 +2121,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Update quantity max
-        if (quantityInput) {
-            quantityInput.setAttribute('max', stock);
-            if (parseInt(quantityInput.value) > stock) {
-                quantityInput.value = stock;
-            }
-            if (stock === 0) {
-                quantityInput.disabled = true;
-            } else {
-                quantityInput.disabled = false;
-            }
-        }
+        updateStockUI(stock);
     }
     
     // Quantity controls
@@ -2445,16 +2452,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Update stock
-            if (stockBadge) {
-                if (stock > 0) {
-                    stockBadge.className = 'stock-badge in-stock';
-                    stockBadge.innerHTML = '<i class="fa fa-check-circle"></i> Còn hàng (' + stock + ' sản phẩm)';
-                } else {
-                    stockBadge.className = 'stock-badge out-of-stock';
-                    stockBadge.innerHTML = '<i class="fa fa-times-circle"></i> Đã hết hàng';
-                }
-            }
+            // Update stock + quantity UI
+            updateStockUI(stock);
             
             // Update SKU
             if (sku && currentSku) {
@@ -2493,17 +2492,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Update quantity max
-            if (quantityInput) {
-                quantityInput.setAttribute('max', stock);
-                if (parseInt(quantityInput.value) > stock) {
-                    quantityInput.value = stock;
-                }
-                if (stock === 0) {
-                    quantityInput.disabled = true;
-                } else {
-                    quantityInput.disabled = false;
-                }
-            }
+        updateStockUI(stock);
             
             // Scroll to top of product info
             document.querySelector('.product-info').scrollIntoView({ behavior: 'smooth', block: 'start' });

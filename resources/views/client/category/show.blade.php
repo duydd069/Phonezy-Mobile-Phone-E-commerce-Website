@@ -11,8 +11,12 @@
                     <img src="{{ asset('uploads/' . $product->image) }}" class="card-img-top">
 
                     <div class="card-body">
+                        @php
+                            $variant = $product->variants->first();
+                            $price = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                        @endphp
                         <h6 class="card-title">{{ $product->name }}</h6>
-                        <p>{{ number_format($product->price) }}đ</p>
+                        <p>{{ number_format($price) }}đ</p>
                         <a href="{{ route('client.product.show', $product->id) }}" class="btn btn-primary w-100">
                             Xem chi tiết
                         </a>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Category;
 use App\Models\Brand;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class ProductController extends Controller
     {
         $q = $request->get('q');
 
-        $products = Product::with(['category','brand'])
+        $products = Product::with(['category','brand','variants'])
             ->when($q, function($qr) use ($q) {
                 $qr->where('name','like',"%$q%")
                    ->orWhere('slug','like',"%$q%");
@@ -39,25 +40,32 @@ class ProductController extends Controller
 
    public function store(ProductRequest $request)
 {
-    $data = $request->only(['name','price','description','category_id','brand_id']);
+    $data = $request->only(['name','description','category_id','brand_id']);
     $data['slug']  = \Illuminate\Support\Str::slug($request->name);
     $data['views'] = 0;
+    $data['has_variant'] = true; // Luôn dùng variant (kể cả mặc định)
+    $data['price'] = 0; // Product gốc không lưu giá
 
     if ($request->hasFile('image')) {
         $data['image'] = $request->file('image')->store('products', 'public');
     }
 
-    $product = \App\Models\Product::create($data);
+    DB::transaction(function () use ($request, $data) {
+        $product = \App\Models\Product::create($data);
 
-    if ($request->hasFile('extra_images')) {
-        foreach ($request->file('extra_images') as $extraImage) {
-            if (!$extraImage) {
-                continue;
+        // Đảm bảo luôn có ít nhất 1 biến thể mặc định
+        $this->ensureDefaultVariant($product, $request->input('price'));
+
+        if ($request->hasFile('extra_images')) {
+            foreach ($request->file('extra_images') as $extraImage) {
+                if (!$extraImage) {
+                    continue;
+                }
+                $galleryPath = $extraImage->store('product_images', 'public');
+                $product->images()->create(['image_url' => $galleryPath]);
             }
-            $galleryPath = $extraImage->store('product_images', 'public');
-            $product->images()->create(['image_url' => $galleryPath]);
         }
-    }
+    });
 
     return redirect()->route('admin.products.index')->with('success','Thêm sản phẩm thành công');
 }
@@ -92,39 +100,46 @@ class ProductController extends Controller
 {
     $product = \App\Models\Product::findOrFail($id);
 
-    $data = $request->only(['name','price','description','category_id','brand_id']);
+    $data = $request->only(['name','description','category_id','brand_id']);
     $data['slug'] = \Illuminate\Support\Str::slug($request->name);
+    $data['has_variant'] = true;
+    $data['price'] = 0; // Product gốc không lưu giá
 
-    if ($request->hasFile('image')) {
-        // xoá ảnh cũ nếu là file trong storage
-        if ($product->image && !str_starts_with($product->image, 'http')) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+    DB::transaction(function () use ($request, $product, $data) {
+        if ($request->hasFile('image')) {
+            // xoá ảnh cũ nếu là file trong storage
+            if ($product->image && !str_starts_with($product->image, 'http')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
         }
-        $data['image'] = $request->file('image')->store('products', 'public');
-    }
 
-    $product->update($data);
+        $product->update($data);
 
-    $removeImageIds = $request->input('remove_images', []);
-    if (!empty($removeImageIds)) {
-        $imagesToDelete = $product->images()->whereIn('id', $removeImageIds)->get();
-        foreach ($imagesToDelete as $image) {
-            if ($image->image_url && !Str::startsWith($image->image_url, ['http://','https://'])) {
-                Storage::disk('public')->delete($image->image_url);
+        // Đảm bảo luôn có biến thể mặc định nếu chưa có
+        $this->ensureDefaultVariant($product, $request->input('price'));
+
+        $removeImageIds = $request->input('remove_images', []);
+        if (!empty($removeImageIds)) {
+            $imagesToDelete = $product->images()->whereIn('id', $removeImageIds)->get();
+            foreach ($imagesToDelete as $image) {
+                if ($image->image_url && !Str::startsWith($image->image_url, ['http://','https://'])) {
+                    Storage::disk('public')->delete($image->image_url);
+                }
+            }
+            $product->images()->whereIn('id', $removeImageIds)->delete();
+        }
+
+        if ($request->hasFile('extra_images')) {
+            foreach ($request->file('extra_images') as $extraImage) {
+                if (!$extraImage) {
+                    continue;
+                }
+                $galleryPath = $extraImage->store('product_images', 'public');
+                $product->images()->create(['image_url' => $galleryPath]);
             }
         }
-        $product->images()->whereIn('id', $removeImageIds)->delete();
-    }
-
-    if ($request->hasFile('extra_images')) {
-        foreach ($request->file('extra_images') as $extraImage) {
-            if (!$extraImage) {
-                continue;
-            }
-            $galleryPath = $extraImage->store('product_images', 'public');
-            $product->images()->create(['image_url' => $galleryPath]);
-        }
-    }
+    });
 
     return redirect()->route('admin.products.index')->with('success','Cập nhật sản phẩm thành công');
 }
@@ -217,5 +232,23 @@ class ProductController extends Controller
                 ->route('admin.products.index')
                 ->with('error', 'Không thể xóa sản phẩm: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Tạo biến thể mặc định khi sản phẩm chưa có biến thể.
+     */
+    protected function ensureDefaultVariant(Product $product, ?float $priceInput = null): void
+    {
+        if ($product->variants()->count() > 0) {
+            return;
+        }
+
+        $product->variants()->create([
+            'price'    => $priceInput ?? 0,
+            'price_sale' => null,
+            'stock'    => 0,
+            'sku'      => 'DEFAULT-' . $product->id,
+            'status'   => ProductVariant::STATUS_AVAILABLE,
+        ]);
     }
 }

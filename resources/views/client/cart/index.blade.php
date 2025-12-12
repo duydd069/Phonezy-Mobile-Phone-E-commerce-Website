@@ -19,6 +19,25 @@
                             {{ session('success') }}
                         </div>
                     @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0 ps-3">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    <div id="cart-alert"
+                         style="display:none;"
+                         class="alert"
+                         data-server-error="{{ session('error') }}"
+                         data-validation-errors='@json($errors->all())'></div>
 
                     @if($items->isEmpty())
                         <p>Giỏ hàng đang trống.</p>
@@ -78,15 +97,21 @@
                                         </h4>
 
                                         {{-- Form cập nhật số lượng --}}
-                                        <form action="{{ route('cart.update') }}" method="POST" class="form-inline" style="margin-top: 5px;">
+                                        <form action="{{ route('cart.update') }}" method="POST" class="form-inline cart-update-form" style="margin-top: 5px;">
                                             @csrf
                                             <input type="hidden" name="cart_item_id" value="{{ $item->id }}">
+                                            @php
+                                                $stock = $variant->stock ?? 0;
+                                                $max = max(1, min($stock, 10)); // tối đa 10/sp
+                                            @endphp
                                             <input type="number"
                                                    name="quantity"
                                                    value="{{ $item->quantity }}"
                                                    min="1"
+                                                   data-max="{{ $max }}"
                                                    class="input"
-                                                   style="width: 80px; display:inline-block; margin-right:5px;">
+                                                   style="width: 80px; display:inline-block; margin-right:5px;"
+                                                   {{ $stock <= 0 ? 'disabled' : '' }}>
                                             <button type="submit" class="primary-btn">
                                                 Cập nhật
                                             </button>
@@ -179,4 +204,55 @@
         </div>
     </div>
     <!-- /SECTION -->
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const alertBox = document.getElementById('cart-alert');
+
+    function showCartAlert(message, type = 'danger') {
+        if (!alertBox) return;
+        alertBox.textContent = message;
+        alertBox.className = 'alert alert-' + type;
+        alertBox.style.display = 'block';
+        // Auto hide after 4s
+        setTimeout(() => {
+            alertBox.style.display = 'none';
+        }, 4000);
+    }
+
+    // Check quantity against max before submit
+    const forms = document.querySelectorAll('.cart-update-form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const qtyInput = form.querySelector('input[name="quantity"]');
+            const max = parseInt(qtyInput?.dataset.max) || 0;
+            const val = parseInt(qtyInput?.value) || 0;
+            if (max > 0 && val > max) {
+                e.preventDefault();
+                showCartAlert('Vượt quá số lượng tối đa cho phép trong giỏ (tối đa 10 sản phẩm).', 'warning');
+                qtyInput.value = max;
+                qtyInput.focus();
+            }
+        });
+    });
+
+    // Hiển thị lỗi từ server (nếu có) từ data attribute
+    const serverError = alertBox ? alertBox.getAttribute('data-server-error') : '';
+    if (serverError) {
+        showCartAlert(serverError, 'danger');
+    }
+
+    const validationErrorsRaw = alertBox ? alertBox.getAttribute('data-validation-errors') : '[]';
+    try {
+        const validationErrors = JSON.parse(validationErrorsRaw || '[]');
+        if (Array.isArray(validationErrors)) {
+            validationErrors.forEach(err => showCartAlert(err, 'danger'));
+        }
+    } catch (e) {
+        console.error('Cannot parse validation errors', e);
+    }
+});
+</script>
+@endpush
 @endsection

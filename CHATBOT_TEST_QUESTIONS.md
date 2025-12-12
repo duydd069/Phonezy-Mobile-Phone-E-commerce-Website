@@ -188,3 +188,12 @@
 - [ ] Câu hỏi kết hợp (màu + dung lượng) trả về đúng thông tin
 
 
+
+
+
+
+
+
+
+
+

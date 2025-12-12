@@ -7,7 +7,11 @@
         <div class="card-body">
             <h3 class="card-title">{{ $product->name }}</h3>
             <p class="text-muted">{{ $product->slug }}</p>
-            <p><strong>Giá:</strong> {{ number_format($product->price,0,',','.') }}</p>
+            @php
+                $firstVariant = $product->variants->first();
+                $displayPrice = $firstVariant ? ($firstVariant->price_sale ?? $firstVariant->price) : 0;
+            @endphp
+            <p><strong>Giá (qua biến thể):</strong> {{ number_format($displayPrice,0,',','.') }} </p>
             <p><strong>Danh mục:</strong> {{ $product->category->name ?? '-' }}</p>
             <p><strong>Thương hiệu:</strong> {{ $product->brand->name ?? '-' }}</p>
             <div class="mb-3">

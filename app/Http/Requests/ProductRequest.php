@@ -17,7 +17,6 @@ class ProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:200'],
-            'price' => ['required', 'numeric', 'min:0'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'brand_id' => ['required', 'integer', 'exists:brands,id'],
             'image' => [
@@ -39,9 +38,6 @@ class ProductRequest extends FormRequest
         return [
             'name.required' => 'Vui lòng nhập tên sản phẩm',
             'name.max' => 'Tên sản phẩm không được vượt quá 200 ký tự',
-            'price.required' => 'Vui lòng nhập giá sản phẩm',
-            'price.numeric' => 'Giá sản phẩm phải là số',
-            'price.min' => 'Giá sản phẩm phải lớn hơn hoặc bằng 0',
             'category_id.required' => 'Vui lòng chọn danh mục',
             'category_id.exists' => 'Danh mục không tồn tại',
             'brand_id.required' => 'Vui lòng chọn thương hiệu',
