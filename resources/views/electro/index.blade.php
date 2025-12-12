@@ -117,8 +117,12 @@
                                             </a>
                                         </h3>
 
+                                        @php
+                                            $variant = $product->variants->first();
+                                            $displayPrice = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                                        @endphp
                                         <h4 class="product-price">
-                                            <span itemprop="price">{{ number_format($product->price, 0, ',', '.') }}</span>
+                                            <span itemprop="price">{{ number_format($displayPrice, 0, ',', '.') }}</span>
                                             ₫
                                             <meta itemprop="priceCurrency" content="VND">
                                         </h4>

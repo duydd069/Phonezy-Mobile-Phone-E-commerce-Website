@@ -21,11 +21,6 @@
             <input type="text" name="name" class="form-control" value="{{ old('name') }}" required>
         </div>
 
-        <div class="col-md-4">
-            <label class="form-label">Giá (VND) *</label>
-            <input type="number" name="price" min="0" step="1" class="form-control" value="{{ old('price') }}" required>
-        </div>
-
         <div class="col-md-6">
             <label class="form-label">Danh mục *</label>
             <select name="category_id" class="form-select" required>
@@ -64,6 +59,13 @@
         <div class="col-12">
             <label class="form-label">Mô tả</label>
             <textarea name="description" rows="5" class="form-control">{{ old('description') }}</textarea>
+        </div>
+
+        <div class="col-12">
+            <div class="alert alert-info mb-0">
+                Giá, SKU và tồn kho được quản lý trong phần <strong>biến thể</strong>.
+                Sau khi lưu sản phẩm, hãy thêm biến thể (hoặc chỉnh sửa biến thể mặc định) để nhập giá và tồn kho.
+            </div>
         </div>
 
         <div class="col-12 d-flex gap-2">

@@ -32,7 +32,7 @@
                     <th>Tên / Slug</th>
                     <th>Danh mục</th>
                     <th>Thương hiệu</th>
-                    <th class="text-end">Giá (VND)</th>
+                    <th class="text-end">Giá (qua biến thể)</th>
                     <th>Views</th>
                     <th width="160">Thao tác</th>
                 </tr>
@@ -63,7 +63,11 @@
                         </td>
                         <td>{{ $p->category->name ?? '-' }}</td>
                         <td>{{ $p->brand->name ?? '-' }}</td>
-                        <td class="text-end">{{ number_format($p->price, 0, ',', '.') }}</td>
+                        @php
+                            $variant = $p->variants->first();
+                            $displayPrice = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                        @endphp
+                        <td class="text-end">{{ number_format($displayPrice, 0, ',', '.') }}</td>
                         <td>{{ $p->views }}</td>
                         <td>
                             <a href="{{ route('admin.products.show', $p->id) }}" class="btn btn-sm btn-info">Xem</a>

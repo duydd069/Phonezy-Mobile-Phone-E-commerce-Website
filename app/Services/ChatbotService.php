@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Coupon;
 use App\Models\Product;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
@@ -48,7 +49,7 @@ class ChatbotService
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
-                    'price' => $product->price,
+                    'price' => $this->resolveDisplayPrice($product),
                     'slug' => $product->slug,
                 ];
             }),
@@ -615,7 +616,7 @@ class ChatbotService
 
     protected function fetchProducts(array $filters): Collection
     {
-        $query = Product::query()->with('category');
+        $query = Product::query()->with(['category','variants']);
 
         if (!empty($filters['category_keyword'])) {
             $query->whereHas('category', function ($q) use ($filters) {
@@ -629,18 +630,22 @@ class ChatbotService
         }
 
         if (!empty($filters['min_price'])) {
-            $query->where('price', '>=', $filters['min_price']);
+            $query->whereHas('variants', function ($q) use ($filters) {
+                $q->whereRaw('COALESCE(price_sale, price, 0) >= ?', [$filters['min_price']]);
+            });
         }
 
         if (!empty($filters['max_price'])) {
-            $query->where('price', '<=', $filters['max_price']);
+            $query->whereHas('variants', function ($q) use ($filters) {
+                $q->whereRaw('COALESCE(price_sale, price, 0) <= ?', [$filters['max_price']]);
+            });
         }
 
         $products = $query->orderByDesc('views')->limit(5)->get();
 
         // Chỉ fallback về sản phẩm phổ biến khi người dùng không nêu loại sản phẩm cụ thể
         if ($products->isEmpty() && empty($filters['keyword']) && empty($filters['category_keyword']) && empty($filters['min_price']) && empty($filters['max_price'])) {
-            $products = Product::orderByDesc('views')->limit(5)->get();
+            $products = Product::with('variants')->orderByDesc('views')->limit(5)->get();
         }
 
         return $products;
@@ -683,7 +688,8 @@ class ChatbotService
     protected function buildContextSummary(Collection $products, Collection $coupons): string
     {
         $productLines = $products->map(function (Product $product) {
-            return "- {$product->name}: " . number_format($product->price, 0, ',', '.') . "đ (slug: {$product->slug})";
+            $price = $this->resolveDisplayPrice($product);
+            return "- {$product->name}: " . number_format($price, 0, ',', '.') . "đ (slug: {$product->slug})";
         })->implode("\n");
 
         $couponLines = $coupons->map(function (Coupon $coupon) {
@@ -734,6 +740,15 @@ class ChatbotService
         }
 
         return $summary;
+    }
+
+    /**
+     * Lấy giá hiển thị của sản phẩm dựa trên biến thể đầu tiên.
+     */
+    protected function resolveDisplayPrice(Product $product): float
+    {
+        $variant = $product->variants->first();
+        return (float) ($variant?->price_sale ?? $variant?->price ?? 0);
     }
 
     protected function generateAnswer(string $message, string $context, bool $isCouponOnly = false): string

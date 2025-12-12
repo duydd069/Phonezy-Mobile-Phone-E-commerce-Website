@@ -191,7 +191,7 @@
                                         // Ưu tiên giá sale nếu có
                                         $price = $variant 
                                             ? ($variant->price_sale ?? $variant->price ?? 0)
-                                            : ($product->price ?? 0);
+                                            : 0;
                                     @endphp
                                     <div class="order-col">
                                         <div>{{ $item->quantity }} x {{ $product->name ?? 'Sản phẩm' }}</div>
