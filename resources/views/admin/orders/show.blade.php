@@ -3,9 +3,13 @@
 @section('content')
 <div class="container-fluid p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="m-0">Chi Tiết Đơn Hàng #{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}</h3>
+        <h3 class="m-0">
+            <i class="fa fa-file-text-o"></i> Chi Tiết Đơn Hàng #{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}
+        </h3>
         <div class="d-flex gap-2">
-            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">← Quay lại</a>
+            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary">
+                <i class="fa fa-arrow-left"></i> Quay lại
+            </a>
         </div>
     </div>
 
@@ -45,9 +49,7 @@
                             <div class="col-md-6">
                                 <strong>Tài khoản:</strong>
                                 <div>
-                                    <a href="{{ route('admin.users.show', $order->user_id) }}">
-                                        {{ $order->user->name }} (ID: {{ $order->user_id }})
-                                    </a>
+                                    {{ $order->user->name }} (ID: {{ $order->user_id }})
                                 </div>
                             </div>
                         @endif
@@ -85,8 +87,8 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Sản phẩm</th>
                                     <th class="text-end">Đơn giá</th>
@@ -98,15 +100,20 @@
                                 @foreach($order->items as $item)
                                     <tr>
                                         <td>
-                                            @if($item->product_image)
-                                                <img src="{{ $item->product_image }}" 
-                                                     alt="{{ $item->product_name }}"
-                                                     style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
-                                            @endif
-                                            {{ $item->product_name }}
-                                            @if($item->product_id)
-                                                <br><small class="text-muted">Mã sản phẩm: {{ $item->product_id }}</small>
-                                            @endif
+                                            <div class="d-flex align-items-center">
+                                                @if($item->product_image)
+                                                    <img src="{{ $item->product_image }}" 
+                                                         alt="{{ $item->product_name }}"
+                                                         class="rounded me-2"
+                                                         style="width: 60px; height: 60px; object-fit: cover; border: 1px solid #dee2e6;">
+                                                @endif
+                                                <div>
+                                                    <strong>{{ $item->product_name }}</strong>
+                                                    @if($item->product_id)
+                                                        <br><small class="text-muted">Mã SP: {{ $item->product_id }}</small>
+                                                    @endif
+                                                </div>
+                                            </div>
                                         </td>
                                         <td class="text-end">{{ number_format($item->unit_price, 0, ',', '.') }} ₫</td>
                                         <td class="text-center">{{ $item->quantity }}</td>
@@ -137,6 +144,17 @@
                                 {{ $order->status_label }}
                             </span>
                         </div>
+                        @if($order->requiresPaymentBeforeConfirmation())
+                            <div class="alert alert-warning mt-2 mb-0" style="font-size: 12px; padding: 8px;">
+                                <i class="fa fa-exclamation-triangle"></i> 
+                                <strong>Lưu ý:</strong> Đơn hàng thanh toán qua {{ strtoupper($order->payment_method) }} chưa được thanh toán. 
+                                @if($order->payment_method === 'vnpay')
+                                    <br><small>Bạn có thể xác nhận thanh toán thủ công ở phần "Thông Tin Thanh Toán" bên dưới (Demo mode).</small>
+                                @else
+                                    Chỉ có thể xác nhận sau khi khách hàng thanh toán thành công.
+                                @endif
+                            </div>
+                        @endif
                     </div>
 
                     <form method="POST" action="{{ route('admin.orders.update-status', $order) }}">
@@ -145,13 +163,38 @@
                         <div class="mb-3">
                             <label for="status" class="form-label">Thay đổi trạng thái:</label>
                             <select name="status" id="status" class="form-select" required>
-                                <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Chờ xử lý</option>
-                                <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Đang xử lý</option>
-                                <option value="completed" {{ $order->status === 'completed' ? 'selected' : '' }}>Hoàn thành</option>
-                                <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
+                                <option value="{{ $order->status }}" selected>
+                                    {{ $order->status_label }} (Hiện tại)
+                                </option>
+                                @php
+                                    $validNextStatuses = $order->getValidNextStatuses();
+                                    $allStatuses = \App\Models\Order::getAvailableStatuses();
+                                @endphp
+                                @if(count($validNextStatuses) > 0)
+                                    @foreach($validNextStatuses as $statusKey)
+                                        <option value="{{ $statusKey }}">
+                                            {{ $allStatuses[$statusKey] ?? $statusKey }}
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option disabled>Không thể thay đổi trạng thái từ đây</option>
+                                @endif
                             </select>
+                            @if(count($validNextStatuses) > 0)
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fa fa-info-circle"></i> Có thể chuyển sang: 
+                                    {{ implode(', ', array_map(function($key) use ($allStatuses) {
+                                        return $allStatuses[$key] ?? $key;
+                                    }, $validNextStatuses)) }}
+                                </small>
+                            @else
+                                <small class="text-danger d-block mt-1">
+                                    <i class="fa fa-exclamation-triangle"></i> Đơn hàng này không thể thay đổi trạng thái
+                                </small>
+                            @endif
                         </div>
                         <button type="submit" class="btn btn-primary w-100" 
+                                {{ count($validNextStatuses) === 0 ? 'disabled' : '' }}
                                 onclick="return confirm('Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng?');">
                             Cập nhật trạng thái
                         </button>
@@ -180,6 +223,22 @@
                             <strong>Thời gian thanh toán:</strong><br>
                             {{ $order->paid_at->format('d/m/Y H:i') }}
                         </p>
+                    @endif
+                    
+                    {{-- Nút xác nhận thanh toán thủ công (Demo mode) --}}
+                    @if($order->payment_method === 'vnpay' && $order->payment_status === 'pending')
+                        <hr>
+                        <div class="alert alert-info" style="font-size: 12px; padding: 10px; margin-bottom: 10px;">
+                            <i class="fa fa-info-circle"></i> 
+                            <strong>Demo Mode:</strong> VNPay chưa được kích hoạt. Bạn có thể xác nhận thanh toán thủ công để test flow.
+                        </div>
+                        <form method="POST" action="{{ route('admin.orders.confirm-payment', $order) }}" class="mt-2">
+                            @csrf
+                            <button type="submit" class="btn btn-success w-100" 
+                                    onclick="return confirm('Bạn có chắc chắn muốn xác nhận thanh toán cho đơn hàng này? (Demo mode)');">
+                                <i class="fa fa-check-circle"></i> Xác nhận thanh toán (Demo)
+                            </button>
+                        </form>
                     @endif
                 </div>
             </div>

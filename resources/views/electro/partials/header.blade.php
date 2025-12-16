@@ -90,13 +90,23 @@
                 <div class="col-md-3 clearfix">
                     <div class="header-ctn">
                         <!-- Wishlist -->
+                        @auth
                         <div>
-                            <a href="#">
+                            <a href="{{ route('client.wishlist.index') }}">
                                 <i class="fa fa-heart-o"></i>
                                 <span>Your Wishlist</span>
-                                <div class="qty">2</div>
+                                <div class="qty">{{ $wishlistCount ?? 0 }}</div>
                             </a>
                         </div>
+                        @else
+                        <div>
+                            <a href="{{ route('client.login') }}" title="Đăng nhập để xem wishlist">
+                                <i class="fa fa-heart-o"></i>
+                                <span>Your Wishlist</span>
+                                <div class="qty">0</div>
+                            </a>
+                        </div>
+                        @endauth
                         <!-- /Wishlist -->
 
                         <!-- Cart -->

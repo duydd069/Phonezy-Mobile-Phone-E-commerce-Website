@@ -135,7 +135,11 @@
                                         </div>
 
                                         <div class="product-btns">
-                                            <button class="add-to-wishlist"><i class="fa fa-heart-o"></i></button>
+                                            <button class="add-to-wishlist wishlist-btn" 
+                                                    data-product-id="{{ $product->id }}"
+                                                    title="Thêm vào wishlist">
+                                                <i class="fa fa-heart-o"></i>
+                                            </button>
                                             <button class="add-to-compare"><i class="fa fa-exchange"></i></button>
                                             <a href="{{ route('client.product.show', $product) }}" class="quick-view-btn"
                                                 title="Xem nhanh">

@@ -1,6 +1,6 @@
 @extends('electro.layout')
 
-@section('title', 'Danh mục: ' . $category->name . ' - Electro')
+@section('title', 'Khuyến mãi - Sản phẩm giảm giá - Electro')
 
 @section('content')
 
@@ -9,8 +9,7 @@
     <div class="container">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('client.index') }}">Trang chủ</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('client.index') }}#categories">Danh mục</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ $category->name }}</li>
+            <li class="breadcrumb-item active" aria-current="page">Khuyến mãi</li>
         </ol>
     </div>
 </nav>
@@ -20,12 +19,15 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="section-header">
-                    <h2 class="title">Danh mục: {{ $category->name }}</h2>
+                    <h2 class="title">
+                        <i class="fa fa-tag" style="color: #D10024; margin-right: 10px;"></i>
+                        Sản phẩm đang khuyến mãi
+                    </h2>
                     <p class="text-muted">
                         @if($products->total() > 0)
-                            Hiển thị {{ $products->count() }} / {{ $products->total() }} sản phẩm
+                            Hiển thị {{ $products->count() }} / {{ $products->total() }} sản phẩm đang được giảm giá
                         @else
-                            Không có sản phẩm nào trong danh mục này.
+                            Hiện tại không có sản phẩm nào đang khuyến mãi.
                         @endif
                     </p>
                 </div>
@@ -34,6 +36,28 @@
 
         <div class="row">
             @forelse ($products as $product)
+                @php
+                    // Tìm variant có giá khuyến mãi tốt nhất (giảm nhiều nhất)
+                    $bestVariant = $product->variants
+                        ->where('status', 'available')
+                        ->filter(function($variant) {
+                            return $variant->price_sale !== null && $variant->price_sale < $variant->price;
+                        })
+                        ->sortBy(function($variant) {
+                            return $variant->price - $variant->price_sale; // Sắp xếp theo số tiền giảm
+                        })
+                        ->last();
+                    
+                    if ($bestVariant) {
+                        $originalPrice = $bestVariant->price;
+                        $salePrice = $bestVariant->price_sale;
+                        $discountPercent = round((($originalPrice - $salePrice) / $originalPrice) * 100);
+                    } else {
+                        $originalPrice = 0;
+                        $salePrice = 0;
+                        $discountPercent = 0;
+                    }
+                @endphp
                 <div class="col-md-3 col-xs-6">
                     <article class="product" itemscope itemtype="https://schema.org/Product">
                         {{-- IMAGE --}}
@@ -43,6 +67,11 @@
 
                             {{-- Label --}}
                             <div class="product-label">
+                                @if($discountPercent > 0)
+                                    <span class="sale" style="background: #D10024; color: #fff; padding: 5px 10px; border-radius: 3px; font-weight: bold;">
+                                        -{{ $discountPercent }}%
+                                    </span>
+                                @endif
                                 @if (($product->created_at ?? null) && \Carbon\Carbon::parse($product->created_at)->gt(now()->subDays(14)))
                                     <span class="new">Mới</span>
                                 @endif
@@ -61,13 +90,17 @@
                                 </a>
                             </h3>
 
-                            @php
-                                $variant = $product->variants->first();
-                                $displayPrice = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
-                            @endphp
                             <h4 class="product-price">
-                                <span itemprop="price">{{ number_format($displayPrice, 0, ',', '.') }}</span>
-                                ₫
+                                @if($salePrice > 0)
+                                    <span class="sale-price" style="color: #D10024; font-weight: bold; font-size: 18px;" itemprop="price">
+                                        {{ number_format($salePrice, 0, ',', '.') }} ₫
+                                    </span>
+                                    <span class="old-price" style="text-decoration: line-through; color: #999; font-size: 14px; margin-left: 10px;">
+                                        {{ number_format($originalPrice, 0, ',', '.') }} ₫
+                                    </span>
+                                @else
+                                    <span itemprop="price">{{ number_format($originalPrice, 0, ',', '.') }}</span> ₫
+                                @endif
                                 <meta itemprop="priceCurrency" content="VND">
                             </h4>
 
@@ -109,9 +142,9 @@
             @empty
                 <div class="col-md-12">
                     <div class="text-center py-5">
-                        <i class="fa fa-box-open" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></i>
-                        <h3>Không có sản phẩm nào.</h3>
-                        <p class="text-muted">Danh mục này hiện chưa có sản phẩm. Vui lòng quay lại sau.</p>
+                        <i class="fa fa-tag" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></i>
+                        <h3>Không có sản phẩm khuyến mãi nào.</h3>
+                        <p class="text-muted">Hiện tại không có sản phẩm nào đang được giảm giá. Vui lòng quay lại sau.</p>
                         <a href="{{ route('client.index') }}" class="btn btn-primary mt-3">
                             <i class="fa fa-arrow-left"></i> Về trang chủ
                         </a>
@@ -132,5 +165,29 @@
         @endif
     </div>
 </section>
+
+<style>
+.product-label .sale {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2;
+}
+
+.product-label .new {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+}
+
+.product-price .sale-price {
+    display: inline-block;
+}
+
+.product-price .old-price {
+    display: inline-block;
+}
+</style>
 
 @endsection

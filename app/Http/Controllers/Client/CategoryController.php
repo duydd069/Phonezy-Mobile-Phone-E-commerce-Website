@@ -11,9 +11,11 @@ class CategoryController extends Controller {
     {
         $category = Category::where('slug', $slug)->firstOrFail();
 
-        $products = Product::where('category_id', $category->id)->paginate(12);
+        $products = Product::where('category_id', $category->id)
+            ->with(['category', 'brand', 'variants'])
+            ->orderBy('id', 'desc')
+            ->paginate(12);
 
         return view('client.category.show', compact('category', 'products'));
     }
-}
 }

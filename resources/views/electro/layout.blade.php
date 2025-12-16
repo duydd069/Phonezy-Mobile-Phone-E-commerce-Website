@@ -70,6 +70,148 @@
 		<script src="{{ asset('electro/js/nouislider.min.js') }}"></script>
 		<script src="{{ asset('electro/js/jquery.zoom.min.js') }}"></script>
 		<script src="{{ asset('electro/js/main.js') }}"></script>
+		
+		<!-- Wishlist JavaScript -->
+		<script>
+		$(document).ready(function() {
+			// Xử lý wishlist cho các nút có class .wishlist-btn (trừ trang wishlist/index)
+			if (!window.location.pathname.includes('/wishlist')) {
+				$(document).on('click', '.wishlist-btn', function(e) {
+					e.preventDefault();
+					var $btn = $(this);
+					var productId = $btn.data('product-id');
+					
+					if (!productId) {
+						console.error('Product ID not found');
+						return;
+					}
+					
+					$.ajax({
+						url: '{{ route("client.wishlist.toggle") }}',
+						method: 'POST',
+						data: {
+							product_id: productId,
+							_token: '{{ csrf_token() }}'
+						},
+						beforeSend: function() {
+							$btn.prop('disabled', true);
+						},
+						success: function(response) {
+							if (response.success) {
+								// Cập nhật icon và text
+								if (response.in_wishlist) {
+									$btn.find('i').removeClass('fa-heart-o').addClass('fa-heart');
+									$btn.addClass('active');
+									
+									// Nếu là nút lớn (btn-wishlist), cập nhật text và style
+									if ($btn.hasClass('btn-wishlist')) {
+										$btn.css('background', '#27ae60');
+										if ($btn.find('span').length) {
+											$btn.find('span').text('Đã thêm vào yêu thích');
+										}
+									} else if ($btn.hasClass('add-to-wishlist')) {
+										$btn.css('color', '#e74c3c');
+									}
+								} else {
+									$btn.find('i').removeClass('fa-heart').addClass('fa-heart-o');
+									$btn.removeClass('active');
+									
+									// Nếu là nút lớn (btn-wishlist), cập nhật text và style
+									if ($btn.hasClass('btn-wishlist')) {
+										$btn.css('background', '#e74c3c');
+										if ($btn.find('span').length) {
+											$btn.find('span').text('Thêm vào yêu thích');
+										}
+									} else if ($btn.hasClass('add-to-wishlist')) {
+										$btn.css('color', '');
+									}
+								}
+								
+								// Hiển thị thông báo
+								showWishlistNotification(response.message, 'success');
+								
+								// Cập nhật số lượng wishlist trong header
+								updateWishlistCount();
+							}
+						},
+						error: function(xhr) {
+							var message = 'Có lỗi xảy ra. Vui lòng thử lại.';
+							if (xhr.status === 401) {
+								message = 'Vui lòng đăng nhập để thêm vào wishlist.';
+								window.location.href = '{{ route("client.login") }}';
+								return;
+							}
+							if (xhr.responseJSON && xhr.responseJSON.message) {
+								message = xhr.responseJSON.message;
+							}
+							showWishlistNotification(message, 'error');
+						},
+						complete: function() {
+							$btn.prop('disabled', false);
+						}
+					});
+				});
+			}
+			
+			// Kiểm tra và cập nhật trạng thái wishlist khi trang load
+			@auth
+			$('.wishlist-btn').each(function() {
+				var $btn = $(this);
+				var productId = $btn.data('product-id');
+				if (productId) {
+					// Kiểm tra xem sản phẩm có trong wishlist không
+					$.ajax({
+						url: '{{ route("client.wishlist.index") }}',
+						method: 'GET',
+						success: function(response) {
+							// Parse HTML response để tìm product ID
+							var $response = $(response);
+							var isInWishlist = $response.find('[data-product-id="' + productId + '"]').length > 0;
+							if (isInWishlist) {
+								$btn.find('i').removeClass('fa-heart-o').addClass('fa-heart');
+								$btn.addClass('active');
+							}
+						}
+					});
+				}
+			});
+			@endauth
+		});
+		
+		function updateWishlistCount() {
+			// Reload để cập nhật số lượng wishlist trong header
+			// Hoặc có thể dùng AJAX để cập nhật mà không reload
+			setTimeout(function() {
+				location.reload();
+			}, 500);
+		}
+		
+		function showWishlistNotification(message, type) {
+			var bgColor = type === 'success' ? '#5cb85c' : '#d9534f';
+			var $notification = $('<div>')
+				.css({
+					'position': 'fixed',
+					'top': '20px',
+					'right': '20px',
+					'background': bgColor,
+					'color': '#fff',
+					'padding': '15px 20px',
+					'border-radius': '4px',
+					'z-index': '9999',
+					'box-shadow': '0 2px 10px rgba(0,0,0,0.2)',
+					'max-width': '300px'
+				})
+				.text(message)
+				.appendTo('body');
+			
+			setTimeout(function() {
+				$notification.fadeOut(300, function() {
+					$(this).remove();
+				});
+			}, 3000);
+		}
+		</script>
+		
 		@stack('scripts')
 		<link rel="stylesheet" href="{{ asset('dist/css/category.css') }}">
 	</body>

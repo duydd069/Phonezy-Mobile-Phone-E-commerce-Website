@@ -25,6 +25,8 @@ Route::prefix('client')->name('client.')->group(function () {
     Route::get('/store', function () {
         return view('electro.store');
     })->name('store');
+    Route::get('/category/{slug}', [\App\Http\Controllers\Client\CategoryController::class, 'show'])->name('category.show');
+    Route::get('/promotions', [\App\Http\Controllers\Client\ProductController::class, 'promotions'])->name('promotions');
     Route::view('/assistant', 'client.chatbot')->name('assistant');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
@@ -63,6 +65,12 @@ Route::middleware(['auth'])->prefix('client')->name('client.')->group(function (
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/coupons', [\App\Http\Controllers\Client\CouponController::class, 'index'])->name('coupons.index');
+    
+    // Wishlist routes
+    Route::get('/wishlist', [\App\Http\Controllers\Client\WishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('/wishlist/add', [\App\Http\Controllers\Client\WishlistController::class, 'add'])->name('wishlist.add');
+    Route::post('/wishlist/remove', [\App\Http\Controllers\Client\WishlistController::class, 'remove'])->name('wishlist.remove');
+    Route::post('/wishlist/toggle', [\App\Http\Controllers\Client\WishlistController::class, 'toggle'])->name('wishlist.toggle');
 });
 
 // Registration routes (show client-styled view)
@@ -123,6 +131,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
+    Route::post('/orders/{order}/confirm-payment', [AdminOrderController::class, 'confirmPayment'])->name('orders.confirm-payment');
 
     // Revenue Report routes
     Route::get('/revenue', [RevenueReportController::class, 'index'])->name('revenue.index');
