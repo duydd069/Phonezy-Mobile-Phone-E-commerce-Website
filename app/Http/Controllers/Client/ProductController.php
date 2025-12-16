@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Wishlist;
 
 class ProductController extends Controller
 {
@@ -50,8 +51,31 @@ class ProductController extends Controller
             ->get();
         
         $product->increment('views');
+        
+        // Check if product is in user's wishlist
+        $inWishlist = false;
+        if (auth()->check()) {
+            $inWishlist = Wishlist::where('user_id', auth()->id())
+                ->where('product_id', $product->id)
+                ->exists();
+        }
 
-        return view('electro.product', compact('product', 'relatedProducts'));
+        return view('electro.product', compact('product', 'relatedProducts', 'inWishlist'));
+    }
+
+    public function promotions()
+    {
+        // Lấy các sản phẩm có ít nhất một variant đang được khuyến mãi (price_sale < price và price_sale không null)
+        $products = Product::with(['category', 'brand', 'variants'])
+            ->whereHas('variants', function($query) {
+                $query->whereNotNull('price_sale')
+                      ->whereColumn('price_sale', '<', 'price')
+                      ->where('status', 'available');
+            })
+            ->orderBy('id', 'desc')
+            ->paginate(12);
+
+        return view('electro.promotions', compact('products'));
     }
 }
 

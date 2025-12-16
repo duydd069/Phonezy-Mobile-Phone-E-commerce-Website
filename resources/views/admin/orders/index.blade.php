@@ -3,7 +3,12 @@
 @section('content')
 <div class="container-fluid p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="m-0">Quản Lý Đơn Hàng</h3>
+        <h3 class="m-0">
+            <i class="fa fa-shopping-cart"></i> Quản Lý Đơn Hàng
+            @if($orders->total() > 0)
+                <small class="text-muted">({{ $orders->total() }} đơn hàng)</small>
+            @endif
+        </h3>
     </div>
 
     @if(session('success'))
@@ -23,10 +28,14 @@
         <div class="col-auto">
             <select name="status" class="form-select">
                 <option value="">Tất cả trạng thái</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Chờ xử lý</option>
-                <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Đang xử lý</option>
-                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Hoàn thành</option>
-                <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
+                @php
+                    $allStatuses = \App\Models\Order::getAvailableStatuses();
+                @endphp
+                @foreach($allStatuses as $statusKey => $statusLabel)
+                    <option value="{{ $statusKey }}" {{ request('status') === $statusKey ? 'selected' : '' }}>
+                        {{ $statusLabel }}
+                    </option>
+                @endforeach
             </select>
         </div>
         <div class="col-auto">
@@ -47,8 +56,8 @@
 
     {{-- Orders Table --}}
     <div class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead>
+        <table class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
                 <tr>
                     <th>Mã đơn</th>
                     <th>Khách hàng</th>
@@ -80,19 +89,21 @@
                             </strong>
                         </td>
                         <td>
-                            <span class="badge {{ $order->status_badge_class }}">
+                            <span class="badge {{ $order->status_badge_class }}" style="font-size: 12px; padding: 6px 10px;">
                                 {{ $order->status_label }}
                             </span>
                         </td>
                         <td>
-                            <span class="badge {{ $order->payment_status === 'paid' ? 'bg-success' : 'bg-warning' }}">
+                            <span class="badge {{ $order->payment_status === 'paid' ? 'bg-success' : ($order->payment_status === 'failed' ? 'bg-danger' : 'bg-warning') }}" style="font-size: 12px; padding: 6px 10px;">
                                 {{ $order->payment_status_label }}
                             </span>
                         </td>
                         <td>{{ $order->created_at->format('d/m/Y H:i') }}</td>
                         <td>
                             <a href="{{ route('admin.orders.show', $order->id) }}" 
-                               class="btn btn-sm btn-primary">Xem chi tiết</a>
+                               class="btn btn-sm btn-primary">
+                                <i class="fa fa-eye"></i> Xem chi tiết
+                            </a>
                         </td>
                     </tr>
                 @empty

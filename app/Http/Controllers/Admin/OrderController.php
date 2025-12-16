@@ -49,23 +49,71 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
+        $availableStatuses = array_keys(Order::getAvailableStatuses());
+        
         $request->validate([
-            'status' => 'required|in:pending,processing,completed,cancelled',
+            'status' => ['required', 'in:' . implode(',', $availableStatuses)],
         ]);
 
         $oldStatus = $order->status;
-        $order->update(['status' => $request->status]);
+        $newStatus = $request->status;
 
-        // Nếu đơn hàng hoàn thành, có thể cập nhật payment_status
-        if ($request->status === 'completed' && $order->payment_status === 'pending') {
-            $order->update([
-                'payment_status' => 'paid',
-                'paid_at' => now(),
-            ]);
+        // Kiểm tra xem có thể chuyển trạng thái không
+        if (!$order->canTransitionTo($newStatus)) {
+            $oldStatusLabel = $order->status_label;
+            $allStatuses = Order::getAvailableStatuses();
+            $newStatusLabel = $allStatuses[$newStatus] ?? $newStatus;
+            
+            $errorMessage = "Không thể chuyển từ trạng thái '{$oldStatusLabel}' sang '{$newStatusLabel}'.";
+            
+            // Kiểm tra nếu là do chưa thanh toán
+            if ($order->requiresPaymentBeforeConfirmation() && in_array($newStatus, ['confirmed', 'processing', 'shipping', 'delivered', 'completed'])) {
+                $errorMessage = "Không thể xác nhận đơn hàng. Đơn hàng thanh toán qua {$order->payment_method} chưa được thanh toán. Vui lòng đợi khách hàng thanh toán trước.";
+            }
+            
+            return redirect()
+                ->route('admin.orders.show', $order)
+                ->with('error', $errorMessage);
         }
+
+        // Cập nhật trạng thái
+        $order->update(['status' => $newStatus]);
+
+        // Tự động cập nhật payment_status dựa trên trạng thái đơn hàng
+        $order->updatePaymentStatusBasedOnOrderStatus();
+
+        // Tạo thông báo
+        $oldStatusLabel = $order->getStatusLabelAttribute();
+        $order->refresh(); // Refresh để lấy status mới
+        $newStatusLabel = $order->getStatusLabelAttribute();
 
         return redirect()
             ->route('admin.orders.show', $order)
-            ->with('success', "Order status updated from '{$oldStatus}' to '{$request->status}'.");
+            ->with('success', "Đã cập nhật trạng thái đơn hàng từ '{$oldStatusLabel}' sang '{$newStatusLabel}'.");
+    }
+
+    /**
+     * Xác nhận thanh toán thủ công cho đơn hàng (dùng cho demo/test)
+     * Chỉ áp dụng cho đơn hàng VNPay chưa thanh toán
+     */
+    public function confirmPayment(Request $request, Order $order): RedirectResponse
+    {
+        // Chỉ cho phép với đơn hàng VNPay chưa thanh toán
+        if ($order->payment_method !== 'vnpay' || $order->payment_status !== 'pending') {
+            return redirect()
+                ->route('admin.orders.show', $order)
+                ->with('error', 'Chỉ có thể xác nhận thanh toán thủ công cho đơn hàng VNPay chưa thanh toán.');
+        }
+
+        // Cập nhật trạng thái thanh toán và đơn hàng
+        $order->update([
+            'payment_status' => 'paid',
+            'paid_at' => now(),
+            'status' => 'processing', // Tự động chuyển sang đang xử lý
+        ]);
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', 'Đã xác nhận thanh toán thành công (Demo mode). Đơn hàng đã được chuyển sang trạng thái "Đang xử lý".');
     }
 }
