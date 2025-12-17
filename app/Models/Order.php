@@ -18,6 +18,8 @@ class Order extends Model
         'discount_amount',
         'total',
         'payment_method',
+        'transaction_no',
+        'transaction_date',
         'payment_status',
         'status',
         'shipping_full_name',
@@ -37,6 +39,7 @@ class Order extends Model
         'discount_amount' => 'float',
         'total'           => 'float',
         'paid_at'         => 'datetime',
+        'transaction_date' => 'datetime',
     ];
 
     public function cart()
@@ -57,6 +60,16 @@ class Order extends Model
     public function coupon()
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class);
+    }
+
+    public function latestRefund()
+    {
+        return $this->hasOne(Refund::class)->latestOfMany();
     }
 
     /**
@@ -84,10 +97,10 @@ class Order extends Model
         $statusFlow = [
             'pending' => ['confirmed', 'processing', 'cancelled'],
             'confirmed' => ['processing', 'cancelled'],
-            'processing' => ['shipping', 'cancelled'],
-            'shipping' => ['delivered', 'cancelled'],
-            'delivered' => ['completed', 'refunded'],
-            'completed' => [], // Không thể chuyển từ completed
+            'processing' => ['shipping', 'cancelled', 'refunded'], // Cho phép hoàn tiền từ processing
+            'shipping' => ['delivered', 'cancelled', 'refunded'], // Cho phép hoàn tiền từ shipping
+            'delivered' => ['completed', 'refunded'], // Cho phép hoàn tiền từ delivered
+            'completed' => ['refunded'], // Cho phép hoàn tiền từ completed
             'cancelled' => [], // Không thể chuyển từ cancelled
             'refunded' => [], // Không thể chuyển từ refunded
         ];
@@ -222,6 +235,112 @@ class Order extends Model
 
         if (!empty($updates)) {
             $this->update($updates);
+        }
+    }
+
+    /**
+     * Kiểm tra đơn hàng có thể hoàn tiền không
+     */
+    public function canBeRefunded(): bool
+    {
+        // Chỉ có thể hoàn tiền nếu:
+        // 1. Đã thanh toán (payment_status = 'paid')
+        // 2. Chưa được hoàn tiền (payment_status != 'refunded')
+        // 3. Trạng thái đơn hàng cho phép hoàn tiền
+        if ($this->payment_status !== 'paid') {
+            return false;
+        }
+
+        if ($this->payment_status === 'refunded') {
+            return false;
+        }
+
+        // Cho phép hoàn tiền từ các trạng thái: processing, shipping, delivered, completed
+        $allowedStatusesForRefund = ['processing', 'shipping', 'delivered', 'completed'];
+        return in_array($this->status, $allowedStatusesForRefund);
+    }
+
+    /**
+     * Cập nhật trạng thái đơn hàng khi hoàn tiền thành công
+     * 
+     * @param float|null $refundAmount Số tiền hoàn (null = hoàn toàn bộ)
+     * @return array Thông tin cập nhật
+     */
+    public function processRefund(?float $refundAmount = null): array
+    {
+        try {
+            if (!$this->canBeRefunded()) {
+                return [
+                    'success' => false,
+                    'message' => 'Đơn hàng không thể hoàn tiền.'
+                ];
+            }
+
+            // Lưu trạng thái cũ trước khi cập nhật
+            $oldStatus = $this->status;
+            $oldPaymentStatus = $this->payment_status;
+            $oldStatusLabel = $this->getStatusLabelAttribute(); // Lưu label cũ trước khi update
+
+            $updates = [
+                'payment_status' => 'refunded', // Luôn cập nhật payment_status
+            ];
+
+            // Logic cập nhật status dựa trên trạng thái hiện tại:
+            // - Nếu đơn hàng chưa được giao (processing, shipping): chuyển sang refunded
+            // - Nếu đơn hàng đã được giao (delivered, completed): 
+            //   + Có thể giữ nguyên status (để theo dõi đơn đã giao nhưng đã hoàn tiền)
+            //   + Hoặc chuyển sang refunded (để đánh dấu rõ ràng)
+            //   Ở đây chúng ta sẽ chuyển sang refunded để đánh dấu rõ ràng
+            
+            $newStatus = 'refunded';
+            if (in_array($this->status, ['processing', 'shipping', 'delivered', 'completed'])) {
+                $updates['status'] = $newStatus;
+            } else {
+                // Nếu không trong danh sách trên, giữ nguyên status
+                $newStatus = $this->status;
+            }
+
+            // Cập nhật thông tin hoàn tiền
+            $this->update($updates);
+            
+            // Refresh để lấy giá trị mới
+            $this->refresh();
+            
+            // Lấy label mới sau khi update
+            $newStatusLabel = $this->getStatusLabelAttribute();
+
+            // Tạo thông báo
+            $refundInfo = $refundAmount ? number_format($refundAmount, 0, ',', '.') . ' ₫' : 'toàn bộ';
+            
+            \Log::info('Order Refund Processed', [
+                'order_id' => $this->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'refund_amount' => $refundAmount,
+            ]);
+            
+            return [
+                'success' => true,
+                'message' => "Hoàn tiền thành công! Đã hoàn {$refundInfo}. Đơn hàng đã được cập nhật từ '{$oldStatusLabel}' sang '{$newStatusLabel}'.",
+                'updates' => $updates,
+                'old_status' => $oldStatus,
+                'old_status_label' => $oldStatusLabel,
+                'old_payment_status' => $oldPaymentStatus,
+                'new_status' => $newStatus,
+                'new_status_label' => $newStatusLabel,
+                'new_payment_status' => 'refunded',
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Order processRefund Exception', [
+                'order_id' => $this->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Lỗi khi cập nhật trạng thái đơn hàng: ' . $e->getMessage()
+            ];
         }
     }
 }

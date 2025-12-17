@@ -19,7 +19,15 @@ class CheckoutController extends Controller
     public function show()
     {
         $cart = $this->getOrCreateActiveCart();
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        // Optimize: only load necessary fields
+        $items = $cart->items()->with([
+            'variant' => function($query) {
+                $query->select('id', 'product_id', 'price', 'price_sale', 'stock', 'status', 'sku');
+            },
+            'variant.product' => function($query) {
+                $query->select('id', 'name', 'image', 'slug');
+            }
+        ])->get();
 
         if ($items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
@@ -34,6 +42,7 @@ class CheckoutController extends Controller
 
         try {
             $this->guardItemsHaveVariant($items);
+            $this->guardItemsStock($items);
         } catch (\RuntimeException $e) {
             return redirect()->route('cart.index')->with('error', $e->getMessage());
         }
@@ -77,7 +86,15 @@ class CheckoutController extends Controller
     {
         $cart = $this->getOrCreateActiveCart();
         // Load variant với tất cả các trường cần thiết, đặc biệt là stock
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        // Optimize: only load necessary fields
+        $items = $cart->items()->with([
+            'variant' => function($query) {
+                $query->select('id', 'product_id', 'price', 'price_sale', 'stock', 'status', 'sku');
+            },
+            'variant.product' => function($query) {
+                $query->select('id', 'name', 'image', 'slug');
+            }
+        ])->get();
 
         if ($items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
@@ -85,6 +102,7 @@ class CheckoutController extends Controller
 
         try {
             $this->guardItemsHaveVariant($items);
+            $this->guardItemsStock($items);
         } catch (\RuntimeException $e) {
             return redirect()
                 ->route('cart.index')
@@ -152,16 +170,18 @@ class CheckoutController extends Controller
                     $quantity = $item->quantity;
 
                     OrderItem::create([
-                        'order_id'      => $order->id,
-                        'product_id'    => $product?->id,
-                        'product_name'  => $product->name ?? 'Sản phẩm',
-                        'product_image' => $product->image ?? null,
-                        'quantity'      => $quantity,
-                        'unit_price'    => $unitPrice,
-                        'total_price'   => $unitPrice * $quantity,
+                        'order_id'          => $order->id,
+                        'product_id'        => $product?->id,
+                        'product_variant_id' => $variant?->id,
+                        'product_name'      => $product->name ?? 'Sản phẩm',
+                        'product_image'     => $product->image ?? null,
+                        'quantity'          => $quantity,
+                        'unit_price'        => $unitPrice,
+                        'total_price'       => $unitPrice * $quantity,
                     ]);
 
                     // Trừ số lượng sản phẩm (stock) khi đặt hàng thành công
+                    // LƯU Ý: Mỗi biến thể có stock riêng, chỉ trừ stock của biến thể này, không ảnh hưởng đến các biến thể khác
                     if ($variant) {
                         // Lấy variant mới nhất từ database để tránh race condition
                         $variant = ProductVariant::lockForUpdate()->find($variant->id);
@@ -176,21 +196,22 @@ class CheckoutController extends Controller
                             continue;
                         }
 
+                        // Kiểm tra stock của biến thể này (mỗi biến thể có stock riêng)
                         if ($variant->stock < $quantity) {
                             // Nếu không đủ hàng, rollback transaction
                             throw new \Exception("Sản phẩm {$product->name} không đủ số lượng trong kho. Số lượng còn lại: {$variant->stock}");
                         }
 
-                        // Tính toán stock mới trước khi trừ
+                        // Tính toán stock mới trước khi trừ (chỉ trừ stock của biến thể này)
                         $newStock = $variant->stock - $quantity;
 
-                        // Trừ stock và tăng sold bằng cách update trực tiếp
+                        // Trừ stock và tăng sold bằng cách update trực tiếp (chỉ ảnh hưởng đến biến thể này)
                         $variant->update([
                             'stock' => $newStock,
                             'sold' => ($variant->sold ?? 0) + $quantity,
                         ]);
 
-                        // Cập nhật status nếu hết hàng
+                        // Cập nhật status nếu hết hàng (chỉ cập nhật status của biến thể này)
                         if ($newStock <= 0) {
                             $variant->update(['status' => \App\Models\ProductVariant::STATUS_OUT_OF_STOCK]);
                         }
@@ -290,10 +311,19 @@ class CheckoutController extends Controller
 
         // Lấy giỏ hàng để tính summary
         $cart = $this->getOrCreateActiveCart();
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        // Optimize: only load necessary fields
+        $items = $cart->items()->with([
+            'variant' => function($query) {
+                $query->select('id', 'product_id', 'price', 'price_sale', 'stock', 'status', 'sku');
+            },
+            'variant.product' => function($query) {
+                $query->select('id', 'name', 'image', 'slug');
+            }
+        ])->get();
 
         try {
             $this->guardItemsHaveVariant($items);
+            $this->guardItemsStock($items);
         } catch (\RuntimeException $e) {
             return response()->json([
                 'valid' => false,
@@ -391,6 +421,38 @@ class CheckoutController extends Controller
 
         if ($missingVariantCount > 0) {
             throw new \RuntimeException('Một hoặc nhiều sản phẩm chưa có biến thể. Vui lòng tạo biến thể mặc định trước khi thanh toán.');
+        }
+    }
+
+    /**
+     * Đảm bảo tất cả sản phẩm trong giỏ hàng còn hàng và đủ số lượng
+     * LƯU Ý: Mỗi biến thể có stock riêng, không tính chung với sản phẩm gốc hay các biến thể khác
+     */
+    protected function guardItemsStock(Collection $items): void
+    {
+        foreach ($items as $item) {
+            $variant = $item->variant;
+            if (!$variant) {
+                continue; // Đã được kiểm tra bởi guardItemsHaveVariant
+            }
+
+            // Kiểm tra trạng thái
+            if ($variant->status !== 'available') {
+                $productName = $variant->product->name ?? 'Sản phẩm';
+                throw new \RuntimeException("Sản phẩm '{$productName}' hiện không khả dụng!");
+            }
+
+            // Kiểm tra stock của biến thể này (mỗi biến thể có stock riêng)
+            $currentStock = $variant->stock ?? 0;
+            if ($currentStock <= 0) {
+                $productName = $variant->product->name ?? 'Sản phẩm';
+                throw new \RuntimeException("Sản phẩm '{$productName}' đã hết hàng!");
+            }
+
+            if ($currentStock < $item->quantity) {
+                $productName = $variant->product->name ?? 'Sản phẩm';
+                throw new \RuntimeException("Sản phẩm '{$productName}' không đủ số lượng trong kho. Số lượng còn lại: {$currentStock}");
+            }
         }
     }
 

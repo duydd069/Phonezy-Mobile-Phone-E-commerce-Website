@@ -614,14 +614,27 @@
             <div class="col-md-5">
                 <div class="product-gallery">
                     @php
+                        // Optimize image collection - use str_starts_with instead of preg_match
                         $allImages = collect();
-                        $mainImage = $product->image ? (preg_match('/^https?:\\/\\//', $product->image) ? $product->image : asset('storage/' . $product->image)) : asset('electro/img/product01.png');
+                        $storageBase = asset('storage/');
+                        $defaultImage = asset('electro/img/product01.png');
+                        
+                        // Main product image
+                        if ($product->image) {
+                            $mainImage = (str_starts_with($product->image, 'http://') || str_starts_with($product->image, 'https://')) 
+                                ? $product->image 
+                                : $storageBase . '/' . $product->image;
+                        } else {
+                            $mainImage = $defaultImage;
+                        }
                         $allImages->push($mainImage);
                         
                         // Add product images
                         if($product->images && $product->images->count() > 0) {
                             foreach($product->images as $img) {
-                                $imgUrl = preg_match('/^https?:\\/\\//', $img->image_url) ? $img->image_url : asset('storage/' . $img->image_url);
+                                $imgUrl = (str_starts_with($img->image_url, 'http://') || str_starts_with($img->image_url, 'https://')) 
+                                    ? $img->image_url 
+                                    : $storageBase . '/' . $img->image_url;
                                 if(!$allImages->contains($imgUrl)) {
                                     $allImages->push($imgUrl);
                                 }
@@ -633,7 +646,9 @@
                         if($hasVariants && $product->variants && $product->variants->count() > 0) {
                             $firstVariant = $product->variants->first();
                             if($firstVariant->image) {
-                                $variantImg = preg_match('/^https?:\\/\\//', $firstVariant->image) ? $firstVariant->image : asset('storage/' . $firstVariant->image);
+                                $variantImg = (str_starts_with($firstVariant->image, 'http://') || str_starts_with($firstVariant->image, 'https://')) 
+                                    ? $firstVariant->image 
+                                    : $storageBase . '/' . $firstVariant->image;
                                 if(!$allImages->contains($variantImg)) {
                                     $allImages->push($variantImg);
                                 }
@@ -642,7 +657,9 @@
                             // Add variant images from variant_images table
                             if($firstVariant->images && $firstVariant->images->count() > 0) {
                                 foreach($firstVariant->images as $vImg) {
-                                    $vImgUrl = preg_match('/^https?:\\/\\//', $vImg->image_url) ? $vImg->image_url : asset('storage/' . $vImg->image_url);
+                                    $vImgUrl = (str_starts_with($vImg->image_url, 'http://') || str_starts_with($vImg->image_url, 'https://')) 
+                                        ? $vImg->image_url 
+                                        : $storageBase . '/' . $vImg->image_url;
                                     if(!$allImages->contains($vImgUrl)) {
                                         $allImages->push($vImgUrl);
                                     }
@@ -652,7 +669,11 @@
                     @endphp
                     
                     <div class="product-gallery-main">
-                        <img id="main-product-image" src="{{ $allImages->first() }}" alt="{{ $product->name }}">
+                        <img id="main-product-image" 
+                             src="{{ $allImages->first() }}" 
+                             alt="{{ $product->name }}"
+                             loading="eager"
+                             fetchpriority="high">
                     </div>
                     
                     <div class="product-gallery-thumbs-wrapper" id="gallery-thumbs-wrapper">
@@ -767,24 +788,26 @@
                         @php
                             $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
                             // Đảm bảo lấy đúng số lượng từ biến thể đầu tiên
+                            $currentStock = 0;
+                            $currentVariantForStock = null;
+                            
                             if ($hasVariants && $product->variants && $product->variants->count() > 0) {
-                                // Lấy biến thể đầu tiên (đã được định nghĩa ở trên)
-                                $currentStock = $currentVariant ? ($currentVariant->stock ?? 0) : 0;
-                            } else {
-                                $currentStock = 0;
+                                // Lấy biến thể đầu tiên
+                                $currentVariantForStock = $product->variants->first();
+                                $currentStock = $currentVariantForStock ? ($currentVariantForStock->stock ?? 0) : 0;
                             }
                         @endphp
                         <span class="stock-badge {{ $currentStock > 0 ? 'in-stock' : 'out-of-stock' }}" id="stock-badge">
                             <i class="fa fa-{{ $currentStock > 0 ? 'check-circle' : 'times-circle' }}"></i>
-                            @if($hasVariants && $currentVariant)
-                                {{ $currentStock > 0 ? 'Còn hàng (' . $currentStock . ' sản phẩm - số lượng riêng của biến thể này)' : 'Đã hết hàng' }}
+                            @if($hasVariants && $currentVariantForStock)
+                                {{ $currentStock > 0 ? 'Còn hàng (' . $currentStock . ' sản phẩm)' : 'Đã hết hàng' }}
                             @else
                                 {{ $currentStock > 0 ? 'Còn hàng (' . $currentStock . ' sản phẩm)' : 'Đã hết hàng' }}
                             @endif
                         </span>
-                        @if($hasVariants && $currentVariant)
+                        @if($hasVariants && $currentVariantForStock)
                             <small class="text-muted" style="display: block; margin-top: 5px; font-size: 12px;">
-                                <i class="fa fa-info-circle"></i> Mỗi biến thể có số lượng tồn kho riêng, không tính chung với các biến thể khác
+                                <i class="fa fa-info-circle"></i> Mỗi biến thể có số lượng riêng, không tính chung với sản phẩm gốc
                             </small>
                         @endif
                     </div>
@@ -794,9 +817,14 @@
                     @endphp
                     @if($hasVariants && $product->variants && $product->variants->count() > 0)
                         @php
-                            // Nhóm variants theo storage_id và version_id để tạo các combination
-                            $storageVersionCombos = [];
+                            // Chuẩn bị dữ liệu variants
                             $allVariantsData = [];
+                            $storages = [];
+                            $versions = [];
+                            $colors = [];
+                            
+                            // Pre-calculate asset base path to avoid repeated calls
+                            $storageBase = asset('storage/');
                             
                             foreach($product->variants as $variant) {
                                 $isAvailable = ($variant->stock ?? 0) > 0 && $variant->status === 'available';
@@ -804,19 +832,14 @@
                                 $versionId = $variant->version_id ?? 'none';
                                 $colorId = $variant->color_id ?? 'none';
                                 
-                                $comboKey = $storageId . '_' . $versionId;
-                                
-                                if(!isset($storageVersionCombos[$comboKey])) {
-                                    $storageVersionCombos[$comboKey] = [
-                                        'storage_id' => $storageId,
-                                        'version_id' => $versionId,
-                                        'storage_name' => $variant->storage ? $variant->storage->storage : '',
-                                        'version_name' => $variant->version ? $variant->version->name : '',
-                                        'variants' => []
-                                    ];
+                                // Optimize image URL generation
+                                if ($variant->image) {
+                                    $variantImage = (str_starts_with($variant->image, 'http://') || str_starts_with($variant->image, 'https://')) 
+                                        ? $variant->image 
+                                        : $storageBase . '/' . $variant->image;
+                                } else {
+                                    $variantImage = $mainImage;
                                 }
-                                
-                                $variantImage = $variant->image ? (preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image)) : $mainImage;
                                 
                                 $allVariantsData[] = [
                                     'id' => $variant->id,
@@ -829,122 +852,196 @@
                                     'sku' => $variant->sku,
                                     'stock' => $variant->stock,
                                     'is_available' => $isAvailable,
+                                    'storage_name' => $variant->storage ? $variant->storage->storage : '',
+                                    'version_name' => $variant->version ? $variant->version->name : '',
                                     'color_name' => $variant->color ? $variant->color->name : '',
                                     'color_hex' => $variant->color ? $variant->color->hex_code : null,
                                 ];
                                 
-                                $storageVersionCombos[$comboKey]['variants'][] = [
-                                    'id' => $variant->id,
-                                    'color_id' => $colorId,
-                                    'color_name' => $variant->color ? $variant->color->name : '',
-                                    'color_hex' => $variant->color ? $variant->color->hex_code : null,
-                                    'price' => $variant->price,
-                                    'price_sale' => $variant->price_sale,
-                                    'image' => $variantImage,
-                                    'sku' => $variant->sku,
-                                    'stock' => $variant->stock,
-                                    'is_available' => $isAvailable,
-                                ];
+                                // Thu thập unique storages
+                                if($storageId !== 'none' && $variant->storage) {
+                                    if(!isset($storages[$storageId])) {
+                                        $storages[$storageId] = [
+                                            'id' => $storageId,
+                                            'name' => $variant->storage->storage,
+                                        ];
+                                    }
+                                }
+                                
+                                // Thu thập unique versions
+                                if($versionId !== 'none' && $variant->version) {
+                                    if(!isset($versions[$versionId])) {
+                                        $versions[$versionId] = [
+                                            'id' => $versionId,
+                                            'name' => $variant->version->name,
+                                        ];
+                                    }
+                                }
+                                
+                                // Thu thập unique colors
+                                if($colorId !== 'none' && $variant->color) {
+                                    if(!isset($colors[$colorId])) {
+                                        $colors[$colorId] = [
+                                            'id' => $colorId,
+                                            'name' => $variant->color->name,
+                                            'hex_code' => $variant->color->hex_code,
+                                        ];
+                                    }
+                                }
                             }
                             
-                            // Lấy combo đầu tiên làm mặc định
-                            $firstCombo = null;
-                            $firstComboKey = null;
-                            if(!empty($storageVersionCombos)) {
-                                $firstComboKey = array_key_first($storageVersionCombos);
-                                $firstCombo = $storageVersionCombos[$firstComboKey];
-                            }
+                            // Lấy variant đầu tiên làm mặc định
+                            $firstVariant = $product->variants->first();
+                            $defaultStorageId = $firstVariant->storage_id ?? 'none';
+                            $defaultVersionId = $firstVariant->version_id ?? 'none';
+                            $defaultColorId = $firstVariant->color_id ?? 'none';
                         @endphp
                         
-                        @if(count($storageVersionCombos) > 0)
-                        {{-- Chọn Storage + Version --}}
+                        {{-- Chọn Dung lượng (Storage) --}}
+                        @if(count($storages) > 0)
                         <div class="variant-selection">
-                            <label class="variant-label">Chọn dung lượng và phiên bản:</label>
-                            <div class="variant-options">
-                                @foreach($storageVersionCombos as $comboKey => $combo)
+                            <label class="variant-label">Chọn dung lượng:</label>
+                            <div class="variant-options" id="storage-options">
+                                @foreach($storages as $storage)
                                     @php 
-                                        $isFirst = $loop->first;
-                                        $displayName = trim(($combo['storage_name'] ?? '') . ' ' . ($combo['version_name'] ?? ''));
-                                        if(empty($displayName)) {
-                                            $displayName = 'Mặc định';
-                                        }
-                                        // Lấy giá từ variant đầu tiên của combo này
-                                        $firstVariantInCombo = $combo['variants'][0] ?? null;
-                                        $comboPrice = $firstVariantInCombo ? ($firstVariantInCombo['price_sale'] ?? $firstVariantInCombo['price']) : 0;
+                                        $isFirst = $loop->first && ($defaultStorageId == $storage['id'] || ($defaultStorageId === 'none' && $loop->first));
                                     @endphp
-                                    <div class="variant-option storage-version-combo {{ $isFirst ? 'selected' : '' }}" 
-                                         data-combo-key="{{ $comboKey }}"
-                                         data-storage-id="{{ $combo['storage_id'] }}"
-                                         data-version-id="{{ $combo['version_id'] }}"
-                                         data-price="{{ $comboPrice }}">
+                                    <div class="variant-option storage-option {{ $isFirst ? 'selected' : '' }}" 
+                                         data-storage-id="{{ $storage['id'] }}">
                                         @if($isFirst)
                                             <i class="fa fa-check"></i>
                                         @endif
-                                        <div style="font-weight: bold;">{{ $displayName }}</div>
+                                        <div style="font-weight: bold;">{{ $storage['name'] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        
+                        {{-- Chọn Phiên bản (Version) --}}
+                        @if(count($versions) > 0)
+                        <div class="variant-selection">
+                            <label class="variant-label">Chọn phiên bản:</label>
+                            <div class="variant-options" id="version-options">
+                                @foreach($versions as $version)
+                                    @php 
+                                        $isFirst = $loop->first && ($defaultVersionId == $version['id'] || ($defaultVersionId === 'none' && $loop->first));
+                                        // Tìm variant tương ứng với version này (không cần storage/color nếu không có)
+                                        // Optimize: use array_search instead of collection first()
+                                        $matchingVariant = null;
+                                        foreach($allVariantsData as $v) {
+                                            if ($v['version_id'] == $version['id'] 
+                                                && ($v['storage_id'] == $defaultStorageId || ($defaultStorageId === 'none' && $v['storage_id'] === 'none'))
+                                                && ($v['color_id'] == $defaultColorId || ($defaultColorId === 'none' && $v['color_id'] === 'none'))) {
+                                                $matchingVariant = $v;
+                                                break;
+                                            }
+                                        }
+                                        $versionPrice = $matchingVariant ? ($matchingVariant['price_sale'] ?? $matchingVariant['price']) : 0;
+                                        $versionStock = $matchingVariant ? $matchingVariant['stock'] : 0;
+                                        $versionAvailable = $matchingVariant ? $matchingVariant['is_available'] : false;
+                                    @endphp
+                                    <div class="variant-option version-option {{ $isFirst ? 'selected' : '' }}" 
+                                         data-version-id="{{ $version['id'] }}"
+                                         data-variant-id="{{ $matchingVariant ? $matchingVariant['id'] : '' }}"
+                                         data-price="{{ $matchingVariant ? $matchingVariant['price'] : 0 }}"
+                                         data-price-sale="{{ $matchingVariant ? ($matchingVariant['price_sale'] ?? '') : '' }}"
+                                         data-image="{{ $matchingVariant ? $matchingVariant['image'] : $mainImage }}"
+                                         data-sku="{{ $matchingVariant ? $matchingVariant['sku'] : '' }}"
+                                         data-stock="{{ $versionStock }}"
+                                         data-available="{{ $versionAvailable ? '1' : '0' }}">
+                                        @if($isFirst)
+                                            <i class="fa fa-check"></i>
+                                        @endif
+                                        <div style="font-weight: bold;">{{ $version['name'] }}</div>
+                                        @if($matchingVariant && count($colors) == 0)
                                         <div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">
-                                            Từ {{ number_format($comboPrice, 0, ',', '.') }} ₫
+                                            {{ number_format($versionPrice, 0, ',', '.') }} ₫
+                                        </div>
+                                        <div style="font-size: 12px; margin-top: 3px;">
+                                            <span class="{{ $versionAvailable ? 'text-success' : 'text-danger' }}">
+                                                {{ $versionAvailable ? 'Còn hàng' : 'Đã hết hàng' }}
+                                            </span>
+                                        </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        
+                        {{-- Chọn Màu sắc (Color) --}}
+                        @if(count($colors) > 0)
+                        <div class="variant-selection" id="color-selection-container">
+                            <label class="variant-label">Chọn màu sắc:</label>
+                            <div class="variant-options" id="color-options">
+                                @foreach($colors as $color)
+                                    @php 
+                                        $isFirst = $loop->first && ($defaultColorId == $color['id'] || ($defaultColorId === 'none' && $loop->first));
+                                        // Tìm variant tương ứng với màu này và storage/version mặc định
+                                        // Optimize: use foreach instead of collection first()
+                                        $matchingVariant = null;
+                                        foreach($allVariantsData as $v) {
+                                            if ($v['color_id'] == $color['id'] 
+                                                && ($v['storage_id'] == $defaultStorageId || ($defaultStorageId === 'none' && $v['storage_id'] === 'none'))
+                                                && ($v['version_id'] == $defaultVersionId || ($defaultVersionId === 'none' && $v['version_id'] === 'none'))) {
+                                                $matchingVariant = $v;
+                                                break;
+                                            }
+                                        }
+                                        $colorImage = $matchingVariant ? $matchingVariant['image'] : $mainImage;
+                                        $colorPrice = $matchingVariant ? ($matchingVariant['price_sale'] ?? $matchingVariant['price']) : 0;
+                                        $colorStock = $matchingVariant ? $matchingVariant['stock'] : 0;
+                                        $colorAvailable = $matchingVariant ? $matchingVariant['is_available'] : false;
+                                    @endphp
+                                    <div class="variant-option color-variant {{ $isFirst ? 'selected' : '' }}" 
+                                         data-color-id="{{ $color['id'] }}"
+                                         data-variant-id="{{ $matchingVariant ? $matchingVariant['id'] : '' }}"
+                                         data-image="{{ $colorImage }}"
+                                         data-price="{{ $matchingVariant ? $matchingVariant['price'] : 0 }}"
+                                         data-price-sale="{{ $matchingVariant ? ($matchingVariant['price_sale'] ?? '') : '' }}"
+                                         data-sku="{{ $matchingVariant ? $matchingVariant['sku'] : '' }}"
+                                         data-stock="{{ $colorStock }}"
+                                         data-available="{{ $colorAvailable ? '1' : '0' }}">
+                                        @if($isFirst)
+                                            <i class="fa fa-check"></i>
+                                        @endif
+                                        <div style="text-align: center;">
+                                            <img src="{{ $colorImage }}" 
+                                                 alt="{{ $color['name'] }}" 
+                                                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;"
+                                                 loading="lazy"
+                                                 decoding="async">
+                                            <div style="font-weight: bold; margin-top: 8px; font-size: 13px;">{{ $color['name'] }}</div>
+                                            @if($matchingVariant)
+                                            <div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">
+                                                {{ number_format($colorPrice, 0, ',', '.') }} ₫
+                                            </div>
+                                            <div class="mt-1" style="font-size: 12px;">
+                                                <span class="{{ $colorAvailable ? 'text-success' : 'text-danger' }}">
+                                                    {{ $colorAvailable ? 'Còn hàng' : 'Đã hết hàng' }}
+                                                </span>
+                                            </div>
+                                            @endif
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         </div>
-                        
-                        {{-- Chọn Màu sắc (sẽ được cập nhật động theo combo đã chọn) --}}
-                        <div class="variant-selection" id="color-selection-container">
-                            <label class="variant-label">Chọn màu sắc:</label>
-                            <div class="variant-options" id="color-options">
-                                @if($firstCombo && count($firstCombo['variants']) > 0)
-                                    @foreach($firstCombo['variants'] as $index => $colorVariant)
-                                        @php 
-                                            $isFirst = $index === 0;
-                                            $colorImage = $colorVariant['image'] ?? $mainImage;
-                                            $isAvailable = $colorVariant['is_available'] && ($colorVariant['stock'] ?? 0) > 0;
-                                            $availabilityText = $isAvailable ? 'Còn hàng' : 'Đã hết hàng';
-                                            $availabilityClass = $isAvailable ? 'text-success' : 'text-danger';
-                                        @endphp
-                                        <div class="variant-option color-variant {{ $isFirst ? 'selected' : '' }}" 
-                                             data-variant-id="{{ $colorVariant['id'] }}"
-                                             data-storage-id="{{ $firstCombo['storage_id'] }}"
-                                             data-version-id="{{ $firstCombo['version_id'] }}"
-                                             data-color-id="{{ $colorVariant['color_id'] }}"
-                                             data-price="{{ $colorVariant['price'] }}"
-                                             data-price-sale="{{ $colorVariant['price_sale'] ?? '' }}"
-                                             data-image="{{ $colorImage }}"
-                                             data-sku="{{ $colorVariant['sku'] }}"
-                                             data-stock="{{ $colorVariant['stock'] }}"
-                                             data-available="{{ $isAvailable ? '1' : '0' }}">
-                                            @if($isFirst)
-                                                <i class="fa fa-check"></i>
-                                            @endif
-                                            <div style="text-align: center;">
-                                                <img src="{{ $colorImage }}" alt="{{ $colorVariant['color_name'] }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;">
-                                                <div style="font-weight: bold; margin-top: 8px; font-size: 13px;">{{ $colorVariant['color_name'] ?: 'Màu sắc' }}</div>
-                                                <div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">
-                                                    {{ number_format($colorVariant['price_sale'] ?? $colorVariant['price'], 0, ',', '.') }} ₫
-                                                </div>
-                                                <div class="mt-1" style="font-size: 12px;">
-                                                    <span class="{{ $availabilityClass }}">{{ $availabilityText }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                @endif
-                            </div>
-                        </div>
+                        @endif
                         
                         {{-- Lưu tất cả variants data vào JavaScript --}}
                         <script>
                             window.productVariantsData = @json($allVariantsData);
-                            window.storageVersionCombos = @json($storageVersionCombos);
                         </script>
-                        @endif
                     @endif
                     
                     <div class="quantity-selector">
                         <label class="variant-label" style="margin: 0;">Số lượng:</label>
                         <div class="quantity-input-group">
                             @php
-                                $initialStock = $currentVariant->stock ?? 0;
+                                $initialVariant = $product->variants->first();
+                                $initialStock = $initialVariant ? ($initialVariant->stock ?? 0) : 0;
                                 $initialMax = max(1, $initialStock);
                                 $quantityDisabled = $initialStock <= 0 ? 'disabled' : '';
                             @endphp
@@ -1009,181 +1106,28 @@
         </div>
         
         <!-- Product Tabs -->
-        <div class="product-tabs">
-            <ul class="nav nav-tabs" role="tablist">
-                <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#description">Mô tả sản phẩm</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#specifications">Thông số kỹ thuật</a>
-                </li>
-                @php
-                    $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
-                @endphp
-                @if($hasVariants && $product->variants && $product->variants->count() > 0)
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#variants">Tất cả biến thể</a>
-                </li>
-                @endif
-            </ul>
-            <div class="tab-content">
-                <div id="description" class="tab-pane fade show active">
-                    <p>{!! nl2br(e($product->description ?? 'Đang cập nhật...')) !!}</p>
-                </div>
-                <div id="specifications" class="tab-pane fade">
-                    <table class="table">
-                        <tbody>
-                            <tr>
-                                <td><strong>Danh mục:</strong></td>
-                                <td>{{ $product->category->name ?? 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Thương hiệu:</strong></td>
-                                <td>{{ $product->brand->name ?? 'N/A' }}</td>
-                            </tr>
-                            @if($currentVariant)
-                            <tr>
-                                <td><strong>SKU:</strong></td>
-                                <td>{{ $currentVariant->sku }}</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-                @php
-                    $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
-                @endphp
-                @if($hasVariants && $product->variants && $product->variants->count() > 0)
-                <div id="variants" class="tab-pane fade">
-                    <div class="alert alert-info" style="margin-bottom: 15px; padding: 10px 15px; font-size: 13px;">
-                        <i class="fa fa-info-circle"></i> <strong>Lưu ý:</strong> Mỗi biến thể có số lượng tồn kho riêng, không tính chung với sản phẩm gốc hay các biến thể khác.
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>STT</th>
-                                    <th>Ảnh</th>
-                                    <th>SKU</th>
-                                    <th>Dung lượng</th>
-                                    <th>Phiên bản</th>
-                                    <th>Màu sắc</th>
-                                    <th class="text-end">Giá niêm yết</th>
-                                    <th class="text-end">Giá khuyến mãi</th>
-                                    <th class="text-center">Tồn kho<br><small class="text-muted">(riêng biến thể)</small></th>
-                                    <th class="text-center">Trạng thái</th>
-                                    <th class="text-center">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($product->variants as $index => $variant)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>
-                                        @if($variant->image)
-                                            <img src="{{ preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image) }}" 
-                                                 alt="{{ $variant->sku }}" 
-                                                 style="width: 60px; height: 60px; object-fit: contain; border: 1px solid #E4E7ED; border-radius: 4px;">
-                                        @else
-                                            <img src="{{ $mainImage }}" 
-                                                 alt="{{ $variant->sku }}" 
-                                                 style="width: 60px; height: 60px; object-fit: contain; border: 1px solid #E4E7ED; border-radius: 4px;">
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <strong>{{ $variant->sku }}</strong>
-                                        @if($variant->barcode)
-                                            <br><small class="text-muted">Barcode: {{ $variant->barcode }}</small>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($variant->storage)
-                                            <span class="badge bg-secondary">{{ $variant->storage->storage }}</span>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($variant->version)
-                                            <span class="badge bg-info">{{ $variant->version->name }}</span>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($variant->color)
-                                            <span class="badge" style="background-color: {{ $variant->color->hex_code ?? '#6c757d' }}; color: white;">
-                                                {{ $variant->color->name }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end">
-                                        <strong>{{ number_format($variant->price, 0, ',', '.') }} ₫</strong>
-                                    </td>
-                                    <td class="text-end">
-                                        @if($variant->price_sale)
-                                            <strong class="text-danger">{{ number_format($variant->price_sale, 0, ',', '.') }} ₫</strong>
-                                            @php
-                                                $discount = round((($variant->price - $variant->price_sale) / $variant->price) * 100);
-                                            @endphp
-                                            <br><small class="text-success">-{{ $discount }}%</small>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @if($variant->stock > 0)
-                                            <span class="badge bg-success">{{ $variant->stock }}</span>
-                                        @else
-                                            <span class="badge bg-danger">0</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @if($variant->status == 'available')
-                                            <span class="badge bg-success">Còn hàng</span>
-                                        @elseif($variant->status == 'out_of_stock')
-                                            <span class="badge bg-warning">Hết hàng</span>
-                                        @else
-                                            <span class="badge bg-secondary">Ngừng bán</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-primary select-variant-btn" 
-                                                data-variant-id="{{ $variant->id }}"
-                                                data-price="{{ $variant->price }}"
-                                                data-price-sale="{{ $variant->price_sale ?? '' }}"
-                                                data-image="{{ $variant->image ? (preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image)) : $mainImage }}"
-                                                data-sku="{{ $variant->sku }}"
-                                                data-stock="{{ $variant->stock }}">
-                                            Chọn
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>
+     
         
         <!-- Product Image Album -->
         @php
+            // Optimize album images collection
             $albumImages = collect();
+            $storageBase = asset('storage/');
             
             // Thêm ảnh chính của sản phẩm
             if($product->image) {
-                $mainImg = preg_match('/^https?:\\/\\//', $product->image) ? $product->image : asset('storage/' . $product->image);
+                $mainImg = (str_starts_with($product->image, 'http://') || str_starts_with($product->image, 'https://')) 
+                    ? $product->image 
+                    : $storageBase . '/' . $product->image;
                 $albumImages->push($mainImg);
             }
             
             // Thêm ảnh từ product_images
             if($product->images && $product->images->count() > 0) {
                 foreach($product->images as $img) {
-                    $imgUrl = preg_match('/^https?:\\/\\//', $img->image_url) ? $img->image_url : asset('storage/' . $img->image_url);
+                    $imgUrl = (str_starts_with($img->image_url, 'http://') || str_starts_with($img->image_url, 'https://')) 
+                        ? $img->image_url 
+                        : $storageBase . '/' . $img->image_url;
                     if(!$albumImages->contains($imgUrl)) {
                         $albumImages->push($imgUrl);
                     }
@@ -1194,7 +1138,9 @@
             if($product->variants && $product->variants->count() > 0) {
                 foreach($product->variants as $variant) {
                     if($variant->image) {
-                        $variantImg = preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image);
+                        $variantImg = (str_starts_with($variant->image, 'http://') || str_starts_with($variant->image, 'https://')) 
+                            ? $variant->image 
+                            : $storageBase . '/' . $variant->image;
                         if(!$albumImages->contains($variantImg)) {
                             $albumImages->push($variantImg);
                         }
@@ -1203,7 +1149,9 @@
                     // Thêm ảnh từ variant_images
                     if($variant->images && $variant->images->count() > 0) {
                         foreach($variant->images as $vImg) {
-                            $vImgUrl = preg_match('/^https?:\\/\\//', $vImg->image_url) ? $vImg->image_url : asset('storage/' . $vImg->image_url);
+                            $vImgUrl = (str_starts_with($vImg->image_url, 'http://') || str_starts_with($vImg->image_url, 'https://')) 
+                                ? $vImg->image_url 
+                                : $storageBase . '/' . $vImg->image_url;
                             if(!$albumImages->contains($vImgUrl)) {
                                 $albumImages->push($vImgUrl);
                             }
@@ -1255,7 +1203,10 @@
                     <div class="col-md-3 col-xs-6">
                         <div class="product">
                             <div class="product-img">
-                                <img src="{{ $related->image ? (preg_match('/^https?:\\/\\//', $related->image) ? $related->image : asset('storage/' . $related->image)) : asset('electro/img/product01.png') }}" alt="{{ $related->name }}">
+                                <img src="{{ $related->image ? (preg_match('/^https?:\\/\\//', $related->image) ? $related->image : asset('storage/' . $related->image)) : asset('electro/img/product01.png') }}" 
+                                     alt="{{ $related->name }}"
+                                     loading="lazy"
+                                     decoding="async">
                             </div>
                             <div class="product-body">
                                 <p class="product-category">{{ $related->category->name ?? 'N/A' }}</p>
@@ -1569,14 +1520,24 @@ document.addEventListener('DOMContentLoaded', function() {
         stock = parseInt(stock) || 0;
         if (isNaN(stock)) stock = 0;
         
+        console.log('updateStockUI called with stock:', stock);
+        
         if (stockBadge) {
             if (stock > 0) {
                 stockBadge.className = 'stock-badge in-stock';
-                stockBadge.innerHTML = '<i class="fa fa-check-circle"></i> Còn hàng (' + stock + ' sản phẩm - số lượng riêng của biến thể này)';
+                stockBadge.innerHTML = '<i class="fa fa-check-circle"></i> Còn hàng (' + stock + ' sản phẩm)';
             } else {
                 stockBadge.className = 'stock-badge out-of-stock';
                 stockBadge.innerHTML = '<i class="fa fa-times-circle"></i> Đã hết hàng';
             }
+            // Thêm hiệu ứng để người dùng thấy sự thay đổi
+            stockBadge.style.transition = 'all 0.3s';
+            stockBadge.style.transform = 'scale(1.05)';
+            setTimeout(function() {
+                if (stockBadge) {
+                    stockBadge.style.transform = 'scale(1)';
+                }
+            }, 300);
         }
         if (quantityInput) {
             const max = Math.max(1, stock);
@@ -1696,22 +1657,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Storage + Version Combo Selection
-    const storageVersionCombos = document.querySelectorAll('.storage-version-combo');
-    storageVersionCombos.forEach(function(combo) {
-        combo.addEventListener('click', function() {
-            // Remove selected from all combos
-            storageVersionCombos.forEach(function(c) {
-                c.classList.remove('selected');
-                c.style.borderColor = '#E4E7ED';
-                c.style.background = '#fff';
-                const checkIcon = c.querySelector('.fa-check');
+    // Storage Selection
+    const storageOptions = document.querySelectorAll('.storage-option');
+    storageOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            // Remove selected from all storage options
+            storageOptions.forEach(function(opt) {
+                opt.classList.remove('selected');
+                opt.style.borderColor = '#E4E7ED';
+                opt.style.background = '#fff';
+                const checkIcon = opt.querySelector('.fa-check');
                 if (checkIcon) {
                     checkIcon.remove();
                 }
             });
             
-            // Add selected to clicked combo
+            // Add selected to clicked option
             this.classList.add('selected');
             this.style.borderColor = '#D10024';
             this.style.background = '#FFF5F5';
@@ -1720,19 +1681,79 @@ document.addEventListener('DOMContentLoaded', function() {
             checkIcon.className = 'fa fa-check';
             this.insertBefore(checkIcon, this.firstChild);
             
-            // Get combo data
-            const comboKey = this.getAttribute('data-combo-key');
-            const storageId = this.getAttribute('data-storage-id');
-            const versionId = this.getAttribute('data-version-id');
-            
-            // Update color options based on selected combo
-            updateColorOptions(comboKey, storageId, versionId);
-            
-            // Note: variant_id will be updated when first color option is auto-selected in updateColorOptions
+            // Update variant based on all selections (this will update stock automatically)
+            updateVariantFromSelections();
         });
     });
     
-    // Color Selection (for existing color options)
+    // Version Selection
+    const versionOptions = document.querySelectorAll('.version-option');
+    versionOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            // Remove selected from all version options
+            versionOptions.forEach(function(opt) {
+                opt.classList.remove('selected');
+                opt.style.borderColor = '#E4E7ED';
+                opt.style.background = '#fff';
+                const checkIcon = opt.querySelector('.fa-check');
+                if (checkIcon) {
+                    checkIcon.remove();
+                }
+            });
+            
+            // Add selected to clicked option
+            this.classList.add('selected');
+            this.style.borderColor = '#D10024';
+            this.style.background = '#FFF5F5';
+            
+            const checkIcon = document.createElement('i');
+            checkIcon.className = 'fa fa-check';
+            this.insertBefore(checkIcon, this.firstChild);
+            
+            // If no color options exist, directly update variant info from version option
+            const hasColorOptions = document.querySelectorAll('.color-variant').length > 0;
+            if (!hasColorOptions) {
+                const versionId = this.getAttribute('data-version-id');
+                const selectedStorage = document.querySelector('.storage-option.selected');
+                const storageId = selectedStorage ? selectedStorage.getAttribute('data-storage-id') : 'none';
+                
+                // Find variant matching this version (and storage if selected)
+                const matchingVariant = findVariant(storageId, versionId, 'none');
+                if (matchingVariant) {
+                    // Update stock immediately
+                    const stock = parseInt(matchingVariant.stock) || 0;
+                    updateStockUI(stock);
+                    
+                    // Update product info
+                    updateProductInfoFromVariant(matchingVariant);
+                    
+                    // Update button variant ID
+                    if (btnAddCart) {
+                        btnAddCart.setAttribute('data-variant-id', matchingVariant.id);
+                        selectedVariantId = matchingVariant.id;
+                    }
+                } else {
+                    // Fallback: try to get from data-variant-id attribute
+                    const variantId = this.getAttribute('data-variant-id');
+                    if (variantId && window.productVariantsData) {
+                        const variant = window.productVariantsData.find(v => v.id == variantId);
+                        if (variant) {
+                            updateProductInfoFromVariant(variant);
+                            if (btnAddCart) {
+                                btnAddCart.setAttribute('data-variant-id', variantId);
+                                selectedVariantId = variantId;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Update variant based on all selections (including color)
+                updateVariantFromSelections();
+            }
+        });
+    });
+    
+    // Color Selection
     const colorOptions = document.querySelectorAll('.color-variant');
     colorOptions.forEach(function(option) {
         option.addEventListener('click', function() {
@@ -1756,133 +1777,209 @@ document.addEventListener('DOMContentLoaded', function() {
             checkIcon.className = 'fa fa-check';
             this.insertBefore(checkIcon, this.firstChild);
             
-            // Update variant ID immediately when color is selected
-            const variantId = this.getAttribute('data-variant-id');
-            if (variantId) {
-                selectedVariantId = variantId;
-                if (btnAddCart) {
-                    btnAddCart.setAttribute('data-variant-id', variantId);
-                    console.log('Updated variant ID after color selection:', variantId);
-                }
-            }
-            
-            // Update product info based on selected color variant
-            updateProductInfo(this);
+            // Update variant based on all selections
+            updateVariantFromSelections();
         });
     });
     
-    // Function to update color options based on selected storage+version combo
-    function updateColorOptions(comboKey, storageId, versionId) {
-        if (!window.storageVersionCombos || !window.storageVersionCombos[comboKey]) {
-            return;
+    // Function to find variant based on selected storage, version, and color
+    function findVariant(storageId, versionId, colorId) {
+        if (!window.productVariantsData) {
+            return null;
         }
         
-        const combo = window.storageVersionCombos[comboKey];
-        const colorOptionsContainer = document.getElementById('color-options');
+        return window.productVariantsData.find(function(variant) {
+            const vStorageId = variant.storage_id === null ? 'none' : variant.storage_id;
+            const vVersionId = variant.version_id === null ? 'none' : variant.version_id;
+            const vColorId = variant.color_id === null ? 'none' : variant.color_id;
+            
+            return vStorageId == storageId && vVersionId == versionId && vColorId == colorId;
+        });
+    }
+    
+    // Function to update variant when any selection changes
+    function updateVariantFromSelections() {
+        // Get selected values
+        const selectedStorage = document.querySelector('.storage-option.selected');
+        const selectedVersion = document.querySelector('.version-option.selected');
+        const selectedColor = document.querySelector('.color-variant.selected');
         
-        if (!colorOptionsContainer || !combo.variants || combo.variants.length === 0) {
-            return;
-        }
+        const storageId = selectedStorage ? selectedStorage.getAttribute('data-storage-id') : 'none';
+        const versionId = selectedVersion ? selectedVersion.getAttribute('data-version-id') : 'none';
+        const colorId = selectedColor ? selectedColor.getAttribute('data-color-id') : 'none';
         
-        // Clear existing color options
-        colorOptionsContainer.innerHTML = '';
+        // Find matching variant
+        const matchingVariant = findVariant(storageId, versionId, colorId);
         
-        // Add new color options
-        combo.variants.forEach(function(colorVariant, index) {
-            const isFirst = index === 0;
-            const colorImage = colorVariant.image || (mainImage ? mainImage.src : '');
-            const displayPrice = colorVariant.price_sale || colorVariant.price;
-            const hasDiscount = colorVariant.price_sale && parseFloat(colorVariant.price_sale) < parseFloat(colorVariant.price);
-            const isAvailable = colorVariant.is_available && parseInt(colorVariant.stock) > 0;
-            const availabilityText = isAvailable ? 'Còn hàng' : 'Đã hết hàng';
-            const availabilityClass = isAvailable ? 'text-success' : 'text-danger';
-            
-            const colorOption = document.createElement('div');
-            colorOption.className = 'variant-option color-variant' + (isFirst ? ' selected' : '');
-            colorOption.setAttribute('data-variant-id', colorVariant.id);
-            colorOption.setAttribute('data-storage-id', storageId);
-            colorOption.setAttribute('data-version-id', versionId);
-            colorOption.setAttribute('data-color-id', colorVariant.color_id);
-            colorOption.setAttribute('data-price', colorVariant.price);
-            colorOption.setAttribute('data-price-sale', colorVariant.price_sale || '');
-            colorOption.setAttribute('data-image', colorImage);
-            colorOption.setAttribute('data-sku', colorVariant.sku);
-            colorOption.setAttribute('data-stock', colorVariant.stock);
-            colorOption.setAttribute('data-available', isAvailable ? '1' : '0');
-            
-            if (isFirst) {
-                colorOption.style.borderColor = '#D10024';
-                colorOption.style.background = '#FFF5F5';
-            }
-            
-            let priceHtml = '';
-            if (hasDiscount) {
-                priceHtml = '<div style="font-size: 12px; color: #D10024; margin-top: 5px; font-weight: bold;">' +
-                    parseInt(colorVariant.price_sale).toLocaleString('vi-VN') + ' ₫' +
-                    '</div>' +
-                    '<div style="font-size: 11px; color: #8D99AE; text-decoration: line-through;">' +
-                    parseInt(colorVariant.price).toLocaleString('vi-VN') + ' ₫' +
-                    '</div>';
-            } else {
-                priceHtml = '<div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">' +
-                    parseInt(displayPrice).toLocaleString('vi-VN') + ' ₫' +
-                    '</div>';
-            }
-            
-            colorOption.innerHTML = 
-                (isFirst ? '<i class="fa fa-check"></i>' : '') +
-                '<div style="text-align: center;">' +
-                    '<img src="' + colorImage + '" alt="' + (colorVariant.color_name || 'Màu sắc') + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;">' +
-                    '<div style="font-weight: bold; margin-top: 8px; font-size: 13px;">' + (colorVariant.color_name || 'Màu sắc') + '</div>' +
-                    priceHtml +
-                    '<div style="margin-top: 4px; font-size: 12px;" class="' + availabilityClass + '">' + availabilityText + '</div>' +
-                '</div>';
-            
-            // Add click event
-            colorOption.addEventListener('click', function() {
-                const allColorOptions = colorOptionsContainer.querySelectorAll('.color-variant');
-                allColorOptions.forEach(function(opt) {
-                    opt.classList.remove('selected');
-                    opt.style.borderColor = '#E4E7ED';
-                    opt.style.background = '#fff';
-                    const checkIcon = opt.querySelector('.fa-check');
-                    if (checkIcon) {
-                        checkIcon.remove();
-                    }
-                });
+        // If no color selection but has version/storage, try to find variant without color
+        if (!matchingVariant && colorId === 'none' && (versionId !== 'none' || storageId !== 'none')) {
+            // Try to find variant with selected storage/version but no color requirement
+            const variantWithoutColor = window.productVariantsData.find(function(variant) {
+                const vStorageId = variant.storage_id === null ? 'none' : variant.storage_id;
+                const vVersionId = variant.version_id === null ? 'none' : variant.version_id;
+                const vColorId = variant.color_id === null ? 'none' : variant.color_id;
                 
-                this.classList.add('selected');
-                this.style.borderColor = '#D10024';
-                this.style.background = '#FFF5F5';
-                
-                const checkIcon = document.createElement('i');
-                checkIcon.className = 'fa fa-check';
-                this.insertBefore(checkIcon, this.firstChild);
-                
-                updateProductInfo(this);
+                return vStorageId == storageId 
+                    && vVersionId == versionId 
+                    && vColorId === 'none';
             });
             
-            colorOptionsContainer.appendChild(colorOption);
-        });
+            if (variantWithoutColor) {
+                // Directly update product info with this variant
+                updateProductInfoFromVariant(variantWithoutColor);
+                return;
+            }
+        }
         
-        // Auto-select first color and update product info
-        const firstColorOption = colorOptionsContainer.querySelector('.color-variant.selected');
-        if (firstColorOption) {
-            // Update SKU immediately when combo changes
-            const firstSku = firstColorOption.getAttribute('data-sku');
-            if (firstSku && currentSku) {
-                currentSku.textContent = firstSku;
+        // Update available colors based on selected storage and version (if colors exist)
+        if (document.querySelectorAll('.color-variant').length > 0) {
+            updateAvailableColors(storageId, versionId, colorId);
+        }
+        
+        if (matchingVariant) {
+            // Update product info
+            const colorOption = selectedColor || document.querySelector('.color-variant:not([style*="display: none"])');
+            if (colorOption) {
+                // Update color option attributes
+                colorOption.setAttribute('data-variant-id', matchingVariant.id);
+                colorOption.setAttribute('data-image', matchingVariant.image);
+                colorOption.setAttribute('data-price', matchingVariant.price);
+                colorOption.setAttribute('data-price-sale', matchingVariant.price_sale || '');
+                colorOption.setAttribute('data-sku', matchingVariant.sku);
+                colorOption.setAttribute('data-stock', matchingVariant.stock);
+                colorOption.setAttribute('data-available', matchingVariant.is_available ? '1' : '0');
+                
+                // Update image in color option
+                const colorImg = colorOption.querySelector('img');
+                if (colorImg) {
+                    colorImg.src = matchingVariant.image;
+                }
+                
+                // Update price and availability display
+                updateColorOptionDisplay(colorOption, matchingVariant);
+                
+                // Update product info
+                updateProductInfo(colorOption);
+            } else {
+                // No color options, update directly from variant
+                updateProductInfoFromVariant(matchingVariant);
             }
-            // Update variant ID and button immediately
-            const firstVariantId = firstColorOption.getAttribute('data-variant-id');
-            if (firstVariantId && btnAddCart) {
-                selectedVariantId = firstVariantId;
-                btnAddCart.setAttribute('data-variant-id', firstVariantId);
-                console.log('Updated variant ID after combo change:', firstVariantId);
+        } else {
+            // No matching variant found - try to find first available variant with selected storage/version
+            const firstAvailableVariant = window.productVariantsData.find(function(variant) {
+                const vStorageId = variant.storage_id === null ? 'none' : variant.storage_id;
+                const vVersionId = variant.version_id === null ? 'none' : variant.version_id;
+                
+                return vStorageId == storageId && vVersionId == versionId;
+            });
+            
+            if (firstAvailableVariant) {
+                updateProductInfoFromVariant(firstAvailableVariant);
             }
-            updateProductInfo(firstColorOption);
         }
     }
+    
+    // Function to update product info directly from variant data (for products without color selection)
+    function updateProductInfoFromVariant(variant) {
+        if (!variant) return;
+        
+        // Update stock immediately
+        const stock = parseInt(variant.stock) || 0;
+        updateStockUI(stock);
+        
+        // Create a temporary element with variant data
+        const tempElement = document.createElement('div');
+        tempElement.setAttribute('data-variant-id', variant.id);
+        tempElement.setAttribute('data-image', variant.image);
+        tempElement.setAttribute('data-price', variant.price);
+        tempElement.setAttribute('data-price-sale', variant.price_sale || '');
+        tempElement.setAttribute('data-sku', variant.sku);
+        tempElement.setAttribute('data-stock', variant.stock);
+        tempElement.setAttribute('data-available', variant.is_available ? '1' : '0');
+        
+        // Update product info (price, image, SKU)
+        updateProductInfoContinue(tempElement);
+    }
+    
+    // Function to update available colors based on storage and version
+    function updateAvailableColors(storageId, versionId, selectedColorId) {
+        if (!window.productVariantsData) return;
+        
+        const colorOptions = document.querySelectorAll('.color-variant');
+        let hasAvailableColor = false;
+        let firstAvailableColor = null;
+        
+        colorOptions.forEach(function(option) {
+            const colorId = option.getAttribute('data-color-id');
+            const variant = findVariant(storageId, versionId, colorId);
+            
+            if (variant) {
+                // Color is available for this storage/version combination
+                option.style.display = '';
+                option.setAttribute('data-variant-id', variant.id);
+                option.setAttribute('data-image', variant.image);
+                option.setAttribute('data-price', variant.price);
+                option.setAttribute('data-price-sale', variant.price_sale || '');
+                option.setAttribute('data-sku', variant.sku);
+                option.setAttribute('data-stock', variant.stock);
+                option.setAttribute('data-available', variant.is_available ? '1' : '0');
+                
+                // Update display
+                updateColorOptionDisplay(option, variant);
+                
+                if (!hasAvailableColor) {
+                    hasAvailableColor = true;
+                    firstAvailableColor = option;
+                }
+            } else {
+                // Color is not available for this storage/version combination
+                option.style.display = 'none';
+            }
+        });
+        
+        // Auto-select first available color if current selection is not available
+        const selectedColor = document.querySelector('.color-variant.selected');
+        if (selectedColor && selectedColor.style.display === 'none' && firstAvailableColor) {
+            firstAvailableColor.classList.add('selected');
+            firstAvailableColor.style.borderColor = '#D10024';
+            firstAvailableColor.style.background = '#FFF5F5';
+            const checkIcon = document.createElement('i');
+            checkIcon.className = 'fa fa-check';
+            firstAvailableColor.insertBefore(checkIcon, firstAvailableColor.firstChild);
+            
+            selectedColor.classList.remove('selected');
+            selectedColor.style.borderColor = '#E4E7ED';
+            selectedColor.style.background = '#fff';
+            const oldCheckIcon = selectedColor.querySelector('.fa-check');
+            if (oldCheckIcon) {
+                oldCheckIcon.remove();
+            }
+        }
+    }
+    
+    // Function to update color option display
+    function updateColorOptionDisplay(option, variant) {
+        const priceDiv = option.querySelector('div[style*="font-size: 12px"][style*="color: #8D99AE"]');
+        if (priceDiv && variant) {
+            const displayPrice = variant.price_sale || variant.price;
+            priceDiv.textContent = parseInt(displayPrice).toLocaleString('vi-VN') + ' ₫';
+        }
+        
+        const availabilityDiv = option.querySelector('.mt-1');
+        if (availabilityDiv && variant) {
+            const isAvailable = variant.is_available && variant.stock > 0;
+            availabilityDiv.innerHTML = '<span class="' + (isAvailable ? 'text-success' : 'text-danger') + '">' +
+                (isAvailable ? 'Còn hàng' : 'Đã hết hàng') + '</span>';
+        }
+        
+        // Update image
+        const colorImg = option.querySelector('img');
+        if (colorImg && variant.image) {
+            colorImg.src = variant.image;
+        }
+    }
+    
+    
     
     // Function to update product info (image, price, SKU, stock) based on selected variant
     function updateProductInfo(variantElement) {
@@ -2100,10 +2197,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Update stock - lấy số lượng từ biến thể được chọn
-        const stock = parseInt(variantElement.getAttribute('data-stock')) || 0;
+        let stock = parseInt(variantElement.getAttribute('data-stock')) || 0;
+        // Nếu không lấy được từ attribute, thử lấy từ variant data
+        if (isNaN(stock) || stock === 0) {
+            const variantId = variantElement.getAttribute('data-variant-id');
+            if (variantId && window.productVariantsData) {
+                const variantData = window.productVariantsData.find(v => v.id == variantId);
+                if (variantData && variantData.stock !== undefined) {
+                    stock = parseInt(variantData.stock) || 0;
+                }
+            }
+        }
         if (isNaN(stock)) {
             console.warn('Stock value is not a valid number:', variantElement.getAttribute('data-stock'));
+            stock = 0;
         }
+        // Cập nhật stock UI với giá trị đã xác định
         updateStockUI(stock);
         
         // Update SKU
@@ -2371,34 +2480,73 @@ document.addEventListener('DOMContentLoaded', function() {
         const initialStock = parseInt(firstColorVariant.getAttribute('data-stock')) || 0;
         updateStockUI(initialStock);
         updateProductInfo(firstColorVariant);
-    } else if (variantOptions.length > 0) {
-        const firstSelected = document.querySelector('.variant-option.selected');
-        if (firstSelected) {
-            selectedVariantId = firstSelected.getAttribute('data-variant-id');
-            console.log('Initial variant from variant-option.selected:', selectedVariantId);
-            if (selectedVariantId && btnAddCart) {
-                btnAddCart.setAttribute('data-variant-id', selectedVariantId);
-            }
-            // Check if it's a color variant with availability info
-            const isAvailable = parseInt(firstSelected.getAttribute('data-available')) === 1;
-            const stock = parseInt(firstSelected.getAttribute('data-stock')) || 0;
-            // Cập nhật số lượng từ biến thể đầu tiên được chọn
-            updateStockUI(stock);
-            if (btnAddCart && (!isAvailable || stock === 0)) {
-                btnAddCart.disabled = true;
-                btnAddCart.style.opacity = '0.6';
-                btnAddCart.style.cursor = 'not-allowed';
-            }
-        }
     } else {
-        // No variants - check if button has initial variant ID from server
-        const initialVariantId = btnAddCart ? btnAddCart.getAttribute('data-variant-id') : null;
-        if (initialVariantId && initialVariantId !== '') {
-            selectedVariantId = initialVariantId;
-            console.log('Initial variant from button data-variant-id:', selectedVariantId);
+        // Check for version option (for products without color)
+        const firstVersionOption = document.querySelector('.version-option.selected');
+        if (firstVersionOption) {
+            const versionId = firstVersionOption.getAttribute('data-version-id');
+            const selectedStorage = document.querySelector('.storage-option.selected');
+            const storageId = selectedStorage ? selectedStorage.getAttribute('data-storage-id') : 'none';
+            
+            // Find matching variant
+            const matchingVariant = findVariant(storageId, versionId, 'none');
+            if (matchingVariant) {
+                selectedVariantId = matchingVariant.id;
+                if (btnAddCart) {
+                    btnAddCart.setAttribute('data-variant-id', matchingVariant.id);
+                }
+                // Update stock from matching variant
+                updateStockUI(matchingVariant.stock || 0);
+                updateProductInfoFromVariant(matchingVariant);
+            } else {
+                // Fallback: use data-variant-id from version option
+                const variantId = firstVersionOption.getAttribute('data-variant-id');
+                if (variantId) {
+                    selectedVariantId = variantId;
+                    if (btnAddCart) {
+                        btnAddCart.setAttribute('data-variant-id', variantId);
+                    }
+                    const stock = parseInt(firstVersionOption.getAttribute('data-stock')) || 0;
+                    updateStockUI(stock);
+                }
+            }
         } else {
-            selectedVariantId = null;
-            console.log('No variant found - product may not have variants');
+            // Check other variant options
+            const firstSelected = document.querySelector('.variant-option.selected');
+            if (firstSelected) {
+                selectedVariantId = firstSelected.getAttribute('data-variant-id');
+                console.log('Initial variant from variant-option.selected:', selectedVariantId);
+                if (selectedVariantId && btnAddCart) {
+                    btnAddCart.setAttribute('data-variant-id', selectedVariantId);
+                }
+                // Check if it's a color variant with availability info
+                const isAvailable = parseInt(firstSelected.getAttribute('data-available')) === 1;
+                const stock = parseInt(firstSelected.getAttribute('data-stock')) || 0;
+                // Cập nhật số lượng từ biến thể đầu tiên được chọn
+                updateStockUI(stock);
+                if (btnAddCart && (!isAvailable || stock === 0)) {
+                    btnAddCart.disabled = true;
+                    btnAddCart.style.opacity = '0.6';
+                    btnAddCart.style.cursor = 'not-allowed';
+                }
+            } else {
+                // No variants - check if button has initial variant ID from server
+                const initialVariantId = btnAddCart ? btnAddCart.getAttribute('data-variant-id') : null;
+                if (initialVariantId && initialVariantId !== '') {
+                    selectedVariantId = initialVariantId;
+                    console.log('Initial variant from button data-variant-id:', selectedVariantId);
+                    // Try to get stock from variant data
+                    if (window.productVariantsData) {
+                        const variant = window.productVariantsData.find(v => v.id == initialVariantId);
+                        if (variant) {
+                            updateStockUI(variant.stock || 0);
+                        }
+                    }
+                } else {
+                    selectedVariantId = null;
+                    console.log('No variant found - product may not have variants');
+                }
+            }
         }
     }
     

@@ -224,6 +224,36 @@
                             {{ $order->paid_at->format('d/m/Y H:i') }}
                         </p>
                     @endif
+                    @if($order->transaction_no)
+                        <p>
+                            <strong>Mã giao dịch VNPAY:</strong><br>
+                            <code>{{ $order->transaction_no }}</code>
+                        </p>
+                    @elseif($order->payment_method === 'vnpay' && $order->payment_status === 'paid')
+                        <p>
+                            <strong>Mã giao dịch VNPAY:</strong><br>
+                            <span class="text-muted">Chưa có</span>
+                            <div class="mt-2">
+                                <form method="POST" action="{{ route('admin.orders.query-transaction', $order) }}" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-info" title="Tra cứu từ VNPAY API">
+                                        <i class="fa fa-search"></i> Tra cứu từ VNPAY
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.orders.generate-test-transaction', $order) }}" class="d-inline ms-2">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-warning" 
+                                            title="Tạo mã giao dịch test cho sandbox (dùng khi quét QR nhưng chưa chuyển khoản)"
+                                            onclick="return confirm('Tạo mã giao dịch test cho sandbox? Mã này có thể dùng để test hoàn tiền.');">
+                                        <i class="fa fa-plus-circle"></i> Tạo mã test
+                                    </button>
+                                </form>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                💡 <strong>Lưu ý:</strong> Nếu đã quét QR nhưng chưa chuyển khoản, hãy dùng "Tạo mã test" để có mã giao dịch test cho sandbox.
+                            </small>
+                        </p>
+                    @endif
                     
                     {{-- Nút xác nhận thanh toán thủ công (Demo mode) --}}
                     @if($order->payment_method === 'vnpay' && $order->payment_status === 'pending')
@@ -237,6 +267,80 @@
                             <button type="submit" class="btn btn-success w-100" 
                                     onclick="return confirm('Bạn có chắc chắn muốn xác nhận thanh toán cho đơn hàng này? (Demo mode)');">
                                 <i class="fa fa-check-circle"></i> Xác nhận thanh toán (Demo)
+                            </button>
+                        </form>
+                    @endif
+
+                    {{-- Form hoàn tiền VNPAY --}}
+                    @if($order->payment_method === 'vnpay' && $order->payment_status === 'paid')
+                        <hr>
+                        <div class="alert alert-warning" style="font-size: 12px; padding: 10px; margin-bottom: 10px;">
+                            <i class="fa fa-info-circle"></i> 
+                            <strong>Hoàn tiền VNPAY:</strong> Chức năng hoàn tiền qua VNPAY Sandbox.
+                            <br><small><strong>Lưu ý:</strong> Mã giao dịch VNPAY (vnp_TransactionNo) KHÁC với mã đơn hàng (#{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }})</small>
+                            @if($order->transaction_no)
+                                <br><small><strong>Mã giao dịch VNPAY:</strong> <code>{{ $order->transaction_no }}</code></small>
+                                <br><small><strong>Mã đơn hàng:</strong> #{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}</small>
+                            @else
+                                <br><small class="text-danger">⚠️ Chưa có mã giao dịch VNPAY.</small>
+                                <br><small class="text-info">💡 Bạn có thể: 
+                                    <a href="#" onclick="document.getElementById('queryForm').submit(); return false;" class="text-decoration-underline">Tra cứu từ VNPAY</a>, 
+                                    <a href="#" onclick="document.getElementById('generateTestForm').submit(); return false;" class="text-decoration-underline">Tạo mã test</a> 
+                                    hoặc nhập thủ công bên dưới
+                                </small>
+                                <form method="POST" action="{{ route('admin.orders.query-transaction', $order) }}" id="queryForm" class="d-none">
+                                    @csrf
+                                </form>
+                                <form method="POST" action="{{ route('admin.orders.generate-test-transaction', $order) }}" id="generateTestForm" class="d-none">
+                                    @csrf
+                                </form>
+                            @endif
+                        </div>
+                        <form method="POST" action="{{ route('admin.orders.refund', $order) }}" class="mt-2" id="refundForm">
+                            @csrf
+                            <div class="mb-2">
+                                <label for="refund_amount" class="form-label" style="font-size: 12px;">Số tiền hoàn (₫):</label>
+                                <input type="number" 
+                                       class="form-control form-control-sm" 
+                                       id="refund_amount" 
+                                       name="amount" 
+                                       value="{{ $order->total }}" 
+                                       min="0" 
+                                       max="{{ $order->total }}"
+                                       step="1000">
+                                <small class="text-muted" style="font-size: 11px;">
+                                    Để trống để hoàn toàn bộ ({{ number_format($order->total, 0, ',', '.') }} ₫)
+                                </small>
+                            </div>
+                            @if(!$order->transaction_no)
+                                <div class="mb-2">
+                                    <label for="transaction_no" class="form-label" style="font-size: 12px;">
+                                        Mã giao dịch VNPAY (vnp_TransactionNo) <span class="text-danger">*</span>:
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control form-control-sm" 
+                                           id="transaction_no" 
+                                           name="transaction_no" 
+                                           placeholder="Nhập mã giao dịch từ VNPAY (KHÔNG phải mã đơn hàng)"
+                                           required>
+                                    <small class="text-muted" style="font-size: 10px;">
+                                        ⚠️ Đây là mã giao dịch do VNPAY tạo, KHÔNG phải mã đơn hàng (#{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }})
+                                    </small>
+                                </div>
+                                <div class="mb-2">
+                                    <label for="transaction_date" class="form-label" style="font-size: 12px;">Ngày giao dịch (YYYYMMDDHHmmss):</label>
+                                    <input type="text" 
+                                           class="form-control form-control-sm" 
+                                           id="transaction_date" 
+                                           name="transaction_date" 
+                                           placeholder="VD: 20241217162535"
+                                           maxlength="14">
+                                </div>
+                            @endif
+                            <button type="submit" 
+                                    class="btn btn-warning w-100" 
+                                    onclick="return confirm('Bạn có chắc chắn muốn hoàn tiền cho đơn hàng này? Hành động này không thể hoàn tác.');">
+                                <i class="fa fa-undo"></i> Hoàn tiền qua VNPAY
                             </button>
                         </form>
                     @endif

@@ -32,7 +32,18 @@ class CartController extends Controller
     {
         $cart = $this->getOrCreateActiveCart();
 
-        $items = $cart->items()->with(['variant.product', 'variant.storage', 'variant.version', 'variant.color'])->get();
+        // Optimize: only load necessary relationships
+        $items = $cart->items()->with([
+            'variant' => function($query) {
+                $query->select('id', 'product_id', 'price', 'price_sale', 'stock', 'status', 'storage_id', 'version_id', 'color_id', 'image', 'sku');
+            },
+            'variant.product' => function($query) {
+                $query->select('id', 'name', 'image', 'slug');
+            },
+            'variant.storage',
+            'variant.version',
+            'variant.color'
+        ])->get();
 
         $total = 0;
         foreach ($items as $item) {
@@ -57,6 +68,7 @@ class CartController extends Controller
         $variantId = $request->product_variant_id;
 
         // Kiểm tra variant có tồn tại và còn hàng không
+        // LƯU Ý: Mỗi biến thể có stock riêng, không tính chung với sản phẩm gốc hay các biến thể khác
         $variant = \App\Models\ProductVariant::findOrFail($variantId);
         
         if ($variant->status !== 'available') {
@@ -64,8 +76,15 @@ class CartController extends Controller
             return $this->respondError($request, $message);
         }
 
-        if ($variant->stock < $quantity) {
-            $message = 'Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').';
+        // Kiểm tra stock của biến thể này (mỗi biến thể có stock riêng)
+        $currentStock = $variant->stock ?? 0;
+        if ($currentStock <= 0) {
+            $message = 'Sản phẩm này đã hết hàng!';
+            return $this->respondError($request, $message);
+        }
+
+        if ($currentStock < $quantity) {
+            $message = 'Số lượng vượt quá tồn kho hiện có (' . $currentStock . ').';
             return $this->respondError($request, $message);
         }
 
@@ -128,6 +147,7 @@ class CartController extends Controller
         })->findOrFail($request->cart_item_id);
 
         // Kiểm tra tồn kho và trạng thái của biến thể trước khi cập nhật
+        // LƯU Ý: Mỗi biến thể có stock riêng, không tính chung với sản phẩm gốc hay các biến thể khác
         $variant = $cartItem->variant()->lockForUpdate()->first();
         if (!$variant) {
             return redirect()->route('cart.index')->with('error', 'Biến thể không tồn tại.');
@@ -137,8 +157,14 @@ class CartController extends Controller
             return redirect()->route('cart.index')->with('error', 'Biến thể này không còn bán.');
         }
 
-        if ($variant->stock < $request->quantity) {
-            return redirect()->route('cart.index')->with('error', 'Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
+        // Kiểm tra stock của biến thể này (mỗi biến thể có stock riêng)
+        $currentStock = $variant->stock ?? 0;
+        if ($currentStock <= 0) {
+            return redirect()->route('cart.index')->with('error', 'Sản phẩm này đã hết hàng!');
+        }
+
+        if ($currentStock < $request->quantity) {
+            return redirect()->route('cart.index')->with('error', 'Số lượng vượt quá tồn kho hiện có (' . $currentStock . ').');
         }
 
         if ($request->quantity > 10) {

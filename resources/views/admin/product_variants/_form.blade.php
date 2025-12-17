@@ -5,12 +5,13 @@
 
 <div class="row g-3">
     <div class="col-md-4">
-        <label class="form-label">SKU *</label>
+        <label class="form-label">SKU</label>
         <input type="text" name="sku"
                class="form-control"
                value="{{ old('sku', $variant->sku ?? '') }}"
                maxlength="100"
-               required>
+               placeholder="Để trống để tự động tạo">
+        <small class="text-muted">Để trống để hệ thống tự động tạo SKU</small>
     </div>
 
     <div class="col-md-4">

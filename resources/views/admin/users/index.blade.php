@@ -63,7 +63,7 @@
                 <span class="text-muted">Chưa xác thực</span>
               @endif
             </td>
-            <td>{{ $user->created_at->format('d/m/Y H:i') }}</td>
+            <td>{{ $user->created_at ? $user->created_at->format('d/m/Y H:i') : 'N/A' }}</td>
             <td class="d-flex gap-2">
               <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm btn-secondary">Xem</a>
               <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-warning">Sửa</a>

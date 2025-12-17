@@ -25,7 +25,7 @@ class ProductVariantRequest extends FormRequest
         ]);
 
         return [
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'min:1000'],
             'storage_id' => ['nullable', 'integer', 'exists:storages,id'],
             'version_id' => ['nullable', 'integer', 'exists:versions,id'],
             'color_id' => ['nullable', 'integer', 'exists:colors,id'],
@@ -33,7 +33,7 @@ class ProductVariantRequest extends FormRequest
             'stock' => ['required', 'integer', 'min:0'],
             'sold' => ['nullable', 'integer', 'min:0'],
             'sku' => [
-                'required',
+                'nullable',
                 'string',
                 'max:100',
                 Rule::unique('product_variants', 'sku')->ignore($variantId),
@@ -50,7 +50,7 @@ class ProductVariantRequest extends FormRequest
         return [
             'price.required' => 'Vui lòng nhập giá bán',
             'price.numeric' => 'Giá bán phải là số',
-            'price.min' => 'Giá bán phải lớn hơn hoặc bằng 0',
+            'price.min' => 'Giá niêm yết phải lớn hơn hoặc bằng 1.000 ₫',
             'storage_id.exists' => 'Dung lượng không tồn tại',
             'version_id.exists' => 'Phiên bản không tồn tại',
             'color_id.exists' => 'Màu sắc không tồn tại',
@@ -62,7 +62,6 @@ class ProductVariantRequest extends FormRequest
             'stock.min' => 'Số lượng tồn kho phải lớn hơn hoặc bằng 0',
             'sold.integer' => 'Số lượng đã bán phải là số nguyên',
             'sold.min' => 'Số lượng đã bán phải lớn hơn hoặc bằng 0',
-            'sku.required' => 'Vui lòng nhập mã SKU',
             'sku.max' => 'Mã SKU không được vượt quá 100 ký tự',
             'sku.unique' => 'Mã SKU đã tồn tại',
             'barcode.max' => 'Mã vạch không được vượt quá 100 ký tự',

@@ -33,8 +33,13 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
+        // Cache categories and brands as they don't change frequently
+        $categories = cache()->remember('categories.all', now()->addHours(24), function() {
+            return Category::orderBy('name')->get();
+        });
+        $brands = cache()->remember('brands.all', now()->addHours(24), function() {
+            return Brand::orderBy('name')->get();
+        });
         return view('admin.products.create', compact('categories','brands'));
     }
 
@@ -50,11 +55,11 @@ class ProductController extends Controller
         $data['image'] = $request->file('image')->store('products', 'public');
     }
 
-    DB::transaction(function () use ($request, $data) {
+    DB::transaction(function () use ($data) {
         $product = \App\Models\Product::create($data);
 
         // Đảm bảo luôn có ít nhất 1 biến thể mặc định
-        $this->ensureDefaultVariant($product, $request->input('price'));
+        $this->ensureDefaultVariant($product);
 
         if ($request->hasFile('extra_images')) {
             foreach ($request->file('extra_images') as $extraImage) {
@@ -90,8 +95,13 @@ class ProductController extends Controller
     public function edit($id)
     {
         $product    = Product::findOrFail($id);
-        $categories = Category::orderBy('name')->get();
-        $brands     = Brand::orderBy('name')->get();
+        // Cache categories and brands
+        $categories = cache()->remember('categories.all', now()->addHours(24), function() {
+            return Category::orderBy('name')->get();
+        });
+        $brands     = cache()->remember('brands.all', now()->addHours(24), function() {
+            return Brand::orderBy('name')->get();
+        });
 
         return view('admin.products.edit', compact('product','categories','brands'));
     }
@@ -117,7 +127,7 @@ class ProductController extends Controller
         $product->update($data);
 
         // Đảm bảo luôn có biến thể mặc định nếu chưa có
-        $this->ensureDefaultVariant($product, $request->input('price'));
+        $this->ensureDefaultVariant($product);
 
         $removeImageIds = $request->input('remove_images', []);
         if (!empty($removeImageIds)) {
@@ -237,18 +247,27 @@ class ProductController extends Controller
     /**
      * Tạo biến thể mặc định khi sản phẩm chưa có biến thể.
      */
-    protected function ensureDefaultVariant(Product $product, ?float $priceInput = null): void
+    protected function ensureDefaultVariant(Product $product): void
     {
         if ($product->variants()->count() > 0) {
             return;
         }
 
+        // Tạo SKU unique bằng cách kiểm tra xem đã tồn tại chưa
+        $baseSku = 'DEFAULT-' . $product->id;
+        $sku = $baseSku;
+        $counter = 1;
+        while (ProductVariant::where('sku', $sku)->exists()) {
+            $sku = $baseSku . '-' . $counter;
+            $counter++;
+        }
+
         $product->variants()->create([
-            'price'    => $priceInput ?? 0,
+            'price'      => 0,
             'price_sale' => null,
-            'stock'    => 0,
-            'sku'      => 'DEFAULT-' . $product->id,
-            'status'   => ProductVariant::STATUS_AVAILABLE,
+            'stock'      => 0,
+            'sku'        => $sku,
+            'status'     => ProductVariant::STATUS_OUT_OF_STOCK, // Mặc định hết hàng vì stock = 0
         ]);
     }
 }

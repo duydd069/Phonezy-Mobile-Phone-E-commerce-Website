@@ -44,14 +44,19 @@
 		<link rel="preconnect" href="https://fonts.googleapis.com">
 		<link rel="dns-prefetch" href="https://fonts.googleapis.com">
 		
+		<!-- Preload critical CSS -->
+		<link rel="preload" href="{{ asset('electro/css/bootstrap.min.css') }}" as="style">
+		<link rel="preload" href="{{ asset('electro/css/style.css') }}" as="style">
+		
 		<!-- Stylesheets -->
-		<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet" media="print" onload="this.media='all'">
+		<noscript><link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet"></noscript>
 		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/bootstrap.min.css') }}"/>
+		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/style.css') }}"/>
 		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/slick.css') }}"/>
 		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/slick-theme.css') }}"/>
 		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/nouislider.min.css') }}"/>
 		<link rel="stylesheet" href="{{ asset('electro/css/font-awesome.min.css') }}">
-		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/style.css') }}"/>
 		
 		<!-- Structured Data -->
 		@stack('structured_data')
@@ -64,12 +69,12 @@
 		@yield('content')
 		@include('electro.partials.footer')
 		@include('electro.partials.chatbot-widget')
-		<script src="{{ asset('electro/js/jquery.min.js') }}"></script>
-		<script src="{{ asset('electro/js/bootstrap.min.js') }}"></script>
-		<script src="{{ asset('electro/js/slick.min.js') }}"></script>
-		<script src="{{ asset('electro/js/nouislider.min.js') }}"></script>
-		<script src="{{ asset('electro/js/jquery.zoom.min.js') }}"></script>
-		<script src="{{ asset('electro/js/main.js') }}"></script>
+		<script src="{{ asset('electro/js/jquery.min.js') }}" defer></script>
+		<script src="{{ asset('electro/js/bootstrap.min.js') }}" defer></script>
+		<script src="{{ asset('electro/js/slick.min.js') }}" defer></script>
+		<script src="{{ asset('electro/js/nouislider.min.js') }}" defer></script>
+		<script src="{{ asset('electro/js/jquery.zoom.min.js') }}" defer></script>
+		<script src="{{ asset('electro/js/main.js') }}" defer></script>
 		
 		<!-- Wishlist JavaScript -->
 		<script>

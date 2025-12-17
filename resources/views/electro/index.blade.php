@@ -95,7 +95,10 @@
                                     {{-- IMAGE --}}
                                     <div class="product-img">
                                         <img src="{{ $product->image ? (preg_match('/^https?:\\/\\//', $product->image) ? $product->image : asset('storage/' . $product->image)) : asset('electro/img/product01.png') }}"
-                                            alt="Mua {{ $product->name }} chính hãng giá tốt" itemprop="image">
+                                            alt="Mua {{ $product->name }} chính hãng giá tốt" 
+                                            itemprop="image"
+                                            loading="lazy"
+                                            decoding="async">
 
                                         {{-- Label --}}
                                         <div class="product-label">
@@ -118,6 +121,7 @@
                                         </h3>
 
                                         @php
+                                            // Optimize: get first variant price (already loaded with limit 1)
                                             $variant = $product->variants->first();
                                             $displayPrice = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
                                         @endphp

@@ -123,6 +123,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/variants/create',          [ProductVariantController::class, 'create'])->name('variants.create');
         Route::post('/variants',                [ProductVariantController::class, 'store'])->name('variants.store');
         Route::get('/variants/{variantId}/edit', [ProductVariantController::class, 'edit'])->name('variants.edit');
+        Route::patch('/variants/{variantId}/stock', [ProductVariantController::class, 'updateStock'])->name('variants.updateStock');
         Route::put('/variants/{variantId}',     [ProductVariantController::class, 'update'])->name('variants.update');
         Route::delete('/variants/{variantId}',  [ProductVariantController::class, 'destroy'])->name('variants.destroy');
     });
@@ -132,6 +133,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
     Route::post('/orders/{order}/confirm-payment', [AdminOrderController::class, 'confirmPayment'])->name('orders.confirm-payment');
+    Route::post('/orders/{order}/refund', [AdminOrderController::class, 'refund'])->name('orders.refund');
+    Route::post('/orders/{order}/query-transaction', [AdminOrderController::class, 'queryTransaction'])->name('orders.query-transaction');
+    Route::post('/orders/{order}/generate-test-transaction', [AdminOrderController::class, 'generateTestTransaction'])->name('orders.generate-test-transaction');
 
     // Revenue Report routes
     Route::get('/revenue', [RevenueReportController::class, 'index'])->name('revenue.index');

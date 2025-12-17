@@ -65,9 +65,19 @@
                         <td>{{ $p->brand->name ?? '-' }}</td>
                         @php
                             $variant = $p->variants->first();
-                            $displayPrice = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                            if ($variant) {
+                                $displayPrice = $variant->price_sale ?? $variant->price ?? 0;
+                            } else {
+                                $displayPrice = 0;
+                            }
                         @endphp
-                        <td class="text-end">{{ number_format($displayPrice, 0, ',', '.') }}</td>
+                        <td class="text-end">
+                            @if($displayPrice > 0)
+                                {{ number_format($displayPrice, 0, ',', '.') }} ₫
+                            @else
+                                <span class="text-muted">Chưa có giá</span>
+                            @endif
+                        </td>
                         <td>{{ $p->views }}</td>
                         <td>
                             <a href="{{ route('admin.products.show', $p->id) }}" class="btn btn-sm btn-info">Xem</a>
