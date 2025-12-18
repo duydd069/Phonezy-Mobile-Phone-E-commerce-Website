@@ -102,7 +102,11 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('brands', \App\Http\Controllers\Admin\BrandController::class);
     Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class);
     
-    Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+    // User management - no create/delete, add ban/unban
+    Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->except(['create', 'store', 'destroy']);
+    Route::put('users/{user}/ban', [\App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
+    Route::put('users/{user}/unban', [\App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
+
     Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
     Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
     Route::resource('versions', \App\Http\Controllers\Admin\VersionController::class);
@@ -132,6 +136,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
     Route::post('/orders/{order}/confirm-payment', [AdminOrderController::class, 'confirmPayment'])->name('orders.confirm-payment');
+
+    // Comment management routes
+    Route::get('/comments', [\App\Http\Controllers\Admin\CommentController::class, 'index'])->name('comments.index');
+    Route::get('/comments/{product}', [\App\Http\Controllers\Admin\CommentController::class, 'show'])->name('comments.show');
+    Route::delete('/comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'destroy'])->name('comments.destroy');
+    Route::post('/comments/reply', [\App\Http\Controllers\Admin\CommentController::class, 'reply'])->name('comments.reply');
 
     // Revenue Report routes
     Route::get('/revenue', [RevenueReportController::class, 'index'])->name('revenue.index');

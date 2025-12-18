@@ -1,18 +1,34 @@
-<div class="comment-item" data-comment-id="{{ $comment->id }}">
+@php
+	// Determine parent ID for replies based on nesting level
+	$replyParentId = $level === 0 ? $comment->id : $comment->parent_id;
+	$replyToUserId = $comment->user_id;
+	$replyToName = $comment->user ? $comment->user->name : 'Khách';
+@endphp
+
+<div class="comment-item {{ $level > 0 ? 'comment-reply' : '' }}" data-comment-id="{{ $comment->id }}">
 	<div class="comment-header">
 		<span class="comment-author">
 			<i class="fa fa-user"></i> {{ $comment->user ? $comment->user->name : 'Khách' }}
+			@if($comment->user && ($comment->user->role_id == 1 || ($comment->user->roles && $comment->user->roles->contains('name', 'admin'))))
+				<span class="admin-badge">ADMIN</span>
+			@endif
 		</span>
 		<span class="comment-time">
 			<i class="fa fa-clock-o"></i> {{ $comment->created_at->diffForHumans() }}
 		</span>
 	</div>
 	<div class="comment-content">
+		@if($comment->replied_to_user_id && $comment->repliedToUser)
+			<span class="reply-to">@{{ $comment->repliedToUser->name }}</span>
+		@endif
 		{{ $comment->content }}
 	</div>
 	<div class="comment-actions">
 		@auth
-			<button class="reply-btn" data-parent-id="{{ $comment->id }}">
+			<button class="reply-btn" 
+				data-parent-id="{{ $replyParentId }}"
+				data-replied-to-user-id="{{ $replyToUserId }}"
+				data-replied-to-name="{{ $replyToName }}">
 				<i class="fa fa-reply"></i> Trả lời
 			</button>
 		@endauth
@@ -20,7 +36,7 @@
 	
 	@auth
 		<div id="replyForm-{{ $comment->id }}" class="reply-form">
-			<form data-parent-id="{{ $comment->id }}">
+			<form data-parent-id="{{ $replyParentId }}" data-replied-to-user-id="{{ $replyToUserId }}">
 				@csrf
 				<textarea name="content" placeholder="Viết phản hồi của bạn..." required></textarea>
 				<div class="btn-group">
@@ -35,12 +51,11 @@
 		</div>
 	@endauth
 	
-	@if($comment->replies->count() > 0)
+	@if($level === 0 && $comment->replies->count() > 0)
 		<div class="comment-replies">
 			@foreach($comment->replies as $reply)
-				@include('electro.partials.comment', ['comment' => $reply, 'level' => $level + 1])
+				@include('electro.partials.comment', ['comment' => $reply, 'level' => 1])
 			@endforeach
 		</div>
 	@endif
 </div>
-

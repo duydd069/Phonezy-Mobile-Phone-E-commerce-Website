@@ -1431,6 +1431,36 @@
 		background: #f8f9fa;
 	}
 	
+	/* Prevent further nesting - all child replies at same level */
+	.comment-replies .comment-replies {
+		margin-left: 0 !important;
+		border-left: none;
+	}
+	
+	/* Admin badge */
+	.admin-badge {
+		background: #D10024;
+		color: white;
+		padding: 2px 8px;
+		border-radius: 3px;
+		font-size: 10px;
+		font-weight: bold;
+		margin-left: 8px;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	
+	/* Reply mention @username */
+	.reply-to {
+		color: #2196F3;
+		font-weight: 600;
+		margin-right: 5px;
+		background: #E3F2FD;
+		padding: 2px 6px;
+		border-radius: 3px;
+		font-size: 13px;
+	}
+	
 	.btn-primary {
 		background-color: #D10024;
 		border-color: #D10024;
@@ -1483,11 +1513,19 @@
 		document.querySelectorAll('.reply-btn').forEach(btn => {
 			btn.addEventListener('click', function() {
 				const parentId = this.dataset.parentId;
+				const repliedToUserId = this.dataset.repliedToUserId;
+				const repliedToName = this.dataset.repliedToName;
 				const replyForm = document.getElementById('replyForm-' + parentId);
+				
 				if (replyForm) {
 					replyForm.classList.toggle('active');
 					if (replyForm.classList.contains('active')) {
-						replyForm.querySelector('textarea').focus();
+						const textarea = replyForm.querySelector('textarea');
+						// Pre-fill with @mention
+						textarea.value = '@' + repliedToName + ' ';
+						textarea.focus();
+						// Move cursor to end
+						textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 					}
 				}
 			});
@@ -1517,6 +1555,14 @@
 			formData.append('_token', '{{ csrf_token() }}');
 			if (parentId) {
 				formData.append('parent_id', parentId);
+				
+				// Get replied_to_user_id from form element
+				if (formElement) {
+					const repliedToUserId = formElement.getAttribute('data-replied-to-user-id');
+					if (repliedToUserId) {
+						formData.append('replied_to_user_id', repliedToUserId);
+					}
+				}
 			}
 			
 			fetch(commentUrl, {
