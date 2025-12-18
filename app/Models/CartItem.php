@@ -13,8 +13,15 @@ class CartItem extends Model
 
     protected $fillable = [
         'cart_id',
-        'product_variant_id', // mình dùng cột này để lưu product_id
+        'product_variant_id',
         'quantity',
+        'price_at_time', // Snapshot giá bán khi thêm vào giỏ
+        'price_sale_at_time', // Snapshot giá khuyến mãi khi thêm vào giỏ
+    ];
+
+    protected $casts = [
+        'price_at_time' => 'decimal:2',
+        'price_sale_at_time' => 'decimal:2',
     ];
 
     public function cart()

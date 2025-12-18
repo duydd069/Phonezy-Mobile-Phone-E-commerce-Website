@@ -24,6 +24,18 @@
                             </div>
                         @endif
 
+                        @if (session('error'))
+                            <div class="alert alert-danger">
+                                <strong>Lỗi:</strong> {{ session('error') }}
+                            </div>
+                        @endif
+
+                        @if (session('success'))
+                            <div class="alert alert-success">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+
                         <div class="billing-details">
                             <div class="form-group">
                                 <input class="input" type="text" name="full_name"
@@ -444,6 +456,24 @@
                 currentSelectedCoupon = initialCouponCode; // Lưu coupon ban đầu
                 updateCouponItemsState(initialCouponCode);
             @endif
+
+            // Xử lý form submit để tránh submit nhiều lần
+            const checkoutForm = document.querySelector('form[action="{{ route("client.checkout.store") }}"]');
+            const submitButton = document.querySelector('button[type="submit"].order-submit');
+            
+            if (checkoutForm && submitButton) {
+                checkoutForm.addEventListener('submit', function(e) {
+                    // Không prevent default - để form submit bình thường
+                    // Chỉ disable button để tránh double submit
+                    if (submitButton.disabled) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
+                });
+            }
         });
 
     </script>
