@@ -15,9 +15,12 @@
                 <th>ID</th>
                 <th>Mã</th>
                 <th>Loại</th>
+                <th>Áp dụng cho</th>
                 <th>Loại giảm</th>
                 <th>Giá trị</th>
+                <th>Ngày bắt đầu</th>
                 <th>Ngày hết hạn</th>
+                <th>Trạng thái</th>
                 <th>Hành động</th>
             </tr>
         </thead>
@@ -25,7 +28,7 @@
         @forelse($coupons as $coupon)
             <tr>
                 <td>{{ $coupon->id }}</td>
-                <td>{{ $coupon->code }}</td>
+                <td><strong>{{ $coupon->code }}</strong></td>
                 <td>
                     @if(($coupon->type ?? 'public') == 'private')
                         <span class="badge bg-warning">Riêng tư</span>
@@ -36,6 +39,16 @@
                         <span class="badge bg-success">Công khai</span>
                     @endif
                 </td>
+                <td>
+                    @if(($coupon->promotion_type ?? 'order') == 'order')
+                        <span class="badge bg-info">Đơn hàng</span>
+                    @else
+                        <span class="badge bg-primary">Sản phẩm</span>
+                        @if($coupon->products->count() > 0)
+                            <br><small>({{ $coupon->products->count() }} sản phẩm)</small>
+                        @endif
+                    @endif
+                </td>
                 <td>{{ $coupon->discount_type === 'percent' ? 'Giảm %' : 'Giảm tiền' }}</td>
                 <td>
                     @if($coupon->discount_type === 'percent')
@@ -44,7 +57,29 @@
                         {{ number_format($coupon->discount_value, 0, ',', '.') }}đ
                     @endif
                 </td>
-                <td>{{ $coupon->expires_at ? $coupon->expires_at->format('d/m/Y') : 'Không có' }}</td>
+                <td>
+                    @if($coupon->starts_at)
+                        {{ $coupon->starts_at->format('d/m/Y H:i') }}
+                    @else
+                        <span class="text-muted">Ngay lập tức</span>
+                    @endif
+                </td>
+                <td>
+                    @if($coupon->expires_at)
+                        {{ $coupon->expires_at->format('d/m/Y H:i') }}
+                    @else
+                        <span class="text-muted">Không có</span>
+                    @endif
+                </td>
+                <td>
+                    @if($coupon->isValid())
+                        <span class="badge bg-success">Đang hoạt động</span>
+                    @elseif($coupon->starts_at && !$coupon->hasStarted())
+                        <span class="badge bg-secondary">Chưa bắt đầu</span>
+                    @else
+                        <span class="badge bg-danger">Đã hết hạn</span>
+                    @endif
+                </td>
                 <td>
                     <a href="{{ route('admin.coupons.edit', $coupon->id) }}" class="btn btn-primary btn-sm">Sửa</a>
                     <form action="{{ route('admin.coupons.destroy', $coupon->id) }}" method="POST" style="display:inline-block" onsubmit="return confirm('Bạn chắc chắn muốn xóa mã này?')">
@@ -55,7 +90,7 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="7" class="text-center">Chưa có mã khuyến mãi nào</td></tr>
+            <tr><td colspan="10" class="text-center">Chưa có mã khuyến mãi nào</td></tr>
         @endforelse
         </tbody>
     </table>

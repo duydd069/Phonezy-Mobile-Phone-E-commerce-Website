@@ -7,6 +7,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -34,10 +35,12 @@ class CartController extends Controller
 
         $items = $cart->items()->with(['variant.product', 'variant.storage', 'variant.version', 'variant.color'])->get();
 
+        // Tính tổng giá trị giỏ hàng dùng snapshot price (giá tại thời điểm thêm vào giỏ)
         $total = 0;
         foreach ($items as $item) {
             if ($item->variant) {
-                $price = $item->variant->price_sale ?? $item->variant->price ?? 0;
+                // Ưu tiên dùng snapshot price
+                $price = $item->price_sale_at_time ?? $item->price_at_time ?? $item->variant->price_sale ?? $item->variant->price ?? 0;
                 $total += $price * $item->quantity;
             }
         }
@@ -49,28 +52,48 @@ class CartController extends Controller
     public function add(Request $request)
     {
         $request->validate([
+            'product_id'         => 'required|integer|exists:products,id', // Validate product_id
             'product_variant_id' => 'required|integer|exists:product_variants,id',
             'quantity'           => 'nullable|integer|min:1|max:10',
         ]);
 
         $quantity = min($request->quantity ?? 1, 10); // giới hạn 10/sp/acc
         $variantId = $request->product_variant_id;
+        $productId = $request->product_id;
 
-        // Kiểm tra variant có tồn tại và còn hàng không
-        $variant = \App\Models\ProductVariant::findOrFail($variantId);
-        
-        if ($variant->status !== 'available') {
-            $message = 'Sản phẩm này hiện không khả dụng!';
-            return $this->respondError($request, $message);
-        }
+        // Lock variant và kiểm tra trong transaction để tránh race condition
+        $variant = DB::transaction(function () use ($variantId, $productId, $quantity, $request) {
+            // Lock variant row để tránh race condition
+            $variant = \App\Models\ProductVariant::lockForUpdate()->find($variantId);
+            
+            if (!$variant) {
+                throw new \Exception('Biến thể sản phẩm không tồn tại.');
+            }
+            
+            // Validate variant thuộc đúng product (bảo mật quan trọng)
+            if ($variant->product_id !== (int)$productId) {
+                throw new \Exception('Biến thể không thuộc sản phẩm này.');
+            }
+            
+            // Kiểm tra trạng thái
+            if ($variant->status !== 'available') {
+                throw new \Exception('Sản phẩm này hiện không khả dụng!');
+            }
 
-        if ($variant->stock < $quantity) {
-            $message = 'Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').';
-            return $this->respondError($request, $message);
-        }
+            // Kiểm tra stock (sau khi lock, đảm bảo không bị race condition)
+            if ($variant->stock < $quantity) {
+                throw new \Exception('Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
+            }
+            
+            return $variant;
+        });
 
         $cart = $this->getOrCreateActiveCart();
         $currentTotal = $cart->items()->sum('quantity');
+
+        // Lấy snapshot giá tại thời điểm thêm vào giỏ
+        $priceAtTime = $variant->price;
+        $priceSaleAtTime = $variant->price_sale;
 
         // Tìm item đã có trong giỏ (do có unique constraint trên cart_id + product_variant_id)
         $cartItem = $cart->items()
@@ -91,6 +114,9 @@ class CartController extends Controller
                 return $this->respondError($request, $message);
             }
             $cartItem->quantity = $newQuantity;
+            // Cập nhật lại snapshot price khi cập nhật quantity (giá có thể đã thay đổi)
+            $cartItem->price_at_time = $priceAtTime;
+            $cartItem->price_sale_at_time = $priceSaleAtTime;
             $cartItem->save();
         } else {
             $newTotal = $currentTotal + $quantity;
@@ -98,11 +124,13 @@ class CartController extends Controller
                 $message = 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).';
                 return $this->respondError($request, $message);
             }
-            // Nếu chưa có, tạo item mới
+            // Nếu chưa có, tạo item mới với snapshot price
             CartItem::create([
                 'cart_id'            => $cart->id,
                 'product_variant_id' => $variantId,
                 'quantity'           => $quantity,
+                'price_at_time'      => $priceAtTime,
+                'price_sale_at_time' => $priceSaleAtTime,
             ]);
         }
 
@@ -153,7 +181,10 @@ class CartController extends Controller
             return redirect()->route('cart.index')->with('error', 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).');
         }
 
+        // Cập nhật quantity và snapshot price (nếu giá đã thay đổi, cập nhật lại snapshot)
         $cartItem->quantity = $request->quantity;
+        $cartItem->price_at_time = $variant->price;
+        $cartItem->price_sale_at_time = $variant->price_sale;
         $cartItem->save();
 
         return redirect()->route('cart.index')->with('success', 'Cập nhật giỏ hàng thành công!');

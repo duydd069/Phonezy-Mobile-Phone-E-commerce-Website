@@ -794,9 +794,14 @@
                     @endphp
                     @if($hasVariants && $product->variants && $product->variants->count() > 0)
                         @php
-                            // Nhóm variants theo storage_id và version_id để tạo các combination
-                            $storageVersionCombos = [];
+                            // Tách riêng versions, storages, và colors
+                            $uniqueVersions = [];
+                            $uniqueStorages = [];
+                            $uniqueColors = [];
                             $allVariantsData = [];
+                            
+                            // Lấy variant đầu tiên available làm mặc định
+                            $firstAvailableVariant = null;
                             
                             foreach($product->variants as $variant) {
                                 $isAvailable = ($variant->stock ?? 0) > 0 && $variant->status === 'available';
@@ -804,20 +809,9 @@
                                 $versionId = $variant->version_id ?? 'none';
                                 $colorId = $variant->color_id ?? 'none';
                                 
-                                $comboKey = $storageId . '_' . $versionId;
-                                
-                                if(!isset($storageVersionCombos[$comboKey])) {
-                                    $storageVersionCombos[$comboKey] = [
-                                        'storage_id' => $storageId,
-                                        'version_id' => $versionId,
-                                        'storage_name' => $variant->storage ? $variant->storage->storage : '',
-                                        'version_name' => $variant->version ? $variant->version->name : '',
-                                        'variants' => []
-                                    ];
-                                }
-                                
                                 $variantImage = $variant->image ? (preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image)) : $mainImage;
                                 
+                                // Lưu tất cả variants data
                                 $allVariantsData[] = [
                                     'id' => $variant->id,
                                     'storage_id' => $storageId,
@@ -829,115 +823,147 @@
                                     'sku' => $variant->sku,
                                     'stock' => $variant->stock,
                                     'is_available' => $isAvailable,
+                                    'storage_name' => $variant->storage ? $variant->storage->storage : '',
+                                    'version_name' => $variant->version ? $variant->version->name : '',
                                     'color_name' => $variant->color ? $variant->color->name : '',
                                     'color_hex' => $variant->color ? $variant->color->hex_code : null,
                                 ];
                                 
-                                $storageVersionCombos[$comboKey]['variants'][] = [
-                                    'id' => $variant->id,
-                                    'color_id' => $colorId,
-                                    'color_name' => $variant->color ? $variant->color->name : '',
-                                    'color_hex' => $variant->color ? $variant->color->hex_code : null,
-                                    'price' => $variant->price,
-                                    'price_sale' => $variant->price_sale,
-                                    'image' => $variantImage,
-                                    'sku' => $variant->sku,
-                                    'stock' => $variant->stock,
-                                    'is_available' => $isAvailable,
-                                ];
+                                // Thu thập unique versions
+                                if($versionId !== 'none' && $variant->version && !isset($uniqueVersions[$versionId])) {
+                                    $uniqueVersions[$versionId] = [
+                                        'id' => $versionId,
+                                        'name' => $variant->version->name,
+                                    ];
+                                }
+                                
+                                // Thu thập unique storages
+                                if($storageId !== 'none' && $variant->storage && !isset($uniqueStorages[$storageId])) {
+                                    $uniqueStorages[$storageId] = [
+                                        'id' => $storageId,
+                                        'name' => $variant->storage->storage,
+                                    ];
+                                }
+                                
+                                // Thu thập unique colors
+                                if($colorId !== 'none' && $variant->color && !isset($uniqueColors[$colorId])) {
+                                    $uniqueColors[$colorId] = [
+                                        'id' => $colorId,
+                                        'name' => $variant->color->name,
+                                        'hex_code' => $variant->color->hex_code,
+                                    ];
+                                }
+                                
+                                // Lưu variant đầu tiên available
+                                if(!$firstAvailableVariant && $isAvailable) {
+                                    $firstAvailableVariant = $variant;
+                                }
                             }
                             
-                            // Lấy combo đầu tiên làm mặc định
-                            $firstCombo = null;
-                            $firstComboKey = null;
-                            if(!empty($storageVersionCombos)) {
-                                $firstComboKey = array_key_first($storageVersionCombos);
-                                $firstCombo = $storageVersionCombos[$firstComboKey];
+                            // Nếu không có variant available, lấy variant đầu tiên
+                            if(!$firstAvailableVariant && count($allVariantsData) > 0) {
+                                $firstAvailableVariant = $product->variants->first();
                             }
+                            
+                            // Lấy giá trị mặc định từ variant đầu tiên
+                            $defaultVersionId = $firstAvailableVariant ? ($firstAvailableVariant->version_id ?? 'none') : (count($uniqueVersions) > 0 ? array_key_first($uniqueVersions) : 'none');
+                            $defaultStorageId = $firstAvailableVariant ? ($firstAvailableVariant->storage_id ?? 'none') : (count($uniqueStorages) > 0 ? array_key_first($uniqueStorages) : 'none');
+                            $defaultColorId = $firstAvailableVariant ? ($firstAvailableVariant->color_id ?? 'none') : (count($uniqueColors) > 0 ? array_key_first($uniqueColors) : 'none');
                         @endphp
                         
-                        @if(count($storageVersionCombos) > 0)
-                        {{-- Chọn Storage + Version --}}
+                        {{-- Chọn Phiên bản --}}
+                        @if(count($uniqueVersions) > 0)
                         <div class="variant-selection">
-                            <label class="variant-label">Chọn dung lượng và phiên bản:</label>
-                            <div class="variant-options">
-                                @foreach($storageVersionCombos as $comboKey => $combo)
+                            <label class="variant-label">Chọn phiên bản:</label>
+                            <div class="variant-options" id="version-options">
+                                @foreach($uniqueVersions as $versionId => $version)
                                     @php 
-                                        $isFirst = $loop->first;
-                                        $displayName = trim(($combo['storage_name'] ?? '') . ' ' . ($combo['version_name'] ?? ''));
-                                        if(empty($displayName)) {
-                                            $displayName = 'Mặc định';
-                                        }
-                                        // Lấy giá từ variant đầu tiên của combo này
-                                        $firstVariantInCombo = $combo['variants'][0] ?? null;
-                                        $comboPrice = $firstVariantInCombo ? ($firstVariantInCombo['price_sale'] ?? $firstVariantInCombo['price']) : 0;
+                                        $isSelected = $versionId == $defaultVersionId;
                                     @endphp
-                                    <div class="variant-option storage-version-combo {{ $isFirst ? 'selected' : '' }}" 
-                                         data-combo-key="{{ $comboKey }}"
-                                         data-storage-id="{{ $combo['storage_id'] }}"
-                                         data-version-id="{{ $combo['version_id'] }}"
-                                         data-price="{{ $comboPrice }}">
-                                        @if($isFirst)
+                                    <div class="variant-option version-option {{ $isSelected ? 'selected' : '' }}" 
+                                         data-version-id="{{ $versionId }}">
+                                        @if($isSelected)
                                             <i class="fa fa-check"></i>
                                         @endif
-                                        <div style="font-weight: bold;">{{ $displayName }}</div>
-                                        <div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">
-                                            Từ {{ number_format($comboPrice, 0, ',', '.') }} ₫
+                                        <div style="font-weight: bold;">{{ $version['name'] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        
+                        {{-- Chọn Dung lượng --}}
+                        @if(count($uniqueStorages) > 0)
+                        <div class="variant-selection">
+                            <label class="variant-label">Chọn dung lượng:</label>
+                            <div class="variant-options" id="storage-options">
+                                @foreach($uniqueStorages as $storageId => $storage)
+                                    @php 
+                                        $isSelected = $storageId == $defaultStorageId;
+                                    @endphp
+                                    <div class="variant-option storage-option {{ $isSelected ? 'selected' : '' }}" 
+                                         data-storage-id="{{ $storageId }}">
+                                        @if($isSelected)
+                                            <i class="fa fa-check"></i>
+                                        @endif
+                                        <div style="font-weight: bold;">{{ $storage['name'] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        
+                        {{-- Chọn Màu sắc --}}
+                        @if(count($uniqueColors) > 0)
+                        <div class="variant-selection" id="color-selection-container">
+                            <label class="variant-label">Chọn màu sắc:</label>
+                            <div class="variant-options" id="color-options">
+                                @foreach($uniqueColors as $colorId => $color)
+                                    @php 
+                                        $isSelected = $colorId == $defaultColorId;
+                                        // Tìm variant image cho màu này với version và storage mặc định
+                                        $colorVariant = null;
+                                        foreach($allVariantsData as $v) {
+                                            if($v['color_id'] == $colorId && 
+                                               ($v['version_id'] == $defaultVersionId || $defaultVersionId == 'none') &&
+                                               ($v['storage_id'] == $defaultStorageId || $defaultStorageId == 'none')) {
+                                                $colorVariant = $v;
+                                                break;
+                                            }
+                                        }
+                                        // Nếu không tìm thấy với combo mặc định, lấy variant đầu tiên có màu này
+                                        if(!$colorVariant) {
+                                            foreach($allVariantsData as $v) {
+                                                if($v['color_id'] == $colorId) {
+                                                    $colorVariant = $v;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        $colorImage = $colorVariant ? $colorVariant['image'] : $mainImage;
+                                    @endphp
+                                    <div class="variant-option color-option {{ $isSelected ? 'selected' : '' }}" 
+                                         data-color-id="{{ $colorId }}">
+                                        @if($isSelected)
+                                            <i class="fa fa-check"></i>
+                                        @endif
+                                        <div style="text-align: center;">
+                                            <img src="{{ $colorImage }}" alt="{{ $color['name'] }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;">
+                                            <div style="font-weight: bold; margin-top: 8px; font-size: 13px;">{{ $color['name'] ?: 'Màu sắc' }}</div>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
                         </div>
-                        
-                        {{-- Chọn Màu sắc (sẽ được cập nhật động theo combo đã chọn) --}}
-                        <div class="variant-selection" id="color-selection-container">
-                            <label class="variant-label">Chọn màu sắc:</label>
-                            <div class="variant-options" id="color-options">
-                                @if($firstCombo && count($firstCombo['variants']) > 0)
-                                    @foreach($firstCombo['variants'] as $index => $colorVariant)
-                                        @php 
-                                            $isFirst = $index === 0;
-                                            $colorImage = $colorVariant['image'] ?? $mainImage;
-                                            $isAvailable = $colorVariant['is_available'] && ($colorVariant['stock'] ?? 0) > 0;
-                                            $availabilityText = $isAvailable ? 'Còn hàng' : 'Đã hết hàng';
-                                            $availabilityClass = $isAvailable ? 'text-success' : 'text-danger';
-                                        @endphp
-                                        <div class="variant-option color-variant {{ $isFirst ? 'selected' : '' }}" 
-                                             data-variant-id="{{ $colorVariant['id'] }}"
-                                             data-storage-id="{{ $firstCombo['storage_id'] }}"
-                                             data-version-id="{{ $firstCombo['version_id'] }}"
-                                             data-color-id="{{ $colorVariant['color_id'] }}"
-                                             data-price="{{ $colorVariant['price'] }}"
-                                             data-price-sale="{{ $colorVariant['price_sale'] ?? '' }}"
-                                             data-image="{{ $colorImage }}"
-                                             data-sku="{{ $colorVariant['sku'] }}"
-                                             data-stock="{{ $colorVariant['stock'] }}"
-                                             data-available="{{ $isAvailable ? '1' : '0' }}">
-                                            @if($isFirst)
-                                                <i class="fa fa-check"></i>
-                                            @endif
-                                            <div style="text-align: center;">
-                                                <img src="{{ $colorImage }}" alt="{{ $colorVariant['color_name'] }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;">
-                                                <div style="font-weight: bold; margin-top: 8px; font-size: 13px;">{{ $colorVariant['color_name'] ?: 'Màu sắc' }}</div>
-                                                <div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">
-                                                    {{ number_format($colorVariant['price_sale'] ?? $colorVariant['price'], 0, ',', '.') }} ₫
-                                                </div>
-                                                <div class="mt-1" style="font-size: 12px;">
-                                                    <span class="{{ $availabilityClass }}">{{ $availabilityText }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                @endif
-                            </div>
-                        </div>
+                        @endif
                         
                         {{-- Lưu tất cả variants data vào JavaScript --}}
                         <script>
                             window.productVariantsData = @json($allVariantsData);
-                            window.storageVersionCombos = @json($storageVersionCombos);
+                            window.defaultVersionId = @json($defaultVersionId);
+                            window.defaultStorageId = @json($defaultStorageId);
+                            window.defaultColorId = @json($defaultColorId);
                         </script>
-                        @endif
                     @endif
                     
                     <div class="quantity-selector">
@@ -1742,193 +1768,304 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Storage + Version Combo Selection
-    const storageVersionCombos = document.querySelectorAll('.storage-version-combo');
-    storageVersionCombos.forEach(function(combo) {
-        combo.addEventListener('click', function() {
-            // Remove selected from all combos
-            storageVersionCombos.forEach(function(c) {
-                c.classList.remove('selected');
-                c.style.borderColor = '#E4E7ED';
-                c.style.background = '#fff';
-                const checkIcon = c.querySelector('.fa-check');
-                if (checkIcon) {
-                    checkIcon.remove();
-                }
-            });
-            
-            // Add selected to clicked combo
-            this.classList.add('selected');
-            this.style.borderColor = '#D10024';
-            this.style.background = '#FFF5F5';
-            
-            const checkIcon = document.createElement('i');
-            checkIcon.className = 'fa fa-check';
-            this.insertBefore(checkIcon, this.firstChild);
-            
-            // Get combo data
-            const comboKey = this.getAttribute('data-combo-key');
-            const storageId = this.getAttribute('data-storage-id');
-            const versionId = this.getAttribute('data-version-id');
-            
-            // Update color options based on selected combo
-            updateColorOptions(comboKey, storageId, versionId);
-            
-            // Note: variant_id will be updated when first color option is auto-selected in updateColorOptions
+    // Helper function to select an option visually
+    function selectOption(optionElement, optionGroup) {
+        const parentGroup = optionElement.closest('.variant-selection');
+        const allOptionsInGroup = parentGroup.querySelectorAll('.variant-option');
+        allOptionsInGroup.forEach(function(opt) {
+            opt.classList.remove('selected');
+            opt.style.borderColor = '#E4E7ED';
+            opt.style.background = '#fff';
+            const checkIcon = opt.querySelector('.fa-check');
+            if (checkIcon) {
+                checkIcon.remove();
+            }
         });
-    });
+        
+        optionElement.classList.add('selected');
+        optionElement.style.borderColor = '#D10024';
+        optionElement.style.background = '#FFF5F5';
+        
+        const checkIcon = document.createElement('i');
+        checkIcon.className = 'fa fa-check';
+        optionElement.insertBefore(checkIcon, optionElement.firstChild);
+    }
     
-    // Color Selection (for existing color options)
-    const colorOptions = document.querySelectorAll('.color-variant');
-    colorOptions.forEach(function(option) {
-        option.addEventListener('click', function() {
-            const parentGroup = this.closest('.variant-selection');
-            const allOptionsInGroup = parentGroup.querySelectorAll('.variant-option');
-            allOptionsInGroup.forEach(function(opt) {
-                opt.classList.remove('selected');
-                opt.style.borderColor = '#E4E7ED';
-                opt.style.background = '#fff';
-                const checkIcon = opt.querySelector('.fa-check');
-                if (checkIcon) {
-                    checkIcon.remove();
+    // Track if user has interacted with variant selection (clicked any option)
+    let userHasInteracted = false;
+    
+    // Function to find matching variant based on selected version, storage, and color
+    function findMatchingVariant(versionId, storageId, colorId, allowBestMatch = false) {
+        if (!window.productVariantsData) return null;
+        
+        // Convert 'none' to null for easier handling
+        const vId = (versionId === 'none' || versionId === null || versionId === undefined) ? null : String(versionId);
+        const sId = (storageId === 'none' || storageId === null || storageId === undefined) ? null : String(storageId);
+        const cId = (colorId === 'none' || colorId === null || colorId === undefined) ? null : String(colorId);
+        
+        // Find exact match - stricter matching: NULL only matches NULL, not any value
+        let variant = window.productVariantsData.find(function(v) {
+            const vVersionId = (v.version_id === 'none' || v.version_id === null || v.version_id === undefined) ? null : String(v.version_id);
+            const vStorageId = (v.storage_id === 'none' || v.storage_id === null || v.storage_id === undefined) ? null : String(v.storage_id);
+            const vColorId = (v.color_id === 'none' || v.color_id === null || v.color_id === undefined) ? null : String(v.color_id);
+            
+            // Strict matching: NULL only matches NULL, not any value
+            // Both must be NULL OR both must be non-NULL and equal
+            const versionMatch = (vVersionId === null && vId === null) || 
+                                (vVersionId !== null && vId !== null && vVersionId == vId);
+            
+            const storageMatch = (vStorageId === null && sId === null) || 
+                                (vStorageId !== null && sId !== null && vStorageId == sId);
+            
+            const colorMatch = (vColorId === null && cId === null) || 
+                              (vColorId !== null && cId !== null && vColorId == cId);
+            
+            // Also check availability and stock
+            return versionMatch && storageMatch && colorMatch && v.is_available && v.stock > 0;
+        });
+        
+        // Only use best match when initializing page, NOT when user has interacted
+        if (!variant && allowBestMatch && !userHasInteracted) {
+            let bestMatch = null;
+            let bestScore = -1;
+            
+            window.productVariantsData.forEach(function(v) {
+                const vVersionId = (v.version_id === 'none' || v.version_id === null || v.version_id === undefined) ? null : String(v.version_id);
+                const vStorageId = (v.storage_id === 'none' || v.storage_id === null || v.storage_id === undefined) ? null : String(v.storage_id);
+                const vColorId = (v.color_id === 'none' || v.color_id === null || v.color_id === undefined) ? null : String(v.color_id);
+                
+                let score = 0;
+                // Give higher weight to storage match (most important for price)
+                if (sId !== null && vStorageId !== null && vStorageId === sId) score += 3;
+                if (vId !== null && vVersionId !== null && vVersionId === vId) score += 2;
+                if (cId !== null && vColorId !== null && vColorId === cId) score += 1;
+                
+                // Only consider available variants with stock
+                if (score > bestScore && v.is_available && v.stock > 0) {
+                    bestScore = score;
+                    bestMatch = v;
                 }
             });
             
-            this.classList.add('selected');
-            this.style.borderColor = '#D10024';
-            this.style.background = '#FFF5F5';
-            
-            const checkIcon = document.createElement('i');
-            checkIcon.className = 'fa fa-check';
-            this.insertBefore(checkIcon, this.firstChild);
-            
-            // Update variant ID immediately when color is selected
-            const variantId = this.getAttribute('data-variant-id');
-            if (variantId) {
-                selectedVariantId = variantId;
-                if (btnAddCart) {
-                    btnAddCart.setAttribute('data-variant-id', variantId);
-                    console.log('Updated variant ID after color selection:', variantId);
+            variant = bestMatch;
+        }
+        
+        return variant;
+    }
+    
+    // Function to update product info based on selected variant
+    function updateSelectedVariant() {
+        // Get selected values
+        const selectedVersion = document.querySelector('.version-option.selected');
+        const selectedStorage = document.querySelector('.storage-option.selected');
+        const selectedColor = document.querySelector('.color-option.selected');
+        
+        const versionId = selectedVersion ? selectedVersion.getAttribute('data-version-id') : (window.defaultVersionId || 'none');
+        const storageId = selectedStorage ? selectedStorage.getAttribute('data-storage-id') : (window.defaultStorageId || 'none');
+        const colorId = selectedColor ? selectedColor.getAttribute('data-color-id') : (window.defaultColorId || 'none');
+        
+        // Find matching variant - allow best match only if user hasn't interacted yet
+        const variant = findMatchingVariant(versionId, storageId, colorId, !userHasInteracted);
+        
+        if (variant) {
+            // Update variant ID
+            selectedVariantId = variant.id;
+            if (btnAddCart) {
+                btnAddCart.setAttribute('data-variant-id', variant.id);
+                // Enable/disable button based on stock
+                if (variant.stock > 0 && variant.is_available) {
+                    btnAddCart.disabled = false;
+                    btnAddCart.style.opacity = '1';
+                    btnAddCart.style.cursor = 'pointer';
+                } else {
+                    btnAddCart.disabled = true;
+                    btnAddCart.style.opacity = '0.6';
+                    btnAddCart.style.cursor = 'not-allowed';
                 }
             }
             
-            // Update product info based on selected color variant
-            updateProductInfo(this);
-        });
-    });
-    
-    // Function to update color options based on selected storage+version combo
-    function updateColorOptions(comboKey, storageId, versionId) {
-        if (!window.storageVersionCombos || !window.storageVersionCombos[comboKey]) {
-            return;
+            // Update SKU
+            if (currentSku) {
+                currentSku.textContent = variant.sku || '';
+            }
+            
+            // Update price
+            if (mainPrice) {
+                const displayPrice = variant.price_sale || variant.price;
+                const priceText = parseInt(displayPrice).toLocaleString('vi-VN') + ' ₫';
+                if (variant.price_sale && parseFloat(variant.price_sale) < parseFloat(variant.price)) {
+                    const originalPrice = parseInt(variant.price).toLocaleString('vi-VN') + ' ₫';
+                    mainPrice.innerHTML = '<span style="color: #D10024; font-weight: bold; font-size: 28px;">' + priceText + '</span>' +
+                                         '<span style="color: #8D99AE; text-decoration: line-through; font-size: 18px; margin-left: 10px;">' + originalPrice + '</span>';
+                } else {
+                    mainPrice.innerHTML = '<span style="color: #2B2D42; font-weight: bold; font-size: 28px;">' + priceText + '</span>';
+                }
+            }
+            
+            // Update stock
+            updateStockUI(variant.stock || 0);
+            
+            // Update image if variant has image
+            if (variant.image && mainImage) {
+                mainImage.style.opacity = '0.7';
+                setTimeout(function() {
+                    if (mainImage) {
+                        mainImage.src = variant.image;
+                        mainImage.style.opacity = '1';
+                    }
+                    // Update thumbnail active state
+                    updateThumbnailActive(variant.image);
+                }, 150);
+            }
+        } else if (userHasInteracted) {
+            // If user has interacted but no exact match found, show warning
+            if (btnAddCart) {
+                btnAddCart.disabled = true;
+                btnAddCart.style.opacity = '0.6';
+                btnAddCart.style.cursor = 'not-allowed';
+            }
+            // Optionally show a message to user
+            // console.log('Tùy chọn này không khả dụng');
         }
-        
-        const combo = window.storageVersionCombos[comboKey];
+    }
+    
+    // Function to filter and update available colors based on selected storage and version
+    function updateAvailableColors() {
+        const selectedVersion = document.querySelector('.version-option.selected');
+        const selectedStorage = document.querySelector('.storage-option.selected');
         const colorOptionsContainer = document.getElementById('color-options');
         
-        if (!colorOptionsContainer || !combo.variants || combo.variants.length === 0) {
-            return;
-        }
+        if (!colorOptionsContainer || !window.productVariantsData) return;
         
-        // Clear existing color options
-        colorOptionsContainer.innerHTML = '';
+        const versionId = selectedVersion ? selectedVersion.getAttribute('data-version-id') : (window.defaultVersionId || 'none');
+        const storageId = selectedStorage ? selectedStorage.getAttribute('data-storage-id') : (window.defaultStorageId || 'none');
         
-        // Add new color options
-        combo.variants.forEach(function(colorVariant, index) {
-            const isFirst = index === 0;
-            const colorImage = colorVariant.image || (mainImage ? mainImage.src : '');
-            const displayPrice = colorVariant.price_sale || colorVariant.price;
-            const hasDiscount = colorVariant.price_sale && parseFloat(colorVariant.price_sale) < parseFloat(colorVariant.price);
-            const isAvailable = colorVariant.is_available && parseInt(colorVariant.stock) > 0;
-            const availabilityText = isAvailable ? 'Còn hàng' : 'Đã hết hàng';
-            const availabilityClass = isAvailable ? 'text-success' : 'text-danger';
+        const vId = (versionId === 'none' || versionId === null || versionId === undefined) ? null : String(versionId);
+        const sId = (storageId === 'none' || storageId === null || storageId === undefined) ? null : String(storageId);
+        
+        // Get all available color IDs for the selected storage and version
+        // Strict matching: NULL only matches NULL, not any value
+        const availableColorIds = new Set();
+        window.productVariantsData.forEach(function(v) {
+            const vVersionId = (v.version_id === 'none' || v.version_id === null || v.version_id === undefined) ? null : String(v.version_id);
+            const vStorageId = (v.storage_id === 'none' || v.storage_id === null || v.storage_id === undefined) ? null : String(v.storage_id);
+            const vColorId = (v.color_id === 'none' || v.color_id === null || v.color_id === undefined) ? null : String(v.color_id);
             
-            const colorOption = document.createElement('div');
-            colorOption.className = 'variant-option color-variant' + (isFirst ? ' selected' : '');
-            colorOption.setAttribute('data-variant-id', colorVariant.id);
-            colorOption.setAttribute('data-storage-id', storageId);
-            colorOption.setAttribute('data-version-id', versionId);
-            colorOption.setAttribute('data-color-id', colorVariant.color_id);
-            colorOption.setAttribute('data-price', colorVariant.price);
-            colorOption.setAttribute('data-price-sale', colorVariant.price_sale || '');
-            colorOption.setAttribute('data-image', colorImage);
-            colorOption.setAttribute('data-sku', colorVariant.sku);
-            colorOption.setAttribute('data-stock', colorVariant.stock);
-            colorOption.setAttribute('data-available', isAvailable ? '1' : '0');
+            // Strict matching: NULL only matches NULL
+            const versionMatch = (vVersionId === null && vId === null) || 
+                                (vVersionId !== null && vId !== null && vVersionId == vId);
             
-            if (isFirst) {
-                colorOption.style.borderColor = '#D10024';
-                colorOption.style.background = '#FFF5F5';
+            const storageMatch = (vStorageId === null && sId === null) || 
+                                (vStorageId !== null && sId !== null && vStorageId == sId);
+            
+            // If variant matches selected storage and version, add its color to available list
+            if (versionMatch && storageMatch && vColorId !== null && v.is_available && v.stock > 0) {
+                availableColorIds.add(vColorId);
             }
+        });
+        
+        // Show/hide color options based on availability
+        const colorOptions = colorOptionsContainer.querySelectorAll('.color-option');
+        let hasSelectedColor = false;
+        let firstAvailableColor = null;
+        
+        colorOptions.forEach(function(colorOption) {
+            const colorId = colorOption.getAttribute('data-color-id');
+            const colorIdStr = (colorId === 'none' || colorId === null || colorId === undefined) ? null : String(colorId);
             
-            let priceHtml = '';
-            if (hasDiscount) {
-                priceHtml = '<div style="font-size: 12px; color: #D10024; margin-top: 5px; font-weight: bold;">' +
-                    parseInt(colorVariant.price_sale).toLocaleString('vi-VN') + ' ₫' +
-                    '</div>' +
-                    '<div style="font-size: 11px; color: #8D99AE; text-decoration: line-through;">' +
-                    parseInt(colorVariant.price).toLocaleString('vi-VN') + ' ₫' +
-                    '</div>';
+            if (colorIdStr !== null && availableColorIds.has(colorIdStr)) {
+                // Color is available - show it
+                colorOption.style.display = '';
+                
+                // Update color image to match the selected storage/version
+                const variant = window.productVariantsData.find(function(v) {
+                    const vVersionId = (v.version_id === 'none' || v.version_id === null || v.version_id === undefined) ? null : String(v.version_id);
+                    const vStorageId = (v.storage_id === 'none' || v.storage_id === null || v.storage_id === undefined) ? null : String(v.storage_id);
+                    const vColorId = (v.color_id === 'none' || v.color_id === null || v.color_id === undefined) ? null : String(v.color_id);
+                    
+                    // Strict matching: NULL only matches NULL
+                    const versionMatch = (vVersionId === null && vId === null) || 
+                                        (vVersionId !== null && vId !== null && vVersionId == vId);
+                    const storageMatch = (vStorageId === null && sId === null) || 
+                                        (vStorageId !== null && sId !== null && vStorageId == sId);
+                    
+                    return versionMatch && storageMatch && vColorId === colorIdStr;
+                });
+                
+                if (variant && variant.image) {
+                    const img = colorOption.querySelector('img');
+                    if (img) {
+                        img.src = variant.image;
+                    }
+                }
+                
+                if (!firstAvailableColor) {
+                    firstAvailableColor = colorOption;
+                }
+                
+                if (colorOption.classList.contains('selected')) {
+                    hasSelectedColor = true;
+                }
             } else {
-                priceHtml = '<div style="font-size: 12px; color: #8D99AE; margin-top: 5px;">' +
-                    parseInt(displayPrice).toLocaleString('vi-VN') + ' ₫' +
-                    '</div>';
-            }
-            
-            colorOption.innerHTML = 
-                (isFirst ? '<i class="fa fa-check"></i>' : '') +
-                '<div style="text-align: center;">' +
-                    '<img src="' + colorImage + '" alt="' + (colorVariant.color_name || 'Màu sắc') + '" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto;">' +
-                    '<div style="font-weight: bold; margin-top: 8px; font-size: 13px;">' + (colorVariant.color_name || 'Màu sắc') + '</div>' +
-                    priceHtml +
-                    '<div style="margin-top: 4px; font-size: 12px;" class="' + availabilityClass + '">' + availabilityText + '</div>' +
-                '</div>';
-            
-            // Add click event
-            colorOption.addEventListener('click', function() {
-                const allColorOptions = colorOptionsContainer.querySelectorAll('.color-variant');
-                allColorOptions.forEach(function(opt) {
-                    opt.classList.remove('selected');
-                    opt.style.borderColor = '#E4E7ED';
-                    opt.style.background = '#fff';
-                    const checkIcon = opt.querySelector('.fa-check');
+                // Color is not available - hide it
+                colorOption.style.display = 'none';
+                
+                // If this was selected, deselect it
+                if (colorOption.classList.contains('selected')) {
+                    colorOption.classList.remove('selected');
+                    colorOption.style.borderColor = '#E4E7ED';
+                    colorOption.style.background = '#fff';
+                    const checkIcon = colorOption.querySelector('.fa-check');
                     if (checkIcon) {
                         checkIcon.remove();
                     }
-                });
-                
-                this.classList.add('selected');
-                this.style.borderColor = '#D10024';
-                this.style.background = '#FFF5F5';
-                
-                const checkIcon = document.createElement('i');
-                checkIcon.className = 'fa fa-check';
-                this.insertBefore(checkIcon, this.firstChild);
-                
-                updateProductInfo(this);
-            });
-            
-            colorOptionsContainer.appendChild(colorOption);
+                }
+            }
         });
         
-        // Auto-select first color and update product info
-        const firstColorOption = colorOptionsContainer.querySelector('.color-variant.selected');
-        if (firstColorOption) {
-            // Update SKU immediately when combo changes
-            const firstSku = firstColorOption.getAttribute('data-sku');
-            if (firstSku && currentSku) {
-                currentSku.textContent = firstSku;
-            }
-            // Update variant ID and button immediately
-            const firstVariantId = firstColorOption.getAttribute('data-variant-id');
-            if (firstVariantId && btnAddCart) {
-                selectedVariantId = firstVariantId;
-                btnAddCart.setAttribute('data-variant-id', firstVariantId);
-                console.log('Updated variant ID after combo change:', firstVariantId);
-            }
-            updateProductInfo(firstColorOption);
+        // If selected color is no longer available, select first available color
+        if (!hasSelectedColor && firstAvailableColor) {
+            selectOption(firstAvailableColor, 'color');
         }
     }
+    
+    // Version Selection
+    const versionOptions = document.querySelectorAll('.version-option');
+    versionOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            userHasInteracted = true; // Mark that user has interacted
+            selectOption(this, 'version');
+            updateAvailableColors(); // Update available colors first
+            updateSelectedVariant();
+        });
+    });
+    
+    // Storage Selection
+    const storageOptions = document.querySelectorAll('.storage-option');
+    storageOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            userHasInteracted = true; // Mark that user has interacted
+            selectOption(this, 'storage');
+            updateAvailableColors(); // Update available colors first
+            updateSelectedVariant();
+        });
+    });
+    
+    // Color Selection
+    const colorOptions = document.querySelectorAll('.color-option');
+    colorOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            userHasInteracted = true; // Mark that user has interacted
+            selectOption(this, 'color');
+            updateSelectedVariant();
+        });
+    });
+    
+    // Initialize with default variant on page load (allow best match during initialization)
+    setTimeout(function() {
+        updateAvailableColors(); // Filter colors based on default storage/version
+        updateSelectedVariant(); // This will use best match since userHasInteracted is still false
+    }, 100);
     
     // Function to update product info (image, price, SKU, stock) based on selected variant
     function updateProductInfo(variantElement) {
@@ -2297,6 +2434,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Create form data
             const formData = new FormData();
+            formData.append('product_id', {{ $product->id }}); // Validate variant belongs to product
             formData.append('product_variant_id', variantId);
             formData.append('quantity', quantity);
             formData.append('_token', '{{ csrf_token() }}');
@@ -2405,52 +2543,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Initialize selected variant and load all images
-    const firstColorVariant = document.querySelector('.color-variant.selected');
-    if (firstColorVariant) {
-        selectedVariantId = firstColorVariant.getAttribute('data-variant-id');
-        console.log('Initial variant from color-variant.selected:', selectedVariantId);
-        if (selectedVariantId && btnAddCart) {
-            btnAddCart.setAttribute('data-variant-id', selectedVariantId);
-        }
-        // Cập nhật số lượng từ biến thể đầu tiên được chọn
-        const initialStock = parseInt(firstColorVariant.getAttribute('data-stock')) || 0;
-        updateStockUI(initialStock);
-        updateProductInfo(firstColorVariant);
-    } else if (variantOptions.length > 0) {
-        const firstSelected = document.querySelector('.variant-option.selected');
-        if (firstSelected) {
-            selectedVariantId = firstSelected.getAttribute('data-variant-id');
-            console.log('Initial variant from variant-option.selected:', selectedVariantId);
-            if (selectedVariantId && btnAddCart) {
-                btnAddCart.setAttribute('data-variant-id', selectedVariantId);
-            }
-            // Check if it's a color variant with availability info
-            const isAvailable = parseInt(firstSelected.getAttribute('data-available')) === 1;
-            const stock = parseInt(firstSelected.getAttribute('data-stock')) || 0;
-            // Cập nhật số lượng từ biến thể đầu tiên được chọn
-            updateStockUI(stock);
-            if (btnAddCart && (!isAvailable || stock === 0)) {
-                btnAddCart.disabled = true;
-                btnAddCart.style.opacity = '0.6';
-                btnAddCart.style.cursor = 'not-allowed';
-            }
-        }
-    } else {
-        // No variants - check if button has initial variant ID from server
-        const initialVariantId = btnAddCart ? btnAddCart.getAttribute('data-variant-id') : null;
-        if (initialVariantId && initialVariantId !== '') {
-            selectedVariantId = initialVariantId;
-            console.log('Initial variant from button data-variant-id:', selectedVariantId);
-        } else {
-            selectedVariantId = null;
-            console.log('No variant found - product may not have variants');
-        }
-    }
-    
-    // Final check: Log current state
-    console.log('Final selectedVariantId:', selectedVariantId);
-    console.log('Button data-variant-id:', btnAddCart ? btnAddCart.getAttribute('data-variant-id') : 'N/A');
+    // Initialize selected variant on page load
+    // This is handled by updateSelectedVariant() which is called after a timeout
     
     // Ensure gallery is visible on load
     const galleryWrapper = document.getElementById('gallery-thumbs-wrapper');
