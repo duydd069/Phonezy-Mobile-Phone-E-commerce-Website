@@ -46,7 +46,7 @@ class RevenueReportController extends Controller
 
         // Tính tổng doanh thu
         $totalRevenue = (float) Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('created_at', [$start, $end])
             ->sum('total') ?? 0;
 
@@ -57,19 +57,19 @@ class RevenueReportController extends Controller
 
         // Tính số đơn hàng đã thanh toán
         $paidOrders = (int) Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('created_at', [$start, $end])
             ->count();
 
         // Tính tổng giảm giá
         $totalDiscount = (float) Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('created_at', [$start, $end])
             ->sum('discount_amount') ?? 0;
 
         // Tính tổng phí vận chuyển
         $totalShipping = (float) Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('created_at', [$start, $end])
             ->sum('shipping_fee') ?? 0;
 
@@ -111,7 +111,7 @@ class RevenueReportController extends Controller
     private function getDailyRevenue($start, $end)
     {
         return Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('created_at', [$start, $end])
             ->select(
                 DB::raw('DATE(created_at) as date'),
@@ -137,7 +137,7 @@ class RevenueReportController extends Controller
     {
         return OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', '!=', 'cancelled')
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('orders.created_at', [$start, $end])
             ->select(
                 'order_items.product_name',
@@ -159,7 +159,7 @@ class RevenueReportController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->where('orders.status', '!=', 'cancelled')
-            ->where('orders.payment_status', 'paid')
+            ->where('orders.payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('orders.created_at', [$start, $end])
             ->select(
                 'categories.name as category_name',
@@ -205,7 +205,7 @@ class RevenueReportController extends Controller
         $stats = [];
         foreach ($months as $month) {
             $revenue = Order::where('status', '!=', 'cancelled')
-                ->where('payment_status', 'paid')
+                ->where('payment_status', 1) // 1 = đã thanh toán
                 ->whereBetween('created_at', [$month['start'], $month['end']])
                 ->sum('total');
 
@@ -242,7 +242,7 @@ class RevenueReportController extends Controller
 
         $orders = Order::with(['user', 'items'])
             ->where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+            ->where('payment_status', 1) // 1 = đã thanh toán
             ->whereBetween('created_at', [$start, $end])
             ->orderBy('created_at', 'desc')
             ->get();

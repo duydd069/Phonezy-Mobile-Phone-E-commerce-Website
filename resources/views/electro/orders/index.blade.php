@@ -25,12 +25,13 @@
             <!-- Filter by status -->
             <div class="mb-4">
                 <form method="GET" action="{{ route('client.orders.index') }}" class="d-flex gap-2">
-                    <select name="status" class="form-control" style="max-width: 200px;" onchange="this.form.submit()">
+                    <select name="status" class="form-control" style="max-width: 250px;" onchange="this.form.submit()">
                         <option value="">Tất cả trạng thái</option>
-                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Chờ xử lý</option>
-                        <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Đang xử lý</option>
-                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Hoàn thành</option>
-                        <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
+                        @foreach(\App\Models\Order::getAvailableStatuses() as $statusValue => $statusLabel)
+                            <option value="{{ $statusValue }}" {{ request('status') == $statusValue ? 'selected' : '' }}>
+                                {{ $statusLabel }}
+                            </option>
+                        @endforeach
                     </select>
                 </form>
             </div>
@@ -52,7 +53,7 @@
                         @foreach($orders as $order)
                             <tr>
                                 <td>
-                                    <strong>#{{ $order->id }}</strong>
+                                    <strong>#{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }}</strong>
                                 </td>
                                 <td>
                                     {{ $order->created_at->format('d/m/Y H:i') }}
@@ -79,42 +80,14 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @php
-                                        $statusClasses = [
-                                            'pending' => 'warning',
-                                            'processing' => 'info',
-                                            'completed' => 'success',
-                                            'cancelled' => 'danger'
-                                        ];
-                                        $statusLabels = [
-                                            'pending' => 'Chờ xử lý',
-                                            'processing' => 'Đang xử lý',
-                                            'completed' => 'Hoàn thành',
-                                            'cancelled' => 'Đã hủy'
-                                        ];
-                                        $badgeClass = $statusClasses[$order->status] ?? 'secondary';
-                                        $statusLabel = $statusLabels[$order->status] ?? ucfirst($order->status);
-                                    @endphp
-                                    <span class="badge bg-{{ $badgeClass }}">{{ $statusLabel }}</span>
+                                    <span class="badge {{ $order->status_badge_class }}">{{ $order->status_label }}</span>
                                 </td>
                                 <td>
-                                    @php
-                                        $paymentClasses = [
-                                            'pending' => 'warning',
-                                            'paid' => 'success',
-                                            'failed' => 'danger',
-                                            'refunded' => 'info'
-                                        ];
-                                        $paymentLabels = [
-                                            'pending' => 'Chờ thanh toán',
-                                            'paid' => 'Đã thanh toán',
-                                            'failed' => 'Thất bại',
-                                            'refunded' => 'Đã hoàn tiền'
-                                        ];
-                                        $paymentBadgeClass = $paymentClasses[$order->payment_status] ?? 'secondary';
-                                        $paymentLabel = $paymentLabels[$order->payment_status] ?? ucfirst($order->payment_status);
-                                    @endphp
-                                    <span class="badge bg-{{ $paymentBadgeClass }}">{{ $paymentLabel }}</span>
+                                    @if($order->payment_status == 1)
+                                        <span class="badge bg-success">Đã thanh toán</span>
+                                    @else
+                                        <span class="badge bg-warning">Chưa thanh toán</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <a href="{{ route('client.orders.show', $order->id) }}" 
