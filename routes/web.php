@@ -66,6 +66,11 @@ Route::middleware(['auth'])->prefix('client')->name('client.')->group(function (
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/coupons', [\App\Http\Controllers\Client\CouponController::class, 'index'])->name('coupons.index');
     
+    // Order return routes
+    Route::get('/orders/{order}/return', [\App\Http\Controllers\Client\OrderReturnController::class, 'create'])->name('orders.return.create');
+    Route::post('/orders/{order}/return', [\App\Http\Controllers\Client\OrderReturnController::class, 'store'])->name('orders.return.store');
+    Route::post('/returns/{return}/mark-shipped', [\App\Http\Controllers\Client\OrderReturnController::class, 'markAsShipped'])->name('returns.mark-shipped');
+    
     // Wishlist routes
     Route::get('/wishlist', [\App\Http\Controllers\Client\WishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist/add', [\App\Http\Controllers\Client\WishlistController::class, 'add'])->name('wishlist.add');
@@ -135,6 +140,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.update-status');
+    Route::post('/orders/{order}/quick-status', [AdminOrderController::class, 'quickUpdateStatus'])->name('orders.quick-status');
     Route::post('/orders/{order}/confirm-payment', [AdminOrderController::class, 'confirmPayment'])->name('orders.confirm-payment');
 
     // Comment management routes
@@ -142,6 +148,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/comments/{product}', [\App\Http\Controllers\Admin\CommentController::class, 'show'])->name('comments.show');
     Route::delete('/comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/reply', [\App\Http\Controllers\Admin\CommentController::class, 'reply'])->name('comments.reply');
+
+    // Order Return Management routes
+    Route::get('/returns', [\App\Http\Controllers\Admin\OrderReturnController::class, 'index'])->name('returns.index');
+    Route::get('/returns/{return}', [\App\Http\Controllers\Admin\OrderReturnController::class, 'show'])->name('returns.show');
+    Route::post('/returns/{return}/approve', [\App\Http\Controllers\Admin\OrderReturnController::class, 'approve'])->name('returns.approve');
+    Route::post('/returns/{return}/reject', [\App\Http\Controllers\Admin\OrderReturnController::class, 'reject'])->name('returns.reject');
+    Route::post('/returns/{return}/confirm-received', [\App\Http\Controllers\Admin\OrderReturnController::class, 'confirmReceived'])->name('returns.confirm-received');
+    Route::post('/returns/{return}/process-refund', [\App\Http\Controllers\Admin\OrderReturnController::class, 'processRefund'])->name('returns.process-refund');
 
     // Revenue Report routes
     Route::get('/revenue', [RevenueReportController::class, 'index'])->name('revenue.index');

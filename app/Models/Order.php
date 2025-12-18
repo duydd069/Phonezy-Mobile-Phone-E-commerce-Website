@@ -29,6 +29,7 @@ class Order extends Model
         'shipping_address',
         'notes',
         'paid_at',
+        'shipping_status',
     ];
 
     protected $casts = [
@@ -59,20 +60,49 @@ class Order extends Model
         return $this->belongsTo(Coupon::class);
     }
 
+    public function returns()
+    {
+        return $this->hasMany(OrderReturn::class);
+    }
+
+    /**
+     * Check if order can be returned
+     * Only orders with status giao_thanh_cong or hoan_thanh within 7 days
+     */
+    public function canBeReturned(): bool
+    {
+        // Check status
+        if (!in_array($this->status, ['giao_thanh_cong', 'hoan_thanh'])) {
+            return false;
+        }
+
+        // Check if already has pending/approved/in-progress return (exclude rejected)
+        if ($this->returns()->whereIn('status', ['Chưa giải quyết', 'Thông qua', 'Đang vận chuyển', 'Đã nhận'])->exists()) {
+            return false;
+        }
+
+        // Check 7 day limit from delivery/completion
+        $limitDate = now()->subDays(7);
+        return $this->updated_at >= $limitDate;
+    }
+
+
     /**
      * Get all available order statuses
      */
     public static function getAvailableStatuses(): array
     {
         return [
-            'pending' => 'Chờ xử lý',
-            'confirmed' => 'Đã xác nhận',
-            'processing' => 'Đang xử lý',
-            'shipping' => 'Đang giao hàng',
-            'delivered' => 'Đã giao hàng',
-            'completed' => 'Hoàn thành',
-            'cancelled' => 'Đã hủy',
-            'refunded' => 'Đã hoàn tiền',
+            'cho_xac_nhan' => 'Chờ xác nhận',
+            'cho_thanh_toan' => 'Chờ thanh toán',
+            'da_xac_nhan' => 'Đã xác nhận',
+            'chuan_bi_hang' => 'Chuẩn bị hàng',
+            'dang_giao_hang' => 'Đang giao hàng',
+            'giao_thanh_cong' => 'Giao thành công',
+            'giao_that_bai' => 'Giao thất bại',
+            'hoan_thanh' => 'Hoàn thành',
+            'da_huy' => 'Đã hủy',
+            'da_hoan_tien' => 'Đã hoàn tiền',
         ];
     }
 
@@ -82,14 +112,16 @@ class Order extends Model
     public function getValidNextStatuses(): array
     {
         $statusFlow = [
-            'pending' => ['confirmed', 'processing', 'cancelled'],
-            'confirmed' => ['processing', 'cancelled'],
-            'processing' => ['shipping', 'cancelled'],
-            'shipping' => ['delivered', 'cancelled'],
-            'delivered' => ['completed', 'refunded'],
-            'completed' => [], // Không thể chuyển từ completed
-            'cancelled' => [], // Không thể chuyển từ cancelled
-            'refunded' => [], // Không thể chuyển từ refunded
+            'cho_xac_nhan' => ['da_xac_nhan', 'da_huy'],
+            'cho_thanh_toan' => ['da_xac_nhan', 'da_huy'],
+            'da_xac_nhan' => ['chuan_bi_hang', 'da_huy'],
+            'chuan_bi_hang' => ['dang_giao_hang'],
+            'dang_giao_hang' => ['giao_thanh_cong', 'giao_that_bai'],
+            'giao_thanh_cong' => ['hoan_thanh'],
+            'giao_that_bai' => ['da_huy', 'dang_giao_hang'],
+            'hoan_thanh' => [],
+            'da_huy' => [],
+            'da_hoan_tien' => [],
         ];
 
         $validStatuses = $statusFlow[$this->status] ?? [];
@@ -98,7 +130,7 @@ class Order extends Model
         if ($this->requiresPaymentBeforeConfirmation()) {
             // Loại bỏ các trạng thái xác nhận nếu chưa thanh toán
             $validStatuses = array_filter($validStatuses, function($status) {
-                return !in_array($status, ['confirmed', 'processing', 'shipping', 'delivered', 'completed']);
+                return !in_array($status, ['da_xac_nhan', 'chuan_bi_hang', 'dang_giao_hang', 'giao_thanh_cong', 'hoan_thanh']);
             });
         }
 
@@ -128,14 +160,16 @@ class Order extends Model
     public function getStatusBadgeClassAttribute(): string
     {
         return match($this->status) {
-            'pending' => 'bg-warning',
-            'confirmed' => 'bg-info',
-            'processing' => 'bg-primary',
-            'shipping' => 'bg-info',
-            'delivered' => 'bg-success',
-            'completed' => 'bg-success',
-            'cancelled' => 'bg-danger',
-            'refunded' => 'bg-secondary',
+            'cho_xac_nhan' => 'bg-warning',
+            'cho_thanh_toan' => 'bg-warning',
+            'da_xac_nhan' => 'bg-info',
+            'chuan_bi_hang' => 'bg-primary',
+            'dang_giao_hang' => 'bg-info',
+            'giao_thanh_cong' => 'bg-success',
+            'giao_that_bai' => 'bg-danger',
+            'hoan_thanh' => 'bg-success',
+            'da_huy' => 'bg-danger',
+            'da_hoan_tien' => 'bg-secondary',
             default => 'bg-secondary',
         };
     }
@@ -159,7 +193,25 @@ class Order extends Model
      */
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, ['pending', 'confirmed', 'processing']);
+        return in_array($this->status, ['cho_xac_nhan', 'cho_thanh_toan', 'da_xac_nhan']);
+    }
+
+    /**
+     * Get shipping status label in Vietnamese
+     */
+    public function getShippingStatusLabelAttribute(): string
+    {
+        if (!$this->shipping_status) {
+            return '-';
+        }
+        
+        return match($this->shipping_status) {
+            'chua_giao' => 'Chưa giao',
+            'dang_giao_hang' => 'Đang giao',
+            'giao_thanh_cong' => 'Giao thành công',
+            'giao_that_bai' => 'Giao thất bại',
+            default => ucfirst($this->shipping_status),
+        };
     }
 
     /**
@@ -186,7 +238,7 @@ class Order extends Model
      */
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === 'hoan_thanh';
     }
 
     /**
@@ -194,7 +246,7 @@ class Order extends Model
      */
     public function isCancelled(): bool
     {
-        return $this->status === 'cancelled';
+        return $this->status === 'da_huy';
     }
 
     /**
@@ -205,19 +257,20 @@ class Order extends Model
         $updates = [];
 
         // Nếu đơn hàng hoàn thành và chưa thanh toán, tự động đánh dấu đã thanh toán
-        if ($this->status === 'completed' && $this->payment_status === 'pending') {
-            $updates['payment_status'] = 'paid';
+        if ($this->status === 'hoan_thanh' && $this->payment_status == 0) {
+            $updates['payment_status'] = 1;
             $updates['paid_at'] = now();
         }
 
         // Nếu đơn hàng bị hủy và đã thanh toán, đánh dấu cần hoàn tiền
-        if ($this->status === 'cancelled' && $this->payment_status === 'paid') {
-            $updates['payment_status'] = 'refunded';
+        if ($this->status === 'da_huy' && $this->payment_status == 1) {
+            // Keep payment status as paid since refund needs to be processed
         }
 
         // Nếu đơn hàng được hoàn tiền
-        if ($this->status === 'refunded' && $this->payment_status !== 'refunded') {
-            $updates['payment_status'] = 'refunded';
+        if ($this->status === 'da_hoan_tien') {
+            // Mark as paid since refund was processed
+            $updates['payment_status'] = 1;
         }
 
         if (!empty($updates)) {

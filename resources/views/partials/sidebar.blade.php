@@ -51,6 +51,14 @@
                   <p>Đơn Hàng</p>
                 </a>
               </li>
+
+              <li class="nav-item">
+                <a href="{{ route('admin.returns.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-arrow-return-left"></i>
+                  <p>Yêu cầu hoàn trả</p>
+                </a>
+              </li>
+
               
               <li class="nav-item">
                 <a href="{{ route('admin.products.index') }}" class="nav-link">

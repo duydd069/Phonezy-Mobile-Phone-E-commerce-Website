@@ -40,7 +40,7 @@ class OrderController extends Controller
             abort(403, 'You do not have permission to view this order.');
         }
 
-        $order->load(['items', 'user', 'coupon']);
+        $order->load(['items', 'user', 'coupon', 'returns.images']);
         $paymentMethods = config('checkout.payment_methods', []);
 
         return view('electro.orders.show', compact('order', 'paymentMethods'));

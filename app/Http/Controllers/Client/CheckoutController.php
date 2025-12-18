@@ -126,8 +126,8 @@ class CheckoutController extends Controller
                     'discount_amount'     => $summary['discount'],
                     'total'               => $summary['total'],
                     'payment_method'      => $data['payment_method'],
-                    'payment_status'      => 'pending',
-                    'status'              => 'pending',
+                    'payment_status'      => 0, // 0 = chưa thanh toán, 1 = đã thanh toán
+                    'status'              => 'cho_xac_nhan', // Trạng thái đầu tiên: Chờ xác nhận
                     'shipping_full_name'  => $data['full_name'],
                     'shipping_email'      => $data['email'] ?? null,
                     'shipping_phone'      => $data['phone'],
@@ -224,6 +224,13 @@ class CheckoutController extends Controller
                 ->route('client.checkout.success', ['order' => $order->id])
                 ->with('success', 'Đặt hàng thành công!');
         } catch (\Exception $e) {
+            // Log error for debugging
+            \Log::error('Checkout error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return redirect()
                 ->route('client.checkout')
                 ->withInput()
