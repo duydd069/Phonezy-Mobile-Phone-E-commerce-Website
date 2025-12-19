@@ -65,16 +65,16 @@ class CartController extends Controller
         $variant = DB::transaction(function () use ($variantId, $productId, $quantity, $request) {
             // Lock variant row để tránh race condition
             $variant = \App\Models\ProductVariant::lockForUpdate()->find($variantId);
-            
+
             if (!$variant) {
                 throw new \Exception('Biến thể sản phẩm không tồn tại.');
             }
-            
+
             // Validate variant thuộc đúng product (bảo mật quan trọng)
             if ($variant->product_id !== (int)$productId) {
                 throw new \Exception('Biến thể không thuộc sản phẩm này.');
             }
-            
+
             // Kiểm tra trạng thái
             if ($variant->status !== 'available') {
                 throw new \Exception('Sản phẩm này hiện không khả dụng!');
@@ -84,7 +84,7 @@ class CartController extends Controller
             if ($variant->stock < $quantity) {
                 throw new \Exception('Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
             }
-            
+
             return $variant;
         });
 
@@ -110,7 +110,7 @@ class CartController extends Controller
                 return $this->respondError($request, $message);
             }
             if ($newTotal > 10) {
-                $message = 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).';
+                $message = 'Số lượng sản phẩm trong giỏ hàng vượt quá số hàng tồn kho.';
                 return $this->respondError($request, $message);
             }
             $cartItem->quantity = $newQuantity;
@@ -121,7 +121,7 @@ class CartController extends Controller
         } else {
             $newTotal = $currentTotal + $quantity;
             if ($newTotal > 10) {
-                $message = 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).';
+                $message = 'Số lượng sản phẩm trong giỏ hàng vượt quá số hàng tồn kho.';
                 return $this->respondError($request, $message);
             }
             // Nếu chưa có, tạo item mới với snapshot price
@@ -178,7 +178,7 @@ class CartController extends Controller
         $otherTotal = $cart->items()->where('id', '!=', $cartItem->id)->sum('quantity');
         $newTotal = $otherTotal + $request->quantity;
         if ($newTotal > 10) {
-            return redirect()->route('cart.index')->with('error', 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).');
+            return redirect()->route('cart.index')->with('error', 'Số lượng sản phẩm trong giỏ hàng vượt quá số hàng tồn kho.');
         }
 
         // Cập nhật quantity và snapshot price (nếu giá đã thay đổi, cập nhật lại snapshot)
