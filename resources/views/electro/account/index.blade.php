@@ -16,6 +16,18 @@
                 </div>
 
                 <div class="account-info">
+                    @if(session('success'))
+                        <div class="alert alert-success" style="margin-bottom: 20px;">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    @if(session('error'))
+                        <div class="alert alert-danger" style="margin-bottom: 20px;">
+                            {{ session('error') }}
+                        </div>
+                    @endif
+
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="info-item">
@@ -38,6 +50,76 @@
                                 <p>{{ $user->phone ?? 'Chưa cập nhật' }}</p>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <strong>Địa chỉ:</strong>
+                                <p>{{ $user->address ?? 'Chưa cập nhật' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <button class="btn btn-primary" onclick="toggleEditMode()">
+                                <i class="fa fa-edit"></i> Chỉnh sửa thông tin
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Edit Form (Hidden by default) -->
+                    <div id="edit-form" style="display: none; margin-top: 20px;">
+                        <form action="{{ route('client.account.update') }}" method="POST">
+                            @csrf
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="name">Họ và tên *</label>
+                                        <input type="text" class="form-control" id="name" name="name" 
+                                               value="{{ old('name', $user->name) }}" required>
+                                        @error('name')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="phone">Số điện thoại</label>
+                                        <input type="text" class="form-control" id="phone" name="phone" 
+                                               value="{{ old('phone', $user->phone) }}">
+                                        @error('phone')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="address">Địa chỉ</label>
+                                        <textarea class="form-control" id="address" name="address" 
+                                                  rows="3" placeholder="Nhập địa chỉ của bạn">{{ old('address', $user->address) }}</textarea>
+                                        @error('address')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fa fa-save"></i> Lưu thay đổi
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" onclick="toggleEditMode()">
+                                        <i class="fa fa-times"></i> Hủy
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="row mb-4">
                         <div class="col-md-6">
                             <div class="info-item">
                                 <strong>Ngày tham gia:</strong>
@@ -133,10 +215,90 @@
     font-weight: bold;
 }
 
+}
+
 .stat-card p {
     margin: 5px 0 0 0;
     color: #666;
     font-size: 14px;
 }
+
+#edit-form {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+#edit-form .form-control {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#edit-form .form-group {
+    margin-bottom: 15px;
+}
+
+#edit-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: #D10024;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background: #a8001c;
+}
+
+.btn-success {
+    background: #28a745;
+    color: #fff;
+}
+
+.btn-success:hover {
+    background: #218838;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: #fff;
+    margin-left: 10px;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+}
 </style>
+
+<script>
+function toggleEditMode() {
+    const editForm = document.getElementById('edit-form');
+    if (editForm.style.display === 'none') {
+        editForm.style.display = 'block';
+    } else {
+        editForm.style.display = 'none';
+    }
+}
+
+// Auto-show edit form if there are errors
+@if($errors->any())
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('edit-form').style.display = 'block';
+    });
+@endif
+</script>
 @endsection

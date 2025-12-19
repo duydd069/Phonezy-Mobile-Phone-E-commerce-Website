@@ -3,13 +3,9 @@
     <!-- TOP HEADER -->
     <div id="top-header">
         <div class="container">
-            <ul class="header-links pull-left">
-                <li><a href="#"><i class="fa fa-phone"></i> +021-95-51-84</a></li>
-                <li><a href="#"><i class="fa fa-envelope-o"></i> email@email.com</a></li>
-                <li><a href="#"><i class="fa fa-map-marker"></i> 1734 Stonecoal Road</a></li>
-            </ul>
+
             <ul class="header-links pull-right">
-                <li><a href="#"><i class="fa fa-dollar"></i> USD</a></li>
+
                 @auth
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
@@ -63,8 +59,8 @@
                 <!-- LOGO -->
                 <div class="col-md-3">
                     <div class="header-logo">
-                        <a href="{{ url('/electro') }}" class="logo">
-                            <img src="{{ asset('electro/img/logo.png') }}" alt="">
+                        <a href="{{ route('client.index') }}" class="logo">
+                            <img src="{{ url('storage/logos/logo.jpg') }}" alt="Logo" style="max-height: 50px;">
                         </a>
                     </div>
                 </div>
@@ -74,12 +70,8 @@
                 <div class="col-md-6">
                     <div class="header-search">
                         <form>
-                            <select class="input-select">
-                                <option value="0">All Categories</option>
-                                <option value="1">Category 01</option>
-                                <option value="1">Category 02</option>
-                            </select>
-                            <input class="input" placeholder="Search here">
+
+                            <input class="input-select" placeholder="Search here">
                             <button class="search-btn">Search</button>
                         </form>
                     </div>
@@ -136,6 +128,7 @@
     <!-- /MAIN HEADER -->
 </header>
 <!-- /HEADER -->
+
 
 <style>
 /* Dropdown menu cho My Account */
@@ -216,6 +209,119 @@
         max-width: 80px;
     }
 }
+
+/* Banner Carousel Styles */
+#banner-carousel {
+    width: 65%;
+    margin: 0;
+    position: relative;
+    margin-left: 18%;
+}
+
+#banner-carousel .carousel-inner {
+    width: 100%;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+#banner-carousel .carousel-inner .item {
+    width: 100%;
+    height: 100%;
+}
+
+#banner-carousel .carousel-inner .item img {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: cover;
+    object-position: center;
+}
+
+#banner-carousel .carousel-indicators {
+    bottom: 20px;
+}
+
+#banner-carousel .carousel-indicators li {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin: 0 5px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 2px solid #fff;
+}
+
+#banner-carousel .carousel-indicators .active {
+    background-color: #D10024;
+}
+
+#banner-carousel .carousel-control {
+    background: none;
+    width: 50px;
+    text-shadow: none;
+}
+
+#banner-carousel .carousel-control .fa {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 30px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.3);
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+#banner-carousel .carousel-control:hover .fa {
+    background: rgba(209, 0, 36, 0.8);
+}
+
+#banner-carousel .left.carousel-control .fa {
+    left: 20px;
+}
+
+#banner-carousel .right.carousel-control .fa {
+    right: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991px) {
+    #banner-carousel .carousel-inner {
+        max-height: 400px;
+    }
+    
+    #banner-carousel .carousel-inner .item img {
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 767px) {
+    #banner-carousel .carousel-inner {
+        max-height: 300px;
+    }
+    
+    #banner-carousel .carousel-inner .item img {
+        max-height: 300px;
+    }
+    
+    #banner-carousel .carousel-control .fa {
+        font-size: 20px;
+        width: 35px;
+        height: 35px;
+        line-height: 35px;
+    }
+    
+    #banner-carousel .left.carousel-control .fa {
+        left: 10px;
+    }
+    
+    #banner-carousel .right.carousel-control .fa {
+        right: 10px;
+    }
+}
+
 </style>
 
 <script>
