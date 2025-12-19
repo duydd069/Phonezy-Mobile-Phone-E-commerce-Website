@@ -1,0 +1,577 @@
+<?php
+
+namespace App\Http\Controllers\Client;
+
+use App\Http\Controllers\Concerns\HandlesActiveCart;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\CheckoutRequest;
+use App\Models\CartItem;
+use App\Models\Coupon;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\ProductVariant;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+
+class CheckoutController extends Controller
+{
+    use HandlesActiveCart;
+
+    public function show()
+    {
+        $cart = $this->getOrCreateActiveCart();
+        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+
+        if ($items->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
+        }
+
+        // Giới hạn tổng số lượng sản phẩm trong đơn hàng
+        $totalQuantity = $items->sum('quantity');
+        if ($totalQuantity > 10) {
+            return redirect()->route('cart.index')
+                ->with('error', 'Bạn chỉ được đặt tối đa 10 sản phẩm cho mỗi đơn hàng.');
+        }
+
+        try {
+            $this->guardItemsHaveVariant($items);
+        } catch (\RuntimeException $e) {
+            return redirect()->route('cart.index')->with('error', $e->getMessage());
+        }
+
+        // Lấy coupon code từ request hoặc session
+        $couponCode = request('coupon_code') ?? session('checkout_coupon_code');
+        $coupon = null;
+        $userId = auth()->id();
+        if ($couponCode) {
+            // Tính subtotal để validate min_order_value
+            $subtotal = $items->sum(function ($item) {
+                $variant = $item->variant;
+                return $this->getVariantPrice($variant, $item) * $item->quantity;
+            });
+            
+            // Lấy product IDs từ giỏ hàng để validate product-level coupons
+            $productIds = $items->pluck('variant.product_id')->unique()->toArray();
+            $coupon = Coupon::validateCode($couponCode, $userId, $productIds, $subtotal);
+            if ($coupon) {
+                session(['checkout_coupon_code' => $couponCode]);
+            } else {
+                session()->forget('checkout_coupon_code');
+            }
+        }
+
+        $summary = $this->buildSummary($items, $coupon);
+        $paymentMethods = config('checkout.payment_methods', []);
+        $user = auth()->user();
+
+        // Lấy danh sách mã khuyến mãi mà user có thể sử dụng
+        $availableCoupons = $this->getAvailableCoupons($userId);
+
+        $prefill = [
+            'full_name' => $user?->name,
+            'email'     => $user?->email,
+            'phone'     => $user?->phone,
+            'address'   => $user?->address,
+            'city'      => null,
+            'district'  => null,
+            'ward'      => null,
+            'notes'     => null,
+            'coupon_code' => $couponCode,
+        ];
+
+        return view('electro.checkout', compact('cart', 'items', 'summary', 'paymentMethods', 'prefill', 'coupon', 'availableCoupons'));
+    }
+
+    public function store(CheckoutRequest $request)
+    {
+        $cart = $this->getOrCreateActiveCart();
+        // Load variant với tất cả các trường cần thiết, đặc biệt là stock
+        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+
+        if ($items->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
+        }
+
+        try {
+            $this->guardItemsHaveVariant($items);
+        } catch (\RuntimeException $e) {
+            return redirect()
+                ->route('cart.index')
+                ->with('error', $e->getMessage());
+        }
+
+        $data = $request->validated();
+
+        // Validate và lấy coupon (sẽ validate lại trong transaction với lock)
+        $coupon = null;
+        $couponCode = $data['coupon_code'] ?? null;
+        $userId = auth()->id();
+        
+        // Tính subtotal sơ bộ để validate
+        $preliminarySubtotal = $items->sum(function ($item) {
+            $variant = $item->variant;
+            return $this->getVariantPrice($variant, $item) * $item->quantity;
+        });
+        
+        if ($couponCode) {
+            // Lấy product IDs từ giỏ hàng để validate product-level coupons
+            $productIds = $items->pluck('variant.product_id')->unique()->toArray();
+            $coupon = Coupon::validateCode($couponCode, $userId, $productIds, $preliminarySubtotal);
+            if (!$coupon) {
+                return redirect()
+                    ->route('client.checkout', ['coupon_code' => $couponCode])
+                    ->withInput()
+                    ->with('error', 'Mã khuyến mãi không hợp lệ, đã hết hạn, bạn không có quyền sử dụng, đã hết lượt sử dụng hoặc không đạt giá trị đơn hàng tối thiểu.');
+            }
+        }
+
+        $summary = $this->buildSummary($items, $coupon);
+
+        try {
+            $order = DB::transaction(function () use ($cart, $items, $summary, $data, $coupon, $couponCode, $userId) {
+                // Giới hạn tổng số lượng sản phẩm trong đơn hàng
+                $totalQuantity = $items->sum('quantity');
+                if ($totalQuantity > 10) {
+                    throw new \Exception('Bạn chỉ được đặt tối đa 10 sản phẩm cho mỗi đơn hàng.');
+                }
+
+                // Nếu có coupon, lock và validate lại trong transaction (tránh race condition)
+                $validatedCoupon = null;
+                if ($coupon && $couponCode) {
+                    // Lock coupon row để tránh race condition
+                    $lockedCoupon = Coupon::lockForUpdate()->find($coupon->id);
+                    
+                    if (!$lockedCoupon) {
+                        throw new \Exception('Mã khuyến mãi không tồn tại.');
+                    }
+                    
+                    // Validate lại với dữ liệu mới nhất (sau khi lock)
+                    // Kiểm tra lại các điều kiện quan trọng
+                    if (!$lockedCoupon->isValid()) {
+                        throw new \Exception('Mã khuyến mãi đã hết hạn hoặc chưa đến thời gian sử dụng.');
+                    }
+                    
+                    if (!$lockedCoupon->canBeUsedBy($userId)) {
+                        throw new \Exception('Bạn không có quyền sử dụng mã khuyến mãi này.');
+                    }
+                    
+                    if ($lockedCoupon->hasReachedUsageLimit()) {
+                        throw new \Exception('Mã khuyến mãi đã hết lượt sử dụng.');
+                    }
+                    
+                    if ($lockedCoupon->hasReachedUserUsageLimit($userId)) {
+                        throw new \Exception('Bạn đã sử dụng hết lượt cho mã khuyến mãi này.');
+                    }
+                    
+                    $finalSubtotal = $summary['subtotal'];
+                    if (!$lockedCoupon->canBeAppliedToSubtotal($finalSubtotal)) {
+                        throw new \Exception('Đơn hàng chưa đạt giá trị tối thiểu để sử dụng mã khuyến mãi này.');
+                    }
+                    
+                    // Validate product-level coupon
+                    if ($lockedCoupon->isForProduct()) {
+                        $productIds = $items->pluck('variant.product_id')->unique()->toArray();
+                        $applicableProducts = $lockedCoupon->products()->whereIn('product_id', $productIds)->count();
+                        if ($applicableProducts === 0) {
+                            throw new \Exception('Mã khuyến mãi không áp dụng cho sản phẩm trong giỏ hàng.');
+                        }
+                    }
+                    
+                    $validatedCoupon = $lockedCoupon;
+                }
+
+                $order = Order::create([
+                    'cart_id'             => $cart->id,
+                    'user_id'             => $cart->user_id,
+                    'coupon_id'           => $validatedCoupon?->id,
+                    'subtotal'            => $summary['subtotal'],
+                    'shipping_fee'        => $summary['shipping_fee'],
+                    'discount_amount'     => $summary['discount'],
+                    'total'               => $summary['total'],
+                    'payment_method'      => $data['payment_method'],
+                    'payment_status'      => 0, // 0 = chưa thanh toán, 1 = đã thanh toán
+                    'status'              => 'cho_xac_nhan', // Trạng thái đầu tiên: Chờ xác nhận
+                    'shipping_full_name'  => $data['full_name'],
+                    'shipping_email'      => $data['email'] ?? null,
+                    'shipping_phone'      => $data['phone'],
+                    'shipping_city'       => $data['city'] ?? null,
+                    'shipping_district'   => $data['district'] ?? null,
+                    'shipping_ward'       => $data['ward'] ?? null,
+                    'shipping_address'    => $data['address'],
+                    'notes'               => $data['notes'] ?? null,
+                ]);
+
+                foreach ($items as $item) {
+                    $variant = $item->variant;
+                    if (!$variant) {
+                        throw new \Exception("Sản phẩm trong giỏ hàng chưa được chọn biến thể. Vui lòng thử lại sau khi cập nhật giỏ hàng.");
+                    }
+
+                    $product = $variant->product ?? $item->product;
+
+                    // Sử dụng giá sale nếu có, nếu không thì dùng giá thường
+                    $unitPrice = $this->getVariantPrice($variant, $item);
+
+                    $quantity = $item->quantity;
+
+                    OrderItem::create([
+                        'order_id'      => $order->id,
+                        'product_id'    => $product?->id,
+                        'product_name'  => $product->name ?? 'Sản phẩm',
+                        'product_image' => $product->image ?? null,
+                        'quantity'      => $quantity,
+                        'unit_price'    => $unitPrice,
+                        'total_price'   => $unitPrice * $quantity,
+                    ]);
+
+                    // Trừ số lượng sản phẩm (stock) khi đặt hàng thành công
+                    if ($variant) {
+                        // Lấy variant mới nhất từ database để tránh race condition
+                        $variant = ProductVariant::lockForUpdate()->find($variant->id);
+
+                        if (!$variant) {
+                            throw new \Exception("Không tìm thấy biến thể sản phẩm.");
+                        }
+
+                        // Kiểm tra stock có đủ không (chỉ kiểm tra nếu stock không null)
+                        if ($variant->stock === null) {
+                            // Nếu stock là null, không quản lý stock cho variant này
+                            continue;
+                        }
+
+                        if ($variant->stock < $quantity) {
+                            // Nếu không đủ hàng, rollback transaction
+                            throw new \Exception("Sản phẩm {$product->name} không đủ số lượng trong kho. Số lượng còn lại: {$variant->stock}");
+                        }
+
+                        // Tính toán stock mới trước khi trừ
+                        $newStock = $variant->stock - $quantity;
+
+                        // Trừ stock và tăng sold bằng cách update trực tiếp
+                        $variant->update([
+                            'stock' => $newStock,
+                            'sold' => ($variant->sold ?? 0) + $quantity,
+                        ]);
+
+                        // Cập nhật status nếu hết hàng
+                        if ($newStock <= 0) {
+                            $variant->update(['status' => \App\Models\ProductVariant::STATUS_OUT_OF_STOCK]);
+                        }
+                    }
+                }
+
+                $cart->update(['status' => 'converted']);
+                $cart->items()->delete();
+
+                // Record coupon usage sau khi tạo order thành công
+                if ($validatedCoupon) {
+                    $validatedCoupon->recordUsage($userId, $order->id);
+                }
+
+                // Xóa coupon code khỏi session sau khi đặt hàng thành công
+                session()->forget('checkout_coupon_code');
+
+                return $order;
+            });
+
+            // Đảm bảo order được tạo thành công
+            if (!$order || !$order->id) {
+                return redirect()
+                    ->route('client.checkout')
+                    ->withInput()
+                    ->with('error', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
+            }
+
+            // Nếu chọn VNPAY, chuyển hướng sang cổng thanh toán
+            if ($order->payment_method === 'vnpay') {
+                $paymentUrl = $this->buildVnpayUrl($order);
+                return redirect()->away($paymentUrl);
+            }
+
+            return redirect()
+                ->route('client.checkout.success', ['order' => $order->id])
+                ->with('success', 'Đặt hàng thành công!');
+        } catch (\Exception $e) {
+            // Log error for debugging
+            \Log::error('Checkout error: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->route('client.checkout')
+                ->withInput()
+                ->with('error', $e->getMessage() ?: 'Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.');
+        }
+    }
+
+    public function success($order)
+    {
+        // Nếu là route model binding, $order sẽ là Order object
+        // Nếu không, sẽ là ID và cần tìm Order
+        if (is_numeric($order)) {
+            $order = Order::findOrFail($order);
+        } elseif (!$order instanceof Order) {
+            abort(404);
+        }
+
+        $userId = $this->resolveCartUserId();
+
+        if ((int) $order->user_id !== $userId) {
+            abort(404);
+        }
+
+        $order->load('items', 'coupon');
+
+        return view('electro.checkout-success', [
+            'order'           => $order,
+            'paymentMethods'  => config('checkout.payment_methods', []),
+        ]);
+    }
+
+    protected function buildSummary(Collection $items, ?Coupon $coupon = null): array
+    {
+        $shippingFee = (float) config('checkout.shipping_fee', 0);
+        $discount = 0;
+        $subtotal = 0;
+
+        // Tính discount dựa trên loại coupon
+        if ($coupon && $coupon->isValid()) {
+            if ($coupon->isForOrder()) {
+                // Coupon cho đơn hàng: tính subtotal toàn bộ, sau đó tính discount
+                $subtotal = $items->sum(function ($item) {
+                    $variant = $item->variant;
+                    return $this->getVariantPrice($variant, $item) * $item->quantity;
+                });
+                
+                // Tính discount cho toàn bộ đơn hàng
+                $discount = $coupon->calculateDiscount($subtotal);
+            } else {
+                // Coupon cho sản phẩm: tính discount cho từng sản phẩm được áp dụng
+                $subtotal = 0;
+                $eligibleSubtotal = 0; // Tổng giá trị các sản phẩm được áp dụng coupon
+                
+                foreach ($items as $item) {
+                    $variant = $item->variant;
+                    $productPrice = $this->getVariantPrice($variant, $item);
+                    $itemSubtotal = $productPrice * $item->quantity;
+                    $subtotal += $itemSubtotal;
+                    
+                    // Kiểm tra coupon có áp dụng cho sản phẩm này không
+                    if ($coupon->appliesToProduct($variant->product_id)) {
+                        // Tính tổng giá trị sản phẩm được áp dụng (để kiểm tra min_order_value nếu cần)
+                        $eligibleSubtotal += $itemSubtotal;
+                        
+                        // Tính discount cho từng sản phẩm
+                        $productDiscount = $coupon->calculateProductDiscount($productPrice);
+                        $discount += $productDiscount * $item->quantity; // Nhân với số lượng
+                    }
+                }
+                
+                // Nếu có min_order_value, kiểm tra với eligible_subtotal (chỉ phần sản phẩm được áp dụng)
+                // Lưu ý: Logic này có thể tùy chỉnh tùy business requirement
+                // Ở đây ta vẫn dùng tổng subtotal để check min_order_value (theo yêu cầu ban đầu)
+            }
+        } else {
+            // Không có coupon, chỉ tính subtotal
+            $subtotal = $items->sum(function ($item) {
+                $variant = $item->variant;
+                return $this->getVariantPrice($variant, $item) * $item->quantity;
+            });
+        }
+
+        $total = max($subtotal - $discount + $shippingFee, 0);
+
+        return [
+            'subtotal'     => $subtotal,
+            'shipping_fee' => $shippingFee,
+            'discount'     => $discount,
+            'total'        => $total,
+        ];
+    }
+
+    /**
+     * Validate coupon code via AJAX
+     */
+    public function validateCoupon()
+    {
+        $code = request('code');
+        $userId = auth()->id();
+
+        // Lấy giỏ hàng để tính summary
+        $cart = $this->getOrCreateActiveCart();
+        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+
+        try {
+            $this->guardItemsHaveVariant($items);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'valid' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        // Nếu không có code hoặc code rỗng, trả về summary không có coupon
+        if (!$code || trim($code) === '') {
+            $summary = $this->buildSummary($items, null);
+            return response()->json([
+                'valid' => false,
+                'message' => 'Đã bỏ chọn mã khuyến mãi',
+                'summary' => $summary,
+            ]);
+        }
+
+        // Tính subtotal để validate min_order_value
+        $subtotal = $items->sum(function ($item) {
+            $variant = $item->variant;
+            return $this->getVariantPrice($variant, $item) * $item->quantity;
+        });
+        
+        // Lấy product IDs từ giỏ hàng để validate product-level coupons
+        $productIds = $items->pluck('variant.product_id')->unique()->toArray();
+        $coupon = Coupon::validateCode($code, $userId, $productIds, $subtotal);
+
+        if (!$coupon) {
+            // Vẫn trả về summary không có coupon khi coupon không hợp lệ
+            $summary = $this->buildSummary($items, null);
+            return response()->json([
+                'valid' => false,
+                'message' => 'Mã khuyến mãi không hợp lệ, đã hết hạn, bạn không có quyền sử dụng, đã hết lượt sử dụng, không đạt giá trị đơn hàng tối thiểu hoặc không áp dụng cho sản phẩm trong giỏ hàng',
+                'summary' => $summary,
+            ]);
+        }
+
+        // Tính summary với coupon
+        $summary = $this->buildSummary($items, $coupon);
+
+        $discountText = '';
+        if ($coupon->discount_type === 'percent') {
+            $discountText = "Giảm {$coupon->discount_value}%";
+        } else {
+            $discountText = "Giảm " . number_format($coupon->discount_value, 0, ',', '.') . " ₫";
+        }
+
+        return response()->json([
+            'valid' => true,
+            'message' => "Áp dụng mã khuyến mãi thành công: {$discountText}",
+            'coupon' => [
+                'code' => $coupon->code,
+                'discount_type' => $coupon->discount_type,
+                'discount_value' => $coupon->discount_value,
+                'discount_text' => $discountText,
+            ],
+            'summary' => $summary,
+        ]);
+    }
+
+    /**
+     * Lấy danh sách mã khuyến mãi mà user có thể sử dụng
+     */
+    protected function getAvailableCoupons(?int $userId): Collection
+    {
+        // Lấy public coupons (chưa hết hạn)
+        $publicCoupons = Coupon::where(function ($query) {
+            $query->where('type', 'public')
+                ->orWhereNull('type'); // Backward compatibility
+        })
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now());
+            })
+            ->get();
+
+        // Lấy private coupons của user (nếu có userId)
+        $privateCoupons = collect();
+        if ($userId) {
+            $privateCoupons = Coupon::where('type', 'private')
+                ->whereHas('users', function ($query) use ($userId) {
+                    $query->where('user_id', $userId);
+                })
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>=', now());
+                })
+                ->get();
+        }
+
+        // Gộp và sắp xếp theo ngày hết hạn
+        return $publicCoupons->merge($privateCoupons)
+            ->sortBy('expires_at')
+            ->values();
+    }
+
+    /**
+     * Đảm bảo mọi cart item đều gắn với một variant (kể cả sản phẩm mặc định)
+     */
+    protected function guardItemsHaveVariant(Collection $items): void
+    {
+        $missingVariantCount = $items->filter(fn($item) => !$item->variant)->count();
+
+        if ($missingVariantCount > 0) {
+            throw new \RuntimeException('Một hoặc nhiều sản phẩm chưa có biến thể. Vui lòng tạo biến thể mặc định trước khi thanh toán.');
+        }
+    }
+
+    /**
+     * Lấy giá từ variant, ưu tiên giá sale. Product gốc không mang giá.
+     */
+    protected function getVariantPrice(ProductVariant $variant, ?CartItem $cartItem = null): float
+    {
+        // Nếu có cartItem với snapshot price, ưu tiên dùng snapshot (giá tại thời điểm thêm vào giỏ)
+        if ($cartItem && $cartItem->price_sale_at_time !== null) {
+            return (float) $cartItem->price_sale_at_time;
+        }
+        if ($cartItem && $cartItem->price_at_time !== null) {
+            return (float) $cartItem->price_at_time;
+        }
+        
+        // Fallback: Ưu tiên giá sale, nếu không có thì dùng giá thường (trường hợp cũ, không có snapshot)
+        return (float) ($variant->price_sale ?? $variant->price ?? 0);
+    }
+
+    /**
+     * Tạo URL thanh toán VNPAY
+     */
+    protected function buildVnpayUrl(Order $order)
+    {
+        $vnp_Url = config('vnpay.payment_url');
+        $vnp_Returnurl = config('vnpay.return_url');
+        $vnp_TmnCode = config('vnpay.tmn_code');
+        $vnp_HashSecret = config('vnpay.hash_secret');
+
+        $inputData = array(
+            "vnp_Version" => "2.1.0",
+            "vnp_TmnCode" => $vnp_TmnCode,
+            "vnp_Amount" => $order->total * 100,
+            "vnp_Command" => "pay",
+            "vnp_CreateDate" => date('YmdHis'),
+            "vnp_CurrCode" => "VND",
+            "vnp_IpAddr" => request()->ip(),
+            "vnp_Locale" => "vn",
+            "vnp_OrderInfo" => "Thanh toan don hang $order->id",
+            "vnp_OrderType" => "other",
+            "vnp_ReturnUrl" => $vnp_Returnurl,
+            "vnp_TxnRef" => $order->id,
+        );
+
+        ksort($inputData);
+        
+        // Build lại dữ liệu theo chuẩn query string VNPAY (giống validateSignature)
+        $hashData = "";
+        foreach ($inputData as $key => $value) {
+            $hashData .= $key . "=" . urlencode($value) . "&";
+        }
+        $hashData = rtrim($hashData, "&");
+        
+        $vnpSecureHash = hash_hmac('sha512', $hashData, $vnp_HashSecret);
+
+//         \Log::channel('single')->info('VNPAY DEBUG', [
+//     'hashData' => $hashData,
+//     'query' => $queryString,
+//     'secureHash' => $vnpSecureHash,
+// ]);
+
+        return $vnp_Url . "?" . http_build_query($inputData) . '&vnp_SecureHash=' . $vnpSecureHash;
+    }
+}
