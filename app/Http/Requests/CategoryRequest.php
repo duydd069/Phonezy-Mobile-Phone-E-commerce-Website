@@ -31,7 +31,6 @@ class CategoryRequest extends FormRequest
             'description' => ['nullable', 'string'],
         ];
     }
-
     public function messages(): array
     {
         return [

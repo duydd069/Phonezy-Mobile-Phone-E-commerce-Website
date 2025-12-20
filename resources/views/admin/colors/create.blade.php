@@ -13,7 +13,7 @@
     </div>
   @endif
 
-  <form action="{{ route('admin.colors.store') }}" method="POST" class="row g-3">
+  <form action="{{ route('admin.colors.store') }}" method="POST" class="row g-3" novalidate>
     @csrf
 
     <script>

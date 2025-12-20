@@ -3,7 +3,7 @@
 @section('content')
 <div class="container">
     <h2>Thêm mã khuyến mãi</h2>
-    <form action="{{ route('admin.coupons.store') }}" method="POST">
+    <form action="{{ route('admin.coupons.store') }}" method="POST" novalidate>
         @csrf
         <div class="mb-3">
             <label>Mã code</label>

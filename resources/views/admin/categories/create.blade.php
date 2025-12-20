@@ -18,7 +18,7 @@
     @endif
 
     {{-- Form thêm mới --}}
-    <form action="{{ route('admin.categories.store') }}" method="POST">
+    <form action="{{ route('admin.categories.store') }}" method="POST" novalidate>
         @csrf
         <div class="mb-3">
             <label for="category-name" class="form-label">Tên danh mục</label>
@@ -28,10 +28,6 @@
             <label for="category-slug" class="form-label">Slug</label>
             <input type="text" name="slug" id="category-slug" class="form-control" value="{{ old('slug') }}">
             <div class="form-text">Nếu để trống, slug sẽ được tạo tự động từ tên.</div>
-        </div>
-        <div class="mb-3">
-            <label for="name" class="form-label">Slug</label>
-            <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug') }}" required>
         </div>
         <button type="submit" class="btn btn-primary">Lưu danh mục</button>
         <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Quay lại</a>

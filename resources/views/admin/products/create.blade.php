@@ -13,7 +13,7 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="row g-3">
+    <form action="{{ route('admin.products.store') }}" method="POST" enctype="multipart/form-data" class="row g-3" novalidate>
         @csrf
 
         <div class="col-md-8">
