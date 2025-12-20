@@ -1,136 +1,241 @@
 <!-- HEADER -->
 <header>
-    <!-- TOP HEADER -->
-    <div id="top-header">
-        <div class="container">
-
-            <ul class="header-links pull-right">
-
-                @auth
-                    <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                            <i class="fa fa-user-o"></i> 
-                            <span class="account-name">{{ auth()->user()->name ?? 'My Account' }}</span>
-                            <i class="fa fa-caret-down"></i>
-                        </a>
-                        <ul class="dropdown-menu" role="menu">
-                            <li>
-                                <a href="{{ route('client.account.index') }}">
-                                    <i class="fa fa-user"></i> Thông tin tài khoản
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('client.orders.index') }}">
-                                    <i class="fa fa-shopping-bag"></i> Đơn hàng của tôi
-                                </a>
-                            </li>
-                            <li>
-                                <a href="{{ route('client.coupons.index') }}">
-                                    <i class="fa fa-tag"></i> Mã khuyến mãi
-                                </a>
-                            </li>
-                            <li class="divider"></li>
-                            <li>
-                                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
-                                    <i class="fa fa-sign-out"></i> Đăng xuất
-                                </a>
-                                <form id="logout-form-header" action="{{ route('logout') }}" method="POST" style="display:none;">
-                                    @csrf
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                @else
-                    <li>
-                        <a href="{{ route('client.login') }}">
-                            <i class="fa fa-sign-in"></i> Login
-                        </a>
-                    </li>
-                @endauth
-            </ul>
-        </div>
-    </div>
-    <!-- /TOP HEADER -->
-
-    <!-- MAIN HEADER -->
     <div id="header">
         <div class="container">
-            <div class="row">
-                <!-- LOGO -->
-                <div class="col-md-3">
+            <div class="row" style="display: flex; align-items: center;">
+                <div class="col-md-2">
                     <div class="header-logo">
                         <a href="{{ route('client.index') }}" class="logo">
-                            <img src="{{ url('storage/logos/logo.jpg') }}" alt="Logo" style="max-height: 50px;">
+                            @if(file_exists(public_path('storage/logos/logo.png')) || file_exists(public_path('storage/logos/logo.jpg')))
+                                <img src="{{ url('storage/logos/logo.' . (file_exists(public_path('storage/logos/logo.png')) ? 'png' : 'jpg')) }}" alt="PhoneZy Logo" class="logo-img" style="max-height: 1000px;">
+                            @else
+                                <div class="logo-text">
+                                    <span class="logo-phone" style="font-weight: bold; color: #D10024; font-size: 24px;">Phone</span><span class="logo-zy" style="font-weight: bold; color: #1E1F29; font-size: 24px;">Zy</span>
+                                </div>
+                            @endif
                         </a>
                     </div>
                 </div>
-                <!-- /LOGO -->
 
-                <!-- SEARCH BAR -->
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <div class="header-search">
-                        <form>
-
-                            <input class="input-select" placeholder="Search here">
-                            <button class="search-btn">Search</button>
+                        <form action="#" method="GET" style="display: flex; width: 100%;">
+                            <input class="input" placeholder="Search here" style="width: 100%; border-radius: 40px 0px 0px 40px; padding: 0px 20px;">
+                            <button class="search-btn" type="submit" style="border-radius: 0px 40px 40px 0px; background: #D10024; color: #fff; font-weight: bold; padding: 0 20px; border: none; height: 40px; display:flex; align-items:center; gap:8px;">
+                                <i class="fa fa-search search-icon" aria-hidden="true" style="display:none;"></i>
+                                <span class="search-text">Search</span>
+                            </button>
                         </form>
                     </div>
                 </div>
-                <!-- /SEARCH BAR -->
 
-                <!-- ACCOUNT -->
-                <div class="col-md-3 clearfix">
-                    <div class="header-ctn">
-                        <!-- Wishlist -->
-                        @auth
-                        <div>
-                            <a href="{{ route('client.wishlist.index') }}">
-                                <i class="fa fa-heart-o"></i>
-                                <span>Your Wishlist</span>
-                                <div class="qty">{{ $wishlistCount ?? 0 }}</div>
+                <div class="col-md-5">
+                    <div class="header-ctn" style="display: flex; justify-content: flex-end; align-items: center; gap: 25px;">
+                        
+                        <div class="wishlist">
+                            <a href="{{ Auth::check() ? route('client.wishlist.index') : route('client.login') }}" style="text-align: center; display: block; position: relative;">
+                                <i class="fa fa-heart-o" style="font-size: 18px;"></i>
+                                <span style="display: block; font-size: 10px; text-transform: uppercase;">Wishlist</span>
+                                <div class="qty" style="position: absolute; right: -10px; top: -10px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; font-size: 10px; color: #FFF; background-color: #D10024;">{{ $wishlistCount ?? 0 }}</div>
                             </a>
                         </div>
-                        @else
-                        <div>
-                            <a href="{{ route('client.login') }}" title="Đăng nhập để xem wishlist">
-                                <i class="fa fa-heart-o"></i>
-                                <span>Your Wishlist</span>
-                                <div class="qty">0</div>
+
+                        <div class="cart">
+                            <a href="{{ route('cart.index') }}" style="text-align: center; display: block; position: relative;">
+                                <i class="fa fa-shopping-cart" style="font-size: 18px;"></i>
+                                <span style="display: block; font-size: 10px; text-transform: uppercase;">Your Cart</span>
+                                <div class="qty" style="position: absolute; right: -10px; top: -10px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; font-size: 10px; color: #FFF; background-color: #D10024;">{{ $cartCount ?? 0 }}</div>
                             </a>
                         </div>
-                        @endauth
-                        <!-- /Wishlist -->
 
-                        <!-- Cart -->
-                      <div>
-                        <a href="{{ route('cart.index') }}">
-                            <i class="fa fa-shopping-cart"></i>
-                            <span>Your Cart</span>
-                            <div class="qty">{{ $cartCount ?? 0 }}</div>
-                        </a>
-                    </div>
-                        <!-- /Cart -->
-
-                        <!-- Menu Toogle -->
-                        <div class="menu-toggle">
-                            <a href="#">
-                                <i class="fa fa-bars"></i>
-                                <span>Menu</span>
-                            </a>
+                        <div class="dropdown">
+                            @auth
+                                <a class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true" style="cursor: pointer; text-align: center; display: block;">
+                                    <i class="fa fa-user-o" style="font-size: 18px;"></i>
+                                    <span style="display: block; font-size: 10px; text-transform: uppercase;">{{ auth()->user()->name }}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-right" style="width: 200px;">
+                                    <li><a href="{{ route('client.account.index') }}"><i class="fa fa-user"></i> Tài khoản</a></li>
+                                    <li><a href="{{ route('client.orders.index') }}"><i class="fa fa-shopping-bag"></i> Đơn hàng</a></li>
+                                    <li class="divider"></li>
+                                    <li>
+                                        <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
+                                            <i class="fa fa-sign-out"></i> Đăng xuất
+                                        </a>
+                                        <form id="logout-form-header" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
+                                    </li>
+                                </ul>
+                            @else
+                                <a href="{{ route('client.login') }}" style="text-align: center; display: block;">
+                                    <i class="fa fa-user-o" style="font-size: 18px;"></i>
+                                    <span style="display: block; font-size: 10px; text-transform: uppercase;">Login</span>
+                                </a>
+                            @endauth
                         </div>
-                        <!-- /Menu Toogle -->
+
+                        <div class="menu-toggle" style="display: none;">
+                            <a href="#"><i class="fa fa-bars"></i></a>
+                        </div>
                     </div>
                 </div>
-                <!-- /ACCOUNT -->
             </div>
         </div>
     </div>
-    <!-- /MAIN HEADER -->
 </header>
 <!-- /HEADER -->
 
 
 <style>
+/* Logo Styles */
+.header-logo .logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+}
+
+.header-logo .logo:hover {
+    transform: scale(1.05);
+}
+
+.header-logo .logo-img {
+    max-height: 90px;
+    width: auto;
+    object-fit: contain;
+    transition: all 0.3s ease;
+}
+
+.header-logo .logo-text {
+    display: flex;
+    align-items: center;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+.header-logo .logo-phone {
+    color: #333;
+    font-weight: 700;
+}
+
+.header-logo .logo-zy {
+    color: #D10024; /* Đỏ làm màu chính */
+    font-weight: 700;
+    border-bottom: 2px solid #FFD700; /* Vàng làm điểm nhấn nhỏ */
+}
+
+/* Header Improvements - Trắng + Xám + Đỏ */
+#top-header {
+    background: #FFFFFF;
+    border-bottom: 2px solid #E4E7ED;
+    color: #333;
+}
+
+#top-header * {
+    color: #333 !important;
+}
+
+#top-header a {
+    color: #333 !important;
+}
+
+#top-header .header-links a {
+    color: #333 !important;
+}
+
+#top-header .header-links a:hover {
+    color: #D10024 !important;
+    background-color: rgba(209, 0, 36, 0.05);
+}
+
+#header {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E4E7ED;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    color: #333;
+}
+
+#header * {
+    color: #333 !important;
+}
+
+#header a {
+    color: #333 !important;
+}
+
+#header .header-ctn a {
+    color: #333 !important;
+}
+
+#header .header-ctn a:hover {
+    color: #D10024 !important;
+}
+
+.header-search {
+    position: relative;
+}
+
+.header-search form {
+    display: flex;
+    gap: 0;
+}
+
+.header-search .input-select {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid #E4E7ED;
+    border-radius: 30px 0 0 30px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.header-search .input-select:focus {
+    outline: none;
+    border-color: #D10024;
+    box-shadow: 0 0 0 3px rgba(209, 0, 36, 0.1);
+}
+
+.header-search .search-btn {
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    border: none;
+    border-radius: 0 30px 30px 0;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.header-search .search-btn:hover {
+    background: linear-gradient(135deg, #B71C1C 0%, #D10024 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.header-ctn > div {
+    transition: transform 0.3s ease;
+}
+
+.header-ctn > div:hover {
+    transform: translateY(-3px);
+}
+
+.header-ctn a {
+    transition: all 0.3s ease;
+}
+
+.header-ctn a:hover {
+    color: #D10024;
+}
+
+.header-ctn .qty {
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    box-shadow: 0 2px 8px rgba(209, 0, 36, 0.3);
+}
+
 /* Dropdown menu cho My Account */
 .header-links .dropdown {
     position: relative;

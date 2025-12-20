@@ -1011,7 +1011,8 @@
                             {{ $inWishlist ?? false ? 'Đã thêm vào yêu thích' : 'Thêm vào yêu thích' }}
                         </button>
                     </div>
-                    
+                    <br>
+
                     <div class="product-features">
                         <div class="feature-item">
                             <i class="fa fa-truck"></i>
@@ -1036,24 +1037,17 @@
         
         <!-- Product Tabs -->
         <div class="product-tabs">
-            <ul class="nav nav-tabs" role="tablist">
+                <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#description">Mô tả sản phẩm</a>
+                    <a class="nav-link active" data-toggle="tab" href="#description">Mô tả sản phẩm</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#specifications">Thông số kỹ thuật</a>
+                    <a class="nav-link" data-toggle="tab" href="#specifications">Thông số kỹ thuật</a>
                 </li>
-                @php
-                    $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
-                @endphp
-                @if($hasVariants && $product->variants && $product->variants->count() > 0)
-                <li class="nav-item">
-                    <a class="nav-link" data-bs-toggle="tab" href="#variants">Tất cả biến thể</a>
-                </li>
-                @endif
+                
             </ul>
             <div class="tab-content">
-                <div id="description" class="tab-pane fade show active">
+                <div id="description" class="tab-pane fade in active">
                     <p>{!! nl2br(e($product->description ?? 'Đang cập nhật...')) !!}</p>
                 </div>
                 <div id="specifications" class="tab-pane fade">
@@ -1076,123 +1070,7 @@
                         </tbody>
                     </table>
                 </div>
-                @php
-                    $hasVariants = ($product->has_variant || ($product->variants && $product->variants->count() > 0));
-                @endphp
-                @if($hasVariants && $product->variants && $product->variants->count() > 0)
-                <div id="variants" class="tab-pane fade">
-                    <div class="alert alert-info" style="margin-bottom: 15px; padding: 10px 15px; font-size: 13px;">
-                        <i class="fa fa-info-circle"></i> <strong>Lưu ý:</strong> Mỗi biến thể có số lượng tồn kho riêng, không tính chung với sản phẩm gốc hay các biến thể khác.
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>STT</th>
-                                    <th>Ảnh</th>
-                                    <th>SKU</th>
-                                    <th>Dung lượng</th>
-                                    <th>Phiên bản</th>
-                                    <th>Màu sắc</th>
-                                    <th class="text-end">Giá niêm yết</th>
-                                    <th class="text-end">Giá khuyến mãi</th>
-                                    <th class="text-center">Tồn kho<br><small class="text-muted">(riêng biến thể)</small></th>
-                                    <th class="text-center">Trạng thái</th>
-                                    <th class="text-center">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($product->variants as $index => $variant)
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>
-                                        @if($variant->image)
-                                            <img src="{{ preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image) }}" 
-                                                 alt="{{ $variant->sku }}" 
-                                                 style="width: 60px; height: 60px; object-fit: contain; border: 1px solid #E4E7ED; border-radius: 4px;">
-                                        @else
-                                            <img src="{{ $mainImage }}" 
-                                                 alt="{{ $variant->sku }}" 
-                                                 style="width: 60px; height: 60px; object-fit: contain; border: 1px solid #E4E7ED; border-radius: 4px;">
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <strong>{{ $variant->sku }}</strong>
-                                        @if($variant->barcode)
-                                            <br><small class="text-muted">Barcode: {{ $variant->barcode }}</small>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($variant->storage)
-                                            <span class="badge bg-secondary">{{ $variant->storage->storage }}</span>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($variant->version)
-                                            <span class="badge bg-info">{{ $variant->version->name }}</span>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($variant->color)
-                                            <span class="badge" style="background-color: {{ $variant->color->hex_code ?? '#6c757d' }}; color: white;">
-                                                {{ $variant->color->name }}
-                                            </span>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end">
-                                        <strong>{{ number_format($variant->price, 0, ',', '.') }} ₫</strong>
-                                    </td>
-                                    <td class="text-end">
-                                        @if($variant->price_sale)
-                                            <strong class="text-danger">{{ number_format($variant->price_sale, 0, ',', '.') }} ₫</strong>
-                                            @php
-                                                $discount = round((($variant->price - $variant->price_sale) / $variant->price) * 100);
-                                            @endphp
-                                            <br><small class="text-success">-{{ $discount }}%</small>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @if($variant->stock > 0)
-                                            <span class="badge bg-success">{{ $variant->stock }}</span>
-                                        @else
-                                            <span class="badge bg-danger">0</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @if($variant->status == 'available')
-                                            <span class="badge bg-success">Còn hàng</span>
-                                        @elseif($variant->status == 'out_of_stock')
-                                            <span class="badge bg-warning">Hết hàng</span>
-                                        @else
-                                            <span class="badge bg-secondary">Ngừng bán</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-primary select-variant-btn" 
-                                                data-variant-id="{{ $variant->id }}"
-                                                data-price="{{ $variant->price }}"
-                                                data-price-sale="{{ $variant->price_sale ?? '' }}"
-                                                data-image="{{ $variant->image ? (preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image)) : $mainImage }}"
-                                                data-sku="{{ $variant->sku }}"
-                                                data-stock="{{ $variant->stock }}">
-                                            Chọn
-                                        </button>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                @endif
+                
             </div>
         </div>
         
@@ -1252,7 +1130,7 @@
                     <div class="row g-3">
                         @foreach($albumImages as $index => $albumImg)
                         <div class="col-md-3 col-sm-4 col-6">
-                            <div class="album-item" data-bs-toggle="modal" data-bs-target="#imageModal" data-image-index="{{ $index }}">
+                            <div class="album-item" data-toggle="modal" data-target="#imageModal" data-image-index="{{ $index }}">
                                 <img src="{{ $albumImg }}" alt="{{ $product->name }} - Ảnh {{ $index + 1 }}" class="img-fluid">
                                 <div class="album-overlay">
                                     <i class="fa fa-search-plus"></i>

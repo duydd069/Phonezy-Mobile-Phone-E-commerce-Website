@@ -5,14 +5,23 @@
           <!--begin::Brand Link-->
           <a href="{{ url('/') }}" class="brand-link">
             <!--begin::Brand Image-->
-            <img
-              src="{{ asset('dist/assets/img/AdminLTELogo.png') }}"
-              alt="AdminLTE Logo"
-              class="brand-image opacity-75 shadow"
-            />
+            @if(file_exists(public_path('storage/logos/logo.png')) || file_exists(public_path('storage/logos/logo.jpg')))
+              <img
+                src="{{ url('storage/logos/logo.' . (file_exists(public_path('storage/logos/logo.png')) ? 'png' : 'jpg')) }}"
+                alt="PhoneZy Logo"
+                class="brand-image opacity-75 shadow"
+                style="max-height:48px;"
+              />
+            @else
+              <img
+                src="{{ asset('dist/assets/img/AdminLTELogo.png') }}"
+                alt="Admin Logo"
+                class="brand-image opacity-75 shadow"
+              />
+            @endif
             <!--end::Brand Image-->
             <!--begin::Brand Text-->
-            <span class="brand-text fw-light">AdminLTE 4</span>
+            <span class="brand-text fw-light">PhoneZy Admin</span>
             <!--end::Brand Text-->
           </a>
           <!--end::Brand Link-->

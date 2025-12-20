@@ -63,12 +63,7 @@
 
             <header class="section-header d-flex justify-content-between align-items-center">
                 <h2 class="title">Sản Phẩm Mới Nhất</h2>
-                <ul class="section-tab-nav tab-nav">
-                    <li class="active"><a data-toggle="tab" href="#tab-laptops">Laptop</a></li>
-                    <li><a data-toggle="tab" href="#tab-phones">Smartphone</a></li>
-                    <li><a data-toggle="tab" href="#tab-cameras">Camera</a></li>
-                    <li><a data-toggle="tab" href="#tab-accessories">Phụ kiện</a></li>
-                </ul>
+                
             </header>
 
             <div class="row">
@@ -119,7 +114,7 @@
                                         {{-- Rating --}}
                                         <div class="product-rating" itemprop="aggregateRating" itemscope
                                             itemtype="https://schema.org/AggregateRating">
-                                            <span itemprop="ratingValue">5</span> ⭐
+                                            <!-- <span itemprop="ratingValue">5</span> ⭐ -->
                                             <meta itemprop="reviewCount" content="1">
                                         </div>
 
@@ -163,6 +158,95 @@
         </div>
     </section>
 
+    {{-- ACCESSORIES FULL SECTION --}}
+@if(isset($accessories) && $accessories->count())
+<section class="section accessories-full-section">
+    <div class="container">
+
+        {{-- HEADER --}}
+        <div class="section-header d-flex justify-content-between align-items-center mb-4">
+            <h2 class="title">Phụ kiện</h2>
+            <a href="{{ route('client.store') }}?category=accessories" class="view-all">
+                Xem tất cả
+            </a>
+        </div>
+
+        <div class="row">
+            {{-- LEFT: ACCESSORIES GRID --}}
+            <div class="col-md-9">
+                <div class="row">
+
+                    @foreach($accessories as $product)
+                        <div class="col-md-4 col-sm-6 mb-4">
+                            <article class="product">
+                                <div class="product-img">
+                                    <img
+                                        src="{{ $product->image
+                                            ? (preg_match('/^https?:\\/\\//', $product->image)
+                                                ? $product->image
+                                                : asset('storage/' . $product->image))
+                                            : asset('electro/img/product01.png') }}"
+                                        alt="{{ $product->name }}">
+                                </div>
+
+                                <div class="product-body">
+                                    <p class="product-category">
+                                        {{ $product->category->name ?? 'Phụ kiện' }}
+                                    </p>
+
+                                    <h3 class="product-name">
+                                        <a href="{{ route('client.product.show', $product) }}">
+                                            {{ $product->name }}
+                                        </a>
+                                    </h3>
+
+                                    @php
+                                        $variant = $product->variants->first();
+                                        $price = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
+                                    @endphp
+
+                                    <h4 class="product-price">
+                                        {{ number_format($price, 0, ',', '.') }} ₫
+                                    </h4>
+
+                                    <div class="product-btns">
+                                        <button class="add-to-wishlist wishlist-btn"
+                                                data-product-id="{{ $product->id }}">
+                                            <i class="fa fa-heart-o"></i>
+                                        </button>
+
+                                        <a href="{{ route('client.product.show', $product) }}"
+                                           class="quick-view-btn">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        </div>
+                    @endforeach
+
+                </div>
+            </div>
+
+            {{-- RIGHT: PROMO IMAGE --}}
+            <div class="col-md-3 hidden-sm hidden-xs">
+                <div class="accessories-banner">
+                    <a href="#">
+                        <img
+                            src="https://cdn2.cellphones.com.vn/insecure/rs:fill:321:960/q:90/plain/https://media-asset.cellphones.com.vn/page_configs/01K8WKEW3CH6FD5HGP201X8WAC.png"
+                            alt="Accessories Banner"
+                            style="width:100%; border-radius:10px;">
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+@endif
+
+
+
     {{-- Hot Deal Section --}}
     <section id="hot-deal" class="section hot-deal-section">
         <div class="container">
@@ -170,22 +254,22 @@
                 <ul class="hot-deal-countdown">
                     <li>
                         <div>
-                            <h3>02</h3><span>Ngày</span>
+                            <h3 id="countdown-days">00</h3><span>Ngày</span>
                         </div>
                     </li>
                     <li>
                         <div>
-                            <h3>10</h3><span>Giờ</span>
+                            <h3 id="countdown-hours">00</h3><span>Giờ</span>
                         </div>
                     </li>
                     <li>
                         <div>
-                            <h3>34</h3><span>Phút</span>
+                            <h3 id="countdown-minutes">00</h3><span>Phút</span>
                         </div>
                     </li>
                     <li>
                         <div>
-                            <h3>60</h3><span>Giây</span>
+                            <h3 id="countdown-seconds">00</h3><span>Giây</span>
                         </div>
                     </li>
                 </ul>
@@ -195,5 +279,115 @@
             </div>
         </div>
     </section>
+
+    <!-- {{-- Accessories Section: carousel left + promo image right --}}
+    @if(isset($accessories) && $accessories->count() > 0)
+    <section class="section accessories-section">
+        <div class="container">
+            <div class="section-header d-flex justify-content-between align-items-center mb-3">
+                <h2 class="title">Phụ kiện nổi bật</h2>
+                <a href="{{ route('client.store') }}#categories" class="view-all">Xem tất cả phụ kiện</a>
+            </div>
+
+            <div class="row align-items-start">
+                <div class="col-md-9">
+                    <div class="products-slick" data-nav="#accessories-nav">
+                        @foreach($accessories as $product)
+                        <article class="product">
+                            <div class="product-img">
+                                <img src="{{ $product->image ? (preg_match('/^https?:\\/\\//', $product->image) ? $product->image : asset('storage/' . $product->image)) : asset('electro/img/product01.png') }}" alt="{{ $product->name }}">
+                            </div>
+                            <div class="product-body">
+                                <p class="product-category">{{ $product->category->name ?? '' }}</p>
+                                <h3 class="product-name"><a href="{{ route('client.product.show', $product) }}">{{ $product->name }}</a></h3>
+                                @php $variant = $product->variants->first(); $displayPrice = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0; @endphp
+                                <h4 class="product-price">{{ number_format($displayPrice,0,',','.') }} ₫</h4>
+                                <div class="product-btns">
+                                    <button class="add-to-wishlist wishlist-btn" data-product-id="{{ $product->id }}" title="Thêm vào wishlist"><i class="fa fa-heart-o"></i></button>
+                                    <a href="{{ route('client.product.show', $product) }}" class="quick-view-btn" title="Xem nhanh"><i class="fa fa-eye"></i></a>
+                                </div>
+                            </div>
+                        </article>
+                        @endforeach
+                    </div>
+                    <div id="accessories-nav" class="products-slick-nav mt-2"></div>
+                </div>
+
+                <div class="col-md-3 hidden-xs hidden-sm">
+                    <div class="accessories-promo">
+                        <a href="#">
+                            <img src="https://cdn2.cellphones.com.vn/insecure/rs:fill:321:960/q:90/plain/https://media-asset.cellphones.com.vn/page_configs/01K8WKEW3CH6FD5HGP201X8WAC.png" alt="Promo" style="width:100%; border-radius:8px;">
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    @endif -->
+
+@push('scripts')
+<script>
+    $(document).ready(function(){
+        if($.fn.slick){
+            $('.products-slick').not('.slick-initialized').slick({
+                slidesToShow: 4,
+                slidesToScroll: 1,
+                infinite: false,
+                dots: true,
+                arrows: true,
+                appendArrows: $('#accessories-nav'),
+                responsive: [
+                    { breakpoint: 992, settings: { slidesToShow: 3 }},
+                    { breakpoint: 768, settings: { slidesToShow: 2 }},
+                    { breakpoint: 480, settings: { slidesToShow: 1 }}
+                ]
+            });
+        }
+    });
+</script>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Đặt thời gian kết thúc khuyến mãi (7 ngày từ bây giờ)
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 7);
+    endDate.setHours(23, 59, 59, 999); // Cuối ngày
+    
+    function updateCountdown() {
+        const now = new Date().getTime();
+        const distance = endDate.getTime() - now;
+        
+        if (distance < 0) {
+            // Khuyến mãi đã kết thúc
+            document.getElementById('countdown-days').textContent = '00';
+            document.getElementById('countdown-hours').textContent = '00';
+            document.getElementById('countdown-minutes').textContent = '00';
+            document.getElementById('countdown-seconds').textContent = '00';
+            return;
+        }
+        
+        // Tính toán thời gian còn lại
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Cập nhật DOM
+        document.getElementById('countdown-days').textContent = String(days).padStart(2, '0');
+        document.getElementById('countdown-hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('countdown-minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('countdown-seconds').textContent = String(seconds).padStart(2, '0');
+    }
+    
+    // Cập nhật ngay lập tức
+    updateCountdown();
+    
+    // Cập nhật mỗi giây
+    setInterval(updateCountdown, 1000);
+});
+</script>
+@endpush
 
 @endsection

@@ -52,6 +52,7 @@
 		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/nouislider.min.css') }}"/>
 		<link rel="stylesheet" href="{{ asset('electro/css/font-awesome.min.css') }}">
 		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/style.css') }}"/>
+		<link type="text/css" rel="stylesheet" href="{{ asset('electro/css/modern-enhancements.css') }}"/>
 		
 		<!-- Structured Data -->
 		@stack('structured_data')

@@ -1,0 +1,528 @@
+/* ============================================
+   PhoneZy Modern Enhancements
+   Cải thiện giao diện hiện đại và đẹp mắt
+   ============================================ */
+
+/* Global Improvements */
+body {
+    background-color: #FBFBFC;
+    font-family: 'Montserrat', sans-serif;
+}
+
+/* Header Enhancements - Trắng + Xám + Đỏ */
+#top-header {
+    background: #FFFFFF;
+    border-bottom: 2px solid #E4E7ED;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+#top-header * {
+    color: #333 !important;
+}
+
+#top-header .header-links a {
+    color: #333 !important;
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+#top-header .header-links a:hover {
+    color: #D10024 !important;
+    background-color: rgba(209, 0, 36, 0.05);
+}
+
+#top-header .header-links .dropdown-toggle {
+    color: #333 !important;
+}
+
+#top-header .header-links .dropdown-toggle:hover {
+    color: #D10024 !important;
+}
+
+#top-header .header-links .dropdown-menu {
+    background-color: #fff;
+    border: 1px solid #E4E7ED;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#top-header .header-links .dropdown-menu a {
+    color: #333 !important;
+}
+
+#top-header .header-links .dropdown-menu a:hover {
+    color: #D10024 !important;
+    background-color: #f8f9fa;
+}
+
+#header {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E4E7ED;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 999;
+    transition: all 0.3s ease;
+    color: #333;
+}
+
+#header * {
+    color: #333 !important;
+}
+
+#header a {
+    color: #333 !important;
+}
+
+#header .header-ctn a {
+    color: #333 !important;
+}
+
+#header .header-ctn a:hover {
+    color: #D10024 !important;
+}
+
+#header .header-ctn span {
+    color: #333 !important;
+}
+
+/* Logo Styles */
+.header-logo .logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: transform 0.3s ease;
+    padding: 5px 0;
+}
+
+.header-logo .logo:hover {
+    transform: scale(1.05);
+}
+
+.header-logo .logo-img {
+    max-height: 90px;
+    width: auto;
+    object-fit: contain;
+    transition: all 0.3s ease;
+    /* Bỏ đổ bóng quanh logo để nhìn phẳng, sạch hơn */
+    filter: none;
+}
+
+.header-logo .logo-text {
+    display: flex;
+    align-items: center;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.header-logo .logo-phone {
+    color: #333;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+.header-logo .logo-zy {
+    color: #D10024; /* Đỏ làm màu chính */
+    font-weight: 700;
+    transition: all 0.3s ease;
+    border-bottom: 2px solid #FFD700; /* Vàng làm điểm nhấn nhỏ */
+    padding-bottom: 2px;
+}
+
+.header-logo .logo:hover .logo-phone {
+    color: #D10024;
+}
+
+.header-logo .logo:hover .logo-zy {
+    color: #D10024;
+    border-bottom-color: #FFC107; /* Vàng đậm hơn khi hover */
+    text-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+/* Search Bar Enhancements */
+.header-search {
+    position: relative;
+}
+
+.header-search form {
+    display: flex;
+    gap: 0;
+    max-width: 100%;
+}
+
+.header-search .input-select {
+    flex: 1;
+    padding: 14px 25px;
+    border: 2px solid #E4E7ED;
+    border-radius: 30px 0 0 30px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background-color: #fff;
+}
+
+.header-search .input-select:focus {
+    outline: none;
+    border-color: #D10024;
+    box-shadow: 0 0 0 3px rgba(209, 0, 36, 0.1);
+    background-color: #fff;
+}
+
+.header-search .search-btn {
+    padding: 14px 35px;
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    border: none;
+    border-radius: 0 30px 30px 0;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+.header-search .search-btn:hover {
+    background: linear-gradient(135deg, #B71C1C 0%, #D10024 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(209, 0, 36, 0.4);
+}
+
+.header-search .search-btn:active {
+    transform: translateY(0);
+}
+
+/* Header Actions */
+.header-ctn > div {
+    transition: transform 0.3s ease;
+    position: relative;
+}
+
+.header-ctn > div:hover {
+    transform: translateY(-3px);
+}
+
+.header-ctn a {
+    transition: all 0.3s ease;
+    color: #E4E7ED;
+    text-decoration: none;
+}
+
+.header-ctn a:hover {
+    color: #fff;
+}
+
+.header-ctn .qty {
+    background: #D10024;
+    box-shadow: none;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% {}
+    50% {}
+}
+
+/* Navigation Enhancements - Trắng + Xám + Đỏ */
+#navigation {
+    background: #F5F5F5;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-top: 2px solid #E4E7ED;
+    border-bottom: 2px solid #E4E7ED;
+    color: #333;
+}
+
+#navigation * {
+    color: #333 !important;
+}
+
+#navigation a {
+    color: #333 !important;
+}
+
+#navigation .main-nav > li > a {
+    transition: all 0.3s ease;
+    padding: 15px 20px;
+    font-weight: 500;
+    color: #333 !important;
+}
+
+#navigation .main-nav > li > a:hover,
+#navigation .main-nav > li.active > a {
+    color: #D10024 !important;
+    background-color: rgba(209, 0, 36, 0.05);
+}
+
+#navigation .main-nav > li > a:after {
+    background-color: #D10024;
+}
+
+/* Product Cards */
+.product {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.product:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.product-img {
+    overflow: hidden;
+    position: relative;
+}
+
+.product-img img {
+    transition: transform 0.5s ease;
+}
+
+.product:hover .product-img img {
+    transform: scale(1.1);
+}
+
+.product-label .new {
+    background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* Buttons */
+.primary-btn {
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    box-shadow: 0 4px 15px rgba(209, 0, 36, 0.3);
+    transition: all 0.3s ease;
+}
+
+.primary-btn:hover {
+    background: linear-gradient(135deg, #B71C1C 0%, #D10024 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(209, 0, 36, 0.4);
+}
+
+.add-to-cart-btn {
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    transition: all 0.3s ease;
+}
+
+.add-to-cart-btn:hover {
+    background: linear-gradient(135deg, #B71C1C 0%, #D10024 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(209, 0, 36, 0.4);
+}
+
+/* Sections */
+.section {
+    padding: 60px 0;
+}
+
+.section-header {
+    margin-bottom: 40px;
+}
+
+.section-header .title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2B2D42;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+.section-header .title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    border-radius: 2px;
+}
+
+/* Hot Deal Section - Xám + Đỏ */
+#hot-deal {
+    background: #E4E7ED;
+    position: relative;
+    overflow: hidden;
+    border-top: 3px solid #D10024;
+    border-bottom: 3px solid #D10024;
+}
+
+#hot-deal .hot-deal {
+    position: relative;
+    z-index: 1;
+}
+
+#hot-deal h2 {
+    color: #2B2D42;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+#hot-deal p {
+    color: #8D99AE;
+    font-size: 18px;
+}
+
+#hot-deal .hot-deal-countdown > li {
+    background: #D10024 !important;
+    box-shadow: 0 4px 15px rgba(209, 0, 36, 0.3);
+}
+
+#hot-deal .hot-deal-countdown > li > div h3 {
+    color: #FFF;
+    font-weight: 700;
+}
+
+#hot-deal .hot-deal-countdown > li > div span {
+    color: #FFF;
+    font-weight: 500;
+}
+
+/* Banner Carousel */
+#banner-carousel {
+    margin-bottom: 40px;
+}
+
+#banner-carousel .carousel-inner {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+#banner-carousel .carousel-control .fa {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+#banner-carousel .carousel-control:hover .fa {
+    background: rgba(209, 0, 36, 0.8);
+}
+
+/* Responsive */
+@media (max-width: 991px) {
+    .header-logo .logo-text {
+        font-size: 24px;
+    }
+    
+    .header-logo .logo-img {
+        max-height: 50px;
+    }
+    
+    .header-search .input-select {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+    
+    .header-search .search-btn {
+        padding: 10px 20px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 767px) {
+    .header-logo .logo-text {
+        font-size: 20px;
+    }
+    
+    .section-header .title {
+        font-size: 24px;
+    }
+}
+
+/* Smooth Scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Loading Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Footer Enhancements - Đảm bảo màu sắc hiển thị đúng */
+#footer {
+    background: #15161D !important;
+    color: #B9BABC !important;
+}
+
+#footer * {
+    color: #B9BABC !important;
+}
+
+#footer .footer-title {
+    color: #FFF !important;
+}
+
+#footer .footer-links li a {
+    color: #B9BABC !important;
+}
+
+#footer .footer-links li a:hover {
+    color: #D10024 !important;
+}
+
+#footer .footer-links li i {
+    color: #D10024 !important;
+}
+
+#bottom-footer {
+    background: #1E1F29 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#bottom-footer .copyright {
+    color: #B9BABC !important;
+}
+
+#bottom-footer .copyright a {
+    color: #D10024 !important;
+}
+
+#bottom-footer .copyright a:hover {
+    color: #FFD700 !important;
+}
+
+#bottom-footer .footer-payments li a {
+    color: #B9BABC !important;
+    transition: all 0.3s ease;
+}
+
+#bottom-footer .footer-payments li a:hover {
+    color: #D10024 !important;
+    transform: scale(1.1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #FBFBFC;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #D10024 0%, #B71C1C 100%);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #B71C1C 0%, #D10024 100%);
+}
+
