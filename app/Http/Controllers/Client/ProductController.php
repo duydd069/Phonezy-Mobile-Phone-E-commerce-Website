@@ -15,7 +15,23 @@ class ProductController extends Controller
             ->limit(12)
             ->get();
 
-        return view('electro.index', compact('products'));
+        // Lấy các sản phẩm thuộc danh mục 'Phụ kiện' (nếu có)
+        $accessories = collect();
+        try {
+            $accessoryCategory = \App\Models\Category::where('name', 'like', '%Phụ kiện%')->first();
+            if ($accessoryCategory) {
+                $accessories = Product::with(['category','brand'])
+                    ->where('category_id', $accessoryCategory->id)
+                    ->orderBy('id', 'desc')
+                    ->limit(8)
+                    ->get();
+            }
+        } catch (\Exception $e) {
+            // Nếu không tìm thấy model hoặc lỗi, bỏ qua
+            $accessories = collect();
+        }
+
+        return view('electro.index', compact('products', 'accessories'));
     }
 
     public function show(Product $product)

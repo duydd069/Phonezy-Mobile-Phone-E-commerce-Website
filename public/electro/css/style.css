@@ -407,39 +407,6 @@ textarea.input {
 ===========================================================*/
 
 /*----------------------------*\
-	Top header
-\*----------------------------*/
-
-#top-header {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  background-color: #1E1F29;
-}
-
-.header-links li {
-  display: inline-block;
-  margin-right: 15px;
-  font-size: 12px;
-}
-
-.header-links li:last-child {
-  margin-right: 0px;
-}
-
-.header-links li a {
-  color: #FFF;
-}
-
-.header-links li a:hover {
-  color: #D10024;
-}
-
-.header-links li i {
-  color: #D10024;
-  margin-right: 5px;
-}
-
-/*----------------------------*\
 	Logo
 \*----------------------------*/
 
@@ -455,6 +422,8 @@ textarea.input {
 
 .header-logo .logo img {
   display: block;
+  height: 120px;
+  width: auto;
 }
 
 /*----------------------------*\
@@ -472,21 +441,42 @@ textarea.input {
 .header-search form .input-select {
   margin-right: -4px;
   border-radius: 40px 0px 0px 40px;
+  color: #FFF;
 }
 
 .header-search form .input {
   width: calc(100% - 260px);
   margin-right: -4px;
+  color: #FFF;
+}
+
+.header-search input::placeholder {
+  color: #DDD;
 }
 
 .header-search form .search-btn {
   height: 40px;
   width: 100px;
   background: #D10024;
-  color: #FFF;
+  color: #FFFFFF;
   font-weight: 700;
   border: none;
   border-radius: 0px 40px 40px 0px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.header-search form .search-btn .search-icon {
+  display: none;
+  font-size: 16px;
+  color: #fff;
+}
+
+.header-search form .search-btn .search-text {
+  display: inline-block;
 }
 
 /*----------------------------*\
@@ -496,31 +486,42 @@ textarea.input {
 .header-ctn {
   float: right;
   padding: 15px 0px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .header-ctn>div {
   display: inline-block;
+  white-space: nowrap;
 }
 
 .header-ctn>div+div {
-  margin-left: 15px;
+  margin-left: 0px;
 }
 
 .header-ctn>div>a {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  width: 90px;
+  width: auto;
+  min-width: 80px;
   text-align: center;
   color: #FFF;
+  box-shadow: none !important;
+  -webkit-box-shadow: none !important;
 }
 
 .header-ctn>div>a>i {
   display: block;
   font-size: 18px;
+  margin-bottom: 2px;
 }
 
 .header-ctn>div>a>span {
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .header-ctn>div>a>.qty {
@@ -539,6 +540,106 @@ textarea.input {
 
 .header-ctn .menu-toggle {
   display: none;
+}
+
+/* Account/Login Styles */
+.header-account {
+  display: inline-block;
+  width: auto;
+  min-width: 80px;
+  text-align: center;
+  color: #FFF;
+  position: relative;
+  margin-left: 0px;
+}
+
+.header-account .login-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #FFF;
+  text-decoration: none;
+}
+
+.header-account .login-link i {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.header-account .login-link span {
+  font-size: 11px;
+  display: block;
+  white-space: nowrap;
+}
+
+.header-account .account-dropdown {
+  position: relative;
+}
+
+.header-account .account-dropdown>a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #FFF;
+  text-decoration: none;
+}
+
+.header-account .account-dropdown>a i {
+  display: block;
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+
+.header-account .account-dropdown .account-name {
+  font-size: 11px;
+  display: block;
+  white-space: nowrap;
+}
+
+.header-account .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #FFF;
+  border: 1px solid #E4E7ED;
+  border-radius: 4px;
+  box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+  min-width: 180px;
+  display: none;
+  z-index: 100;
+}
+
+.header-account .dropdown-menu.show,
+.header-account .account-dropdown.show .dropdown-menu {
+  display: block;
+}
+
+.header-account .dropdown-menu li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.header-account .dropdown-menu li a {
+  display: block;
+  padding: 12px 15px;
+  color: #2B2D42;
+  text-decoration: none;
+  font-size: 13px;
+  transition: background-color 0.2s;
+}
+
+.header-account .dropdown-menu li a:hover {
+  background-color: #F5F5F5;
+  color: #D10024;
+}
+
+.header-account .dropdown-menu li.divider {
+  border-top: 1px solid #E4E7ED;
+  margin: 5px 0;
+  height: 0;
+  padding: 0;
 }
 
 .cart-dropdown {
@@ -2163,6 +2264,33 @@ textarea.input {
     margin-top: 30px;
     margin-bottom: 30px;
   }
+
+  /* Header responsive adjustments */
+  #header .container .row {
+    align-items: center;
+  }
+  .header-logo .logo img {
+    height: 90px; /* slightly smaller on tablet */
+    width: auto;
+  }
+  .header-search {
+    padding: 8px 0;
+  }
+  .header-search form .input {
+    width: calc(100% - 160px);
+  }
+  .header-search form .search-btn {
+    width: 80px;
+    height: 36px;
+    font-size: 13px;
+  }
+  .header-ctn {
+    gap: 6px;
+  }
+  .header-account .account-dropdown .account-name,
+  .header-ctn>div>a>span {
+    font-size: 11px;
+  }
 }
 
 @media only screen and (max-width: 767px) {
@@ -2186,5 +2314,61 @@ textarea.input {
   .store-pagination {
     float: none;
     margin-top: 10px;
+  }
+
+  /* Mobile header: compact layout */
+  .header-logo {
+    text-align: left;
+    padding-left: 10px;
+  }
+  .header-logo .logo img {
+    height: 60px;
+    width: auto;
+  }
+  .header-search {
+    order: 3;
+    width: 100%;
+    padding: 8px 10px;
+  }
+  .header-search form {
+    display: flex;
+  }
+  .header-search form .input {
+    width: calc(100% - 80px);
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  .header-search form .search-btn {
+    width: 70px;
+    height: 36px;
+    padding: 0 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .header-search form .search-btn .search-icon {
+    display: inline-block;
+    font-size: 16px;
+    color: #fff;
+  }
+  .header-search form .search-btn .search-text {
+    display: none;
+  }
+  .header-ctn {
+    order: 2;
+    float: right;
+    gap: 6px;
+  }
+  /* Hide text labels and show only icons to save space */
+  .header-ctn>div>a>span,
+  .header-account .login-link span,
+  .header-account .account-dropdown .account-name {
+    display: none;
+  }
+  .header-ctn>div>a {
+    min-width: 44px;
+    padding: 4px 6px;
   }
 }

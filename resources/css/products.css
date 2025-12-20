@@ -54,3 +54,19 @@
 	flex-shrink: 0;
 }
 
+.accessories-full-section .product {
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    transition: 0.3s;
+}
+
+.accessories-full-section .product:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+}
+
+.accessories-banner {
+    position: sticky;
+    top: 20px;
+}

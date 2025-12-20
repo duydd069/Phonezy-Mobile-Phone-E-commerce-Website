@@ -92,6 +92,7 @@ class OrderController extends Controller
             ->with('success', "Đã cập nhật trạng thái đơn hàng từ '{$oldStatusLabel}' sang '{$newStatusLabel}'.");
     }
 
+
     /**
      * Xác nhận thanh toán thủ công cho đơn hàng (dùng cho demo/test)
      * Chỉ áp dụng cho đơn hàng VNPay chưa thanh toán
@@ -99,7 +100,7 @@ class OrderController extends Controller
     public function confirmPayment(Request $request, Order $order): RedirectResponse
     {
         // Chỉ cho phép với đơn hàng VNPay chưa thanh toán
-        if ($order->payment_method !== 'vnpay' || $order->payment_status !== 'pending') {
+        if ($order->payment_method !== 'vnpay' || $order->payment_status != 0) {
             return redirect()
                 ->route('admin.orders.show', $order)
                 ->with('error', 'Chỉ có thể xác nhận thanh toán thủ công cho đơn hàng VNPay chưa thanh toán.');
@@ -107,13 +108,63 @@ class OrderController extends Controller
 
         // Cập nhật trạng thái thanh toán và đơn hàng
         $order->update([
-            'payment_status' => 'paid',
+            'payment_status' => 1,
             'paid_at' => now(),
-            'status' => 'processing', // Tự động chuyển sang đang xử lý
+            'status' => 'chuan_bi_hang', // Tự động chuyển sang chuẩn bị hàng
         ]);
 
         return redirect()
             ->route('admin.orders.show', $order)
-            ->with('success', 'Đã xác nhận thanh toán thành công (Demo mode). Đơn hàng đã được chuyển sang trạng thái "Đang xử lý".');
+            ->with('success', 'Đã xác nhận thanh toán thành công (Demo mode). Đơn hàng đã được chuyển sang trạng thái "Chuẩn bị hàng".');
+    }
+
+    /**
+     * Quick status update for AJAX calls from index page
+     */
+    public function quickUpdateStatus(Request $request, Order $order)
+    {
+        $availableStatuses = array_keys(Order::getAvailableStatuses());
+        
+        $request->validate([
+            'status' => ['required', 'in:' . implode(',', $availableStatuses)],
+        ]);
+
+        $newStatus = $request->status;
+        $updates = ['status' => $newStatus];
+
+        // Auto-update shipping status based on order status
+        if ($newStatus === 'da_xac_nhan') {
+            $updates['shipping_status'] = 'chua_giao';
+        } elseif ($newStatus === 'dang_giao_hang') {
+            $updates['shipping_status'] = 'dang_giao_hang';
+        } elseif ($newStatus === 'giao_thanh_cong') {
+            $updates['shipping_status'] = 'giao_thanh_cong';
+        } elseif ($newStatus === 'giao_that_bai') {
+            $updates['shipping_status'] = 'giao_that_bai';
+        }
+
+        // Update the order
+        $order->update($updates);
+
+        // Update payment status based on order status
+        $order->updatePaymentStatusBasedOnOrderStatus();
+
+        $order->refresh();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã cập nhật trạng thái thành công',
+                'status' => $order->status,
+                'status_label' => $order->status_label,
+                'status_badge_class' => $order->status_badge_class,
+                'shipping_status_label' => $order->shipping_status_label,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.orders.index')
+            ->with('success', 'Đã cập nhật trạng thái thành công');
     }
 }
+

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\URL;
 use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Wishlist;
@@ -23,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS URLs when APP_URL is HTTPS (for ngrok and production)
+        if (str_starts_with(config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         // Biến dùng cho mọi view: số lượng sản phẩm trong giỏ
         View::composer('*', function ($view) {
             // Nếu chưa login thì tạm dùng user_id = 1 (giống CartController)

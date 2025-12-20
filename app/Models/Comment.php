@@ -11,6 +11,7 @@ class Comment extends Model
         'product_id',
         'user_id',
         'parent_id',
+        'replied_to_user_id',
         'content',
     ];
 
@@ -32,6 +33,11 @@ class Comment extends Model
     public function replies()
     {
         return $this->hasMany(Comment::class, 'parent_id')->orderBy('created_at', 'asc');
+    }
+
+    public function repliedToUser()
+    {
+        return $this->belongsTo(User::class, 'replied_to_user_id');
     }
 }
 

@@ -106,17 +106,46 @@
 				</li>
 			</ul>
 
-			<ul class="nav navbar-nav navbar-right">
+			<!-- <ul class="nav navbar-nav navbar-right">
 				@guest
 					<li><a href="{{ route('client.login') }}">Login</a></li>
 					<li><a href="{{ route('client.register') }}">Register</a></li>
 				@endguest
-			</ul>
+			</ul> -->
 		</div>
 	</div>
 </nav>
 
 <style>
+/* Navigation Background - Trắng + Xám + Đỏ */
+#navigation {
+	background: #F5F5F5 !important;
+	color: #333 !important;
+	border-top: 2px solid #E4E7ED !important;
+	border-bottom: 2px solid #E4E7ED !important;
+}
+
+#navigation * {
+	color: #333 !important;
+}
+
+#navigation a {
+	color: #333 !important;
+}
+
+#navigation .main-nav > li > a {
+	color: #333 !important;
+}
+
+#navigation .main-nav > li.active > a {
+	color: #D10024 !important;
+}
+
+#navigation .main-nav > li > a:hover {
+	color: #D10024 !important;
+	background-color: rgba(209, 0, 36, 0.05) !important;
+}
+
 /* Category Dropdown Styles */
 .category-dropdown {
 	position: relative;
@@ -132,8 +161,12 @@
 	transition: transform 0.3s ease;
 }
 
+.category-dropdown > a {
+	color: #333 !important;
+}
+
 .category-dropdown:hover > a {
-	color: #D10024;
+	color: #D10024 !important;
 }
 
 .category-dropdown:hover > a i.fa-angle-right {

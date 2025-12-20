@@ -17,6 +17,7 @@ class UserController extends Controller
     {
         $query = User::query();
 
+        // Search by name or email
         if ($search = $request->string('q')->toString()) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -24,8 +25,14 @@ class UserController extends Controller
             });
         }
 
-        if ($request->has('is_admin')) {
-            $query->where('is_admin', $request->boolean('is_admin'));
+        // Filter by role
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->input('role_id'));
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
         }
 
         $users = $query->orderByDesc('id')->paginate(15)->withQueryString();
@@ -93,8 +100,8 @@ class UserController extends Controller
      */
     public function ban(User $user): RedirectResponse
     {
-        $user->update(['is_banned' => 1]);
-        return redirect()->route('admin.users.index')->with('success', 'User banned successfully');
+        $user->update(['status' => 'banned']);
+        return redirect()->route('admin.users.index')->with('success', 'Đã cấm người dùng thành công');
     }
 
     /**
@@ -102,8 +109,8 @@ class UserController extends Controller
      */
     public function unban(User $user): RedirectResponse
     {
-        $user->update(['is_banned' => 0]);
-        return redirect()->route('admin.users.index')->with('success', 'User unbanned successfully');
+        $user->update(['status' => 'active']);
+        return redirect()->route('admin.users.index')->with('success', 'Đã bỏ cấm người dùng thành công');
     }
 }
 

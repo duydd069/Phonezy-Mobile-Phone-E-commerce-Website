@@ -5,14 +5,23 @@
           <!--begin::Brand Link-->
           <a href="{{ url('/') }}" class="brand-link">
             <!--begin::Brand Image-->
-            <img
-              src="{{ asset('dist/assets/img/AdminLTELogo.png') }}"
-              alt="AdminLTE Logo"
-              class="brand-image opacity-75 shadow"
-            />
+            @if(file_exists(public_path('storage/logos/logo.png')) || file_exists(public_path('storage/logos/logo.jpg')))
+              <img
+                src="{{ url('storage/logos/logo.' . (file_exists(public_path('storage/logos/logo.png')) ? 'png' : 'jpg')) }}"
+                alt="PhoneZy Logo"
+                class="brand-image opacity-75 shadow"
+                style="max-height:48px;"
+              />
+            @else
+              <img
+                src="{{ asset('dist/assets/img/AdminLTELogo.png') }}"
+                alt="Admin Logo"
+                class="brand-image opacity-75 shadow"
+              />
+            @endif
             <!--end::Brand Image-->
             <!--begin::Brand Text-->
-            <span class="brand-text fw-light">AdminLTE 4</span>
+            <span class="brand-text fw-light">PhoneZy Admin</span>
             <!--end::Brand Text-->
           </a>
           <!--end::Brand Link-->
@@ -51,6 +60,14 @@
                   <p>Đơn Hàng</p>
                 </a>
               </li>
+
+              <li class="nav-item">
+                <a href="{{ route('admin.returns.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-arrow-return-left"></i>
+                  <p>Yêu cầu hoàn trả</p>
+                </a>
+              </li>
+
               
               <li class="nav-item">
                 <a href="{{ route('admin.products.index') }}" class="nav-link">
@@ -98,6 +115,13 @@
                 <a href="{{ route('admin.coupons.index') }}" class="nav-link">
                   <i class="nav-icon bi bi-tag"></i>
                   <p>Khuyến mãi</p>
+                </a>
+              </li>
+              
+              <li class="nav-item">
+                <a href="{{ route('admin.comments.index') }}" class="nav-link">
+                  <i class="nav-icon bi bi-chat-dots"></i>
+                  <p>Bình luận</p>
                 </a>
               </li>
               

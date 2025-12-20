@@ -25,8 +25,8 @@ class VnpayController extends Controller
 
         if ($responseCode === '00') {
             $order->update([
-                'payment_status' => 'paid',
-                'status' => 'processing',
+                'payment_status' => 1, // 1 = đã thanh toán
+                'status' => 'da_xac_nhan', // Đã xác nhận sau khi thanh toán
                 'payment_method' => 'vnpay',
             ]);
             return redirect()->route('client.checkout.success', ['order' => $order->id])
@@ -53,8 +53,8 @@ class VnpayController extends Controller
 
         if ($responseCode === '00') {
             $order->update([
-                'payment_status' => 'paid',
-                'status' => 'processing',
+                'payment_status' => 1, // 1 = đã thanh toán
+                'status' => 'da_xac_nhan', // Đã xác nhận sau khi thanh toán
                 'payment_method' => 'vnpay',
             ]);
             return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
