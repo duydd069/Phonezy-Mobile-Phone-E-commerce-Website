@@ -47,6 +47,21 @@ class ProductVariantController extends Controller
         $validated = $this->processValidatedData($request);
         $validated['product_id'] = $product->id;
 
+        // Tự động tạo SKU nếu chưa có
+        if (empty($validated['sku'])) {
+            $validated['sku'] = ProductVariant::generateSku(
+                $product,
+                $validated['version_id'] ?? null,
+                $validated['storage_id'] ?? null,
+                $validated['color_id'] ?? null
+            );
+        }
+
+        // Tự động tạo barcode nếu chưa có
+        if (empty($validated['barcode'])) {
+            $validated['barcode'] = ProductVariant::generateBarcode($product->id);
+        }
+
         ProductVariant::create($validated);
 
         return redirect()
@@ -76,6 +91,21 @@ class ProductVariantController extends Controller
         $variant = $this->findVariantOrFail($product->id, $variantId);
 
         $validated = $this->processValidatedData($request);
+
+        // Tự động tạo SKU nếu chưa có (hoặc nếu user muốn regenerate)
+        if (empty($validated['sku']) || $request->has('regenerate_sku')) {
+            $validated['sku'] = ProductVariant::generateSku(
+                $product,
+                $validated['version_id'] ?? $variant->version_id,
+                $validated['storage_id'] ?? $variant->storage_id,
+                $validated['color_id'] ?? $variant->color_id
+            );
+        }
+
+        // Tự động tạo barcode nếu chưa có (hoặc nếu user muốn regenerate)
+        if (empty($validated['barcode']) || $request->has('regenerate_barcode')) {
+            $validated['barcode'] = ProductVariant::generateBarcode($product->id, $variant->id);
+        }
 
         // Handle image update - delete old image if new one is uploaded
         if ($request->hasFile('image')) {
@@ -177,6 +207,40 @@ class ProductVariantController extends Controller
             ->where('product_id', $productId)
             ->where('id', $variantId)
             ->firstOrFail();
+    }
+
+    /**
+     * API endpoint để generate SKU tự động
+     */
+    public function generateSku(Request $request, int $productId)
+    {
+        $product = Product::findOrFail($productId);
+        
+        $versionId = $request->input('version_id');
+        $storageId = $request->input('storage_id');
+        $colorId = $request->input('color_id');
+
+        $sku = ProductVariant::generateSku($product, $versionId, $storageId, $colorId);
+
+        return response()->json([
+            'success' => true,
+            'sku' => $sku,
+        ]);
+    }
+
+    /**
+     * API endpoint để generate barcode tự động
+     */
+    public function generateBarcode(Request $request, int $productId)
+    {
+        $variantId = $request->input('variant_id');
+        
+        $barcode = ProductVariant::generateBarcode($productId, $variantId);
+
+        return response()->json([
+            'success' => true,
+            'barcode' => $barcode,
+        ]);
     }
 }
 

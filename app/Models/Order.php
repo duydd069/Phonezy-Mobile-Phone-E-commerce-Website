@@ -179,10 +179,10 @@ class Order extends Model
      */
     public function getPaymentStatusLabelAttribute(): string
     {
-        return match($this->payment_status) {
-            'pending' => 'Chờ thanh toán',
-            'paid' => 'Đã thanh toán',
-            'failed' => 'Thanh toán thất bại',
+        return match((string)$this->payment_status) {
+            'pending', '0' => 'Chờ thanh toán',
+            'paid', '1' => 'Đã thanh toán',
+            'failed', '2' => 'Thanh toán thất bại',
             'refunded' => 'Đã hoàn tiền',
             default => ucfirst($this->payment_status),
         };

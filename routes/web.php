@@ -135,6 +135,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/variants/{variantId}/edit', [ProductVariantController::class, 'edit'])->name('variants.edit');
         Route::put('/variants/{variantId}',     [ProductVariantController::class, 'update'])->name('variants.update');
         Route::delete('/variants/{variantId}',  [ProductVariantController::class, 'destroy'])->name('variants.destroy');
+        Route::post('/variants/generate-sku',  [ProductVariantController::class, 'generateSku'])->name('variants.generate-sku');
+        Route::post('/variants/generate-barcode', [ProductVariantController::class, 'generateBarcode'])->name('variants.generate-barcode');
     });
 
     // Orders routes

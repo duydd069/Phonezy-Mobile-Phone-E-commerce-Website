@@ -198,8 +198,22 @@
                     body: JSON.stringify({ message }),
                 });
 
-                const data = await response.json();
                 messages.lastChild.remove(); // remove loading bubble
+
+                // Kiểm tra response status
+                if (!response.ok) {
+                    appendMessage('Xin lỗi, mình đang có chút trục trặc. Bạn thử lại sau nhé!', 'bot');
+                    return;
+                }
+
+                // Kiểm tra content-type để đảm bảo là JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    appendMessage('Xin lỗi, mình đang có chút trục trặc. Bạn thử lại sau nhé!', 'bot');
+                    return;
+                }
+
+                const data = await response.json();
 
                 if (data.success) {
                     appendMessage(data.data.answer || 'Mình đã ghi nhận thông tin của bạn!', 'bot');
@@ -210,10 +224,11 @@
                         appendMessage(`Gợi ý nổi bật:\n${suggestionText}`, 'bot');
                     }
                 } else {
-                    appendMessage('Xin lỗi, mình đang có chút trục trặc. Bạn thử lại sau nhé!', 'bot');
+                    appendMessage(data.error || 'Xin lỗi, mình đang có chút trục trặc. Bạn thử lại sau nhé!', 'bot');
                 }
             } catch (error) {
                 messages.lastChild.remove();
+                console.error('Chatbot error:', error);
                 appendMessage('Kết nối bị gián đoạn, vui lòng thử lại.', 'bot');
             }
         });

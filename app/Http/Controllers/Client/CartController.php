@@ -76,14 +76,14 @@ class CartController extends Controller
             }
             
             // Kiểm tra trạng thái
-            if ($variant->status !== 'available') {
+        if ($variant->status !== 'available') {
                 throw new \Exception('Sản phẩm này hiện không khả dụng!');
-            }
+        }
 
             // Kiểm tra stock (sau khi lock, đảm bảo không bị race condition)
-            if ($variant->stock < $quantity) {
+        if ($variant->stock < $quantity) {
                 throw new \Exception('Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
-            }
+        }
             
             return $variant;
         });

@@ -22,6 +22,8 @@ class ProductVariantRequest extends FormRequest
         $this->merge([
             'price_sale' => $this->price_sale === '' ? null : $this->price_sale,
             'sold' => $this->sold === '' ? null : $this->sold,
+            'sku' => $this->sku === '' ? null : $this->sku,
+            'barcode' => $this->barcode === '' ? null : $this->barcode,
         ]);
 
         return [
@@ -33,7 +35,7 @@ class ProductVariantRequest extends FormRequest
             'stock' => ['required', 'integer', 'min:0'],
             'sold' => ['nullable', 'integer', 'min:0'],
             'sku' => [
-                'required',
+                'nullable',
                 'string',
                 'max:100',
                 Rule::unique('product_variants', 'sku')->ignore($variantId),
@@ -62,7 +64,6 @@ class ProductVariantRequest extends FormRequest
             'stock.min' => 'Số lượng tồn kho phải lớn hơn hoặc bằng 0',
             'sold.integer' => 'Số lượng đã bán phải là số nguyên',
             'sold.min' => 'Số lượng đã bán phải lớn hơn hoặc bằng 0',
-            'sku.required' => 'Vui lòng nhập mã SKU',
             'sku.max' => 'Mã SKU không được vượt quá 100 ký tự',
             'sku.unique' => 'Mã SKU đã tồn tại',
             'barcode.max' => 'Mã vạch không được vượt quá 100 ký tự',

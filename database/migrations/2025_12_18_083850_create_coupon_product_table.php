@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         if (!Schema::hasTable('coupon_product')) {
-            Schema::create('coupon_product', function (Blueprint $table) {
-                $table->id();
+        Schema::create('coupon_product', function (Blueprint $table) {
+            $table->id();
                 // Sử dụng bigInteger để khớp với kiểu bigint của bảng coupons và products
                 $table->bigInteger('coupon_id');
                 $table->bigInteger('product_id');
-                $table->timestamps();
+            $table->timestamps();
 
                 // Đảm bảo mỗi coupon chỉ liên kết với mỗi product 1 lần
                 $table->unique(['coupon_id', 'product_id']);
@@ -32,7 +32,7 @@ return new class extends Migration
                       ->references('id')
                       ->on('products')
                       ->onDelete('cascade');
-            });
+        });
         }
     }
 

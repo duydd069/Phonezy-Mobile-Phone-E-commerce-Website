@@ -2,8 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\OrderItem;
 use App\Models\Coupon;
+use App\Models\Order;
 use App\Models\Product;
+use Carbon\Carbon;
+
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -13,9 +17,29 @@ class ChatbotService
 {
     public function reply(string $message, ?int $userId = null): array
     {
+        // Kiểm tra các câu hỏi liên quan đến đơn hàng trước (bảo mật: cần userId để trả lời chi tiết)
+        if ($orderAnswer = $this->answerOrderQuestion($message, $userId)) {
+            return $orderAnswer;
+        }
+
         // Nếu là câu hỏi chi tiết về 1 sản phẩm cụ thể (màu sắc, dung lượng, ...)
         if ($detailAnswer = $this->answerProductDetailQuestion($message, $userId)) {
             return $detailAnswer;
+        }
+
+        // Nếu là câu hỏi về số lượng tồn kho
+        if ($inventoryAnswer = $this->answerInventoryQuestion($message)) {
+            return $inventoryAnswer;
+        }
+
+        // Nếu là câu hỏi về sản phẩm bán chạy
+        if ($bestSellingAnswer = $this->answerBestSellingQuestion($message)) {
+            return $bestSellingAnswer;
+        }
+
+        // Nếu là câu hỏi về sản phẩm bán chạy
+        if ($bestSellingAnswer = $this->answerBestSellingQuestion($message)) {
+            return $bestSellingAnswer;
         }
 
         $filters = $this->extractFilters($message);
@@ -63,6 +87,126 @@ class ChatbotService
             }),
             'filters' => $filters,
         ];
+    }
+
+    /**
+     * Trả lời câu hỏi liên quan đến đơn hàng: tra cứu trạng thái, liệt kê đơn gần đây của user.
+     */
+    protected function answerOrderQuestion(string $message, ?int $userId = null): ?array
+    {
+        $normalized = Str::lower($message);
+        $normalizedAscii = Str::lower(Str::ascii($message));
+
+        // Các từ khóa ngữ cảnh liên quan đến đơn hàng
+        $orderKeywords = ['đơn hàng', 'don hang', 'mã đơn', 'ma don', 'mã đơn hàng', 'theo dõi đơn', 'trạng thái đơn', 'tình trạng đơn', 'order'];
+        if (! Str::contains($normalized, $orderKeywords) && ! Str::contains($normalizedAscii, $orderKeywords)) {
+            return null;
+        }
+
+        // Thử tìm order id trong câu: các dạng "#123", "mã đơn 123", "đơn 123"
+        $orderId = null;
+        if (preg_match('/#(\d{2,9})/u', $message, $m)) {
+            $orderId = (int) $m[1];
+        } elseif (preg_match('/(?:mã đơn|ma don|don|đơn)\s*[:#]?\s*(\d{2,9})/iu', $message, $m)) {
+            $orderId = (int) $m[1];
+        } elseif (preg_match('/order\s*(\d{2,9})/iu', $message, $m)) {
+            $orderId = (int) $m[1];
+        }
+
+        // Nếu user hỏi chung chung về "đơn hàng của tôi" -> liệt kê đơn gần đây
+        $askMyOrders = Str::contains($normalized, ['của tôi', 'của minh', 'của mình', 'của tôi?', 'của tôi']) || Str::contains($normalizedAscii, ['cua toi', 'cua minh']);
+
+        if ($orderId) {
+            // Nếu có orderId, yêu cầu user đăng nhập để bảo mật nếu chưa có userId
+            if (! $userId) {
+                return [
+                    'answer' => 'Mình cần bạn đăng nhập để tra cứu thông tin đơn hàng. Vui lòng đăng nhập hoặc cung cấp thông tin xác thực (số điện thoại hoặc email) để mình hỗ trợ nhé.',
+                    'suggestions' => collect(),
+                    'coupons' => collect(),
+                    'filters' => ['order_id' => $orderId],
+                ];
+            }
+
+            $order = Order::where('id', $orderId)->where('user_id', $userId)->first();
+            if (! $order) {
+                return [
+                    'answer' => "Không tìm thấy đơn hàng #{$orderId} trong tài khoản của bạn. Vui lòng kiểm tra lại mã đơn hoặc liên hệ hỗ trợ.",
+                    'suggestions' => collect(),
+                    'coupons' => collect(),
+                    'filters' => ['order_id' => $orderId],
+                ];
+            }
+
+            $lines = [];
+            $lines[] = "📦 Đơn hàng #{$order->id}";
+            $lines[] = "💰 Tổng tiền: " . number_format($order->total ?? 0, 0, ',', '.') . 'đ';
+            $lines[] = "📝 Trạng thái đơn: {$order->getStatusLabelAttribute()}";
+            $lines[] = "💳 Thanh toán: {$order->getPaymentStatusLabelAttribute()}";
+            $lines[] = "🚚 Vận chuyển: {$order->getShippingStatusLabelAttribute()}";
+
+            if ($order->shipping_phone) {
+                $lines[] = "👤 Người nhận: {$order->shipping_full_name} ({$order->shipping_phone})";
+            }
+
+            $answer = implode("\n", $lines);
+
+            $suggestion = [
+                'order_id' => $order->id,
+                'status' => $order->status,
+                'total' => $order->total,
+            ];
+
+            return [
+                'answer' => $answer,
+                'suggestions' => collect([$suggestion]),
+                'coupons' => collect(),
+                'filters' => ['order_id' => $order->id],
+            ];
+        }
+
+        if ($askMyOrders) {
+            if (! $userId) {
+                return [
+                    'answer' => 'Mình cần bạn đăng nhập để hiển thị danh sách đơn hàng của bạn. Vui lòng đăng nhập để tiếp tục.',
+                    'suggestions' => collect(),
+                    'coupons' => collect(),
+                    'filters' => [],
+                ];
+            }
+
+            $orders = Order::where('user_id', $userId)->orderByDesc('created_at')->limit(5)->get();
+            if ($orders->isEmpty()) {
+                return [
+                    'answer' => 'Bạn hiện chưa có đơn hàng nào. Hãy đặt hàng để mình có thể hỗ trợ theo dõi nhé!',
+                    'suggestions' => collect(),
+                    'coupons' => collect(),
+                    'filters' => [],
+                ];
+            }
+
+            $lines = $orders->map(function (Order $o) {
+                return "#{$o->id}: {$o->getStatusLabelAttribute()} - " . number_format($o->total ?? 0, 0, ',', '.') . 'đ';
+            })->values()->all();
+
+            $answer = "Danh sách các đơn hàng gần đây của bạn:\n" . implode("\n", $lines);
+
+            $suggestions = $orders->map(function (Order $o) {
+                return [
+                    'order_id' => $o->id,
+                    'status' => $o->status,
+                    'total' => $o->total,
+                ];
+            });
+
+            return [
+                'answer' => $answer,
+                'suggestions' => $suggestions,
+                'coupons' => collect(),
+                'filters' => [],
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -124,10 +268,12 @@ class ChatbotService
             );
 
             // Bỏ dung lượng (12GB, 256GB, etc.) - cả dạng có và không có dấu cách
-            $clean = preg_replace('/\b\d{2,4}\s*gb\b/i', '', $clean);
+            // Nhưng giữ lại RAM (12GB, 8GB) nếu có trong câu hỏi
+            $clean = preg_replace('/\b(\d{3,4}\s*gb)\b/i', '', $clean); // Chỉ bỏ storage (256GB, 512GB), giữ RAM (12GB)
             $clean = trim(preg_replace('/\s+/', ' ', $clean));
 
             if ($clean !== '') {
+                // Ưu tiên tìm chính xác trước
                 $product = Product::query()
                     ->with(['variants.color', 'variants.storage'])
                     ->where('name', 'like', '%' . $clean . '%')
@@ -144,19 +290,31 @@ class ChatbotService
                     });
                     
                     if (!empty($mainKeywords)) {
-                        // Tìm sản phẩm có chứa ít nhất 2 từ khóa chính
-                        $product = Product::query()
+                        // Tìm sản phẩm có chứa tất cả từ khóa chính (AND logic) để chính xác hơn
+                        $products = Product::query()
                             ->with(['variants.color', 'variants.storage'])
                             ->where(function($q) use ($mainKeywords) {
-                                $count = 0;
                                 foreach ($mainKeywords as $keyword) {
-                                    if ($count < 2) { // Chỉ cần 2 từ khóa đầu tiên
-                                        $q->where('name', 'like', '%' . $keyword . '%');
-                                        $count++;
-                                    }
+                                    $q->where('name', 'like', '%' . $keyword . '%');
                                 }
                             })
-                            ->first();
+                            ->get();
+                        
+                        if ($products->isNotEmpty()) {
+                            // Nếu có nhiều kết quả, ưu tiên sản phẩm có nhiều từ khóa khớp nhất
+                            $products = $products->sortByDesc(function($p) use ($mainKeywords) {
+                                $name = Str::lower($p->name);
+                                $matchCount = 0;
+                                foreach ($mainKeywords as $kw) {
+                                    if (Str::contains($name, $kw)) {
+                                        $matchCount++;
+                                    }
+                                }
+                                return $matchCount;
+                            })->values();
+                            
+                            $product = $products->first();
+                        }
                     }
                 }
             }
@@ -240,15 +398,40 @@ class ChatbotService
 
                     if ($products->isNotEmpty()) {
                         // Sắp xếp theo số từ khóa khớp (sản phẩm có nhiều từ khóa khớp hơn sẽ được ưu tiên)
-                        $products = $products->sortByDesc(function($p) use ($searchWords) {
+                        // Ưu tiên các từ khóa đặc trưng (fold, flip, pro, max, s24, z, etc.)
+                        $products = $products->sortByDesc(function($p) use ($searchWords, $normalized) {
                             $name = Str::lower($p->name);
                             $matchCount = 0;
+                            $specialMatchBonus = 0;
+                            
                             foreach ($searchWords as $w) {
                                 if (Str::contains($name, $w)) {
                                     $matchCount++;
+                                    // Tăng điểm nếu từ khóa đặc trưng khớp
+                                    if (in_array($w, ['fold', 'fold7', 'flip', 'z', 'pro', 'max', 's24', 's25', 'note'])) {
+                                        $specialMatchBonus += 2;
+                                    }
                                 }
                             }
-                            return $matchCount;
+                            
+                            // Nếu câu hỏi có từ khóa đặc trưng, ưu tiên sản phẩm có từ khóa đó
+                            if (Str::contains($normalized, ['fold', 'flip', 'z fold', 'z flip'])) {
+                                if (Str::contains($name, ['fold', 'flip'])) {
+                                    $specialMatchBonus += 5;
+                                }
+                            }
+                            if (Str::contains($normalized, ['pro', 'max'])) {
+                                if (Str::contains($name, ['pro', 'max'])) {
+                                    $specialMatchBonus += 5;
+                                }
+                            }
+                            if (Str::contains($normalized, ['s24', 's25', 's26'])) {
+                                if (Str::contains($name, ['s24', 's25', 's26'])) {
+                                    $specialMatchBonus += 5;
+                                }
+                            }
+                            
+                            return $matchCount * 10 + $specialMatchBonus;
                         })->values();
                         
                         // Nếu người dùng KHÔNG nhắc đến "pro" hoặc "max" thì ưu tiên bản thường
@@ -258,6 +441,7 @@ class ChatbotService
                                 return ! Str::contains($name, ['pro', 'max']);
                             }) ?? $products->first();
                         } else {
+                            // Lấy sản phẩm đầu tiên sau khi đã sắp xếp (đã ưu tiên đúng)
                             $product = $products->first();
                         }
                     }
@@ -314,22 +498,69 @@ class ChatbotService
             ->values()
             ->all();
 
-        // Nhận diện dung lượng cụ thể mà người dùng đang hỏi (128GB, 256GB, ...)
-        $requestedStorage = null;
-        if (preg_match('/\b(\d{2,4}\s*gb)\b/i', $message, $matchStorage)) {
-            $requestedStorage = strtoupper(preg_replace('/\s+/', '', $matchStorage[1])); // "128GB"
+        // Nhận diện RAM trong câu hỏi (12GB, 8GB, ...) - thường là số nhỏ hơn 16GB
+        $requestedRam = null;
+        if (preg_match_all('/\b(\d{1,2}\s*gb)\b/i', $message, $ramMatches)) {
+            // Lấy tất cả các giá trị GB tìm được
+            foreach ($ramMatches[1] as $ramMatch) {
+                $ramValue = (int) preg_replace('/\s*gb/i', '', $ramMatch);
+                // RAM thường là 4, 6, 8, 12, 16GB (không phải 128, 256, 512GB)
+                if ($ramValue <= 16) {
+                    $requestedRam = strtoupper(preg_replace('/\s+/', '', $ramMatch)); // "12GB"
+                    break;
+                }
+            }
         }
 
-        $storages = $product->variants
+        // Nhận diện dung lượng cụ thể mà người dùng đang hỏi (128GB, 256GB, ...)
+        $requestedStorage = null;
+        if (preg_match('/\b(\d{3,4}\s*gb)\b/i', $message, $matchStorage)) {
+            $requestedStorage = strtoupper(preg_replace('/\s+/', '', $matchStorage[1])); // "256GB"
+        }
+
+        // Đảm bảo variants được load với relationships
+        if (!$product->relationLoaded('variants')) {
+            $product->load(['variants.color', 'variants.storage']);
+        }
+
+        // Lọc variants theo RAM nếu có yêu cầu RAM
+        $variantsForStorage = $product->variants;
+        if ($requestedRam) {
+            $normalizedRequestedRam = strtoupper(preg_replace('/\s+/', '', $requestedRam));
+            $variantsForStorage = $variantsForStorage->filter(function ($v) use ($normalizedRequestedRam, $product) {
+                try {
+                    // Kiểm tra trong description
+                    if ($v->description) {
+                        $description = strtoupper(preg_replace('/\s+/', '', $v->description));
+                        if (Str::contains($description, $normalizedRequestedRam)) {
+                            return true;
+                        }
+                    }
+                    // Kiểm tra trong tên sản phẩm
+                    $productName = strtoupper(preg_replace('/\s+/', '', $product->name));
+                    if (Str::contains($productName, $normalizedRequestedRam)) {
+                        return true;
+                    }
+                } catch (\Throwable $e) {
+                    \Log::warning('Error filtering variant by RAM', ['error' => $e->getMessage()]);
+                }
+                return false;
+            });
+        }
+
+        $storages = $variantsForStorage
             ->map(function ($v) {
-                if ($v->storage) {
-                    return $v->storage->storage;
-                }
+                try {
+                    if ($v->storage && isset($v->storage->storage)) {
+                        return $v->storage->storage;
+                    }
 
-                if ($v->description && preg_match('/\b(\d{2,4}\s*gb)\b/i', $v->description, $match)) {
-                    return strtoupper(preg_replace('/\s+/', '', $match[1]));
+                    if ($v->description && preg_match('/\b(\d{3,4}\s*gb)\b/i', $v->description, $match)) {
+                        return strtoupper(preg_replace('/\s+/', '', $match[1]));
+                    }
+                } catch (\Throwable $e) {
+                    \Log::warning('Error extracting storage from variant', ['error' => $e->getMessage()]);
                 }
-
                 return null;
             })
             ->filter()
@@ -347,7 +578,33 @@ class ChatbotService
             ->all();
 
         // Nếu người dùng hỏi kèm dung lượng (vd "128GB") thì chỉ lấy biến thể đúng dung lượng đó
+        // Cũng lọc theo RAM nếu có yêu cầu RAM
         $variantsForSummary = $product->variants;
+        
+        // Lọc theo RAM trước nếu có yêu cầu RAM
+        if ($requestedRam) {
+            $normalizedRequestedRam = strtoupper(preg_replace('/\s+/', '', $requestedRam));
+            $variantsForSummary = $variantsForSummary->filter(function ($v) use ($normalizedRequestedRam, $product) {
+                try {
+                    // Kiểm tra trong description
+                    if ($v->description) {
+                        $description = strtoupper(preg_replace('/\s+/', '', $v->description));
+                        if (Str::contains($description, $normalizedRequestedRam)) {
+                            return true;
+                        }
+                    }
+                    // Kiểm tra trong tên sản phẩm
+                    $productName = strtoupper(preg_replace('/\s+/', '', $product->name));
+                    if (Str::contains($productName, $normalizedRequestedRam)) {
+                        return true;
+                    }
+                } catch (\Throwable $e) {
+                    \Log::warning('Error filtering variant by RAM for summary', ['error' => $e->getMessage()]);
+                }
+                return false;
+            });
+        }
+        
         if ($requestedStorage) {
             // Chuẩn hóa requestedStorage: bỏ khoảng trắng, uppercase
             $normalizedRequestedStorage = strtoupper(preg_replace('/\s+/', '', $requestedStorage));
@@ -528,6 +785,199 @@ class ChatbotService
         ];
     }
 
+    /**
+     * Trả lời câu hỏi về số lượng tồn kho của sản phẩm
+     * Ví dụ: "số lượng tồn kho của iPhone 15", "iPhone 15 còn bao nhiêu", "tồn kho iPhone 15"
+     */
+    protected function answerInventoryQuestion(string $message): ?array
+    {
+        $normalized = Str::lower($message);
+        $normalizedAscii = Str::lower(Str::ascii($message));
+
+        // Nhận diện câu hỏi về số lượng tồn kho
+        $inventoryKeywords = [
+            'số lượng tồn kho', 'so luong ton kho', 'ton kho',
+            'còn bao nhiêu', 'con bao nhieu', 'còn mấy', 'con may',
+            'số lượng còn', 'so luong con', 'còn hàng bao nhiêu', 'con hang bao nhieu',
+            'tồn kho hiện tại', 'ton kho hien tai', 'số lượng hiện tại', 'so luong hien tai',
+            'inventory', 'stock', 'quantity',
+        ];
+
+        $hasInventoryKeyword = false;
+        foreach ($inventoryKeywords as $keyword) {
+            if (Str::contains($normalized, $keyword) || Str::contains($normalizedAscii, $keyword)) {
+                $hasInventoryKeyword = true;
+                break;
+            }
+        }
+
+        if (!$hasInventoryKeyword) {
+            return null;
+        }
+
+        // Tìm sản phẩm được đề cập trong câu hỏi
+        $product = $this->findProductInMessage($message, $normalized, $normalizedAscii);
+
+        if (!$product) {
+            return null;
+        }
+
+        // Load variants với stock và các relationships
+        $product->load(['variants.version', 'variants.storage', 'variants.color']);
+
+        // Tính tổng số lượng tồn kho từ tất cả các variant
+        $totalStock = $product->variants->sum(function ($variant) {
+            return $variant->stock ?? 0;
+        });
+
+        // Đếm số variant còn hàng
+        $availableVariants = $product->variants->filter(function ($variant) {
+            return ($variant->status === 'available' || $variant->status === null) 
+                && ($variant->stock ?? 0) > 0;
+        })->count();
+
+        // Xây dựng câu trả lời
+        $answer = "Số lượng tồn kho hiện tại của {$product->name} là: " . number_format($totalStock, 0, ',', '.') . " sản phẩm.";
+        
+        if ($availableVariants > 0) {
+            $answer .= " Hiện có {$availableVariants} biến thể đang còn hàng.";
+        } else {
+            $answer .= " Hiện sản phẩm đã hết hàng.";
+        }
+
+        // Nếu có nhiều variant, có thể thêm thông tin chi tiết
+        if ($product->variants->count() > 1 && $totalStock > 0) {
+            $variantDetails = $product->variants
+                ->filter(function ($variant) {
+                    return ($variant->stock ?? 0) > 0;
+                })
+                ->map(function ($variant) {
+                    $parts = [];
+                    if ($variant->version?->name) {
+                        $parts[] = $variant->version->name;
+                    }
+                    if ($variant->storage?->storage) {
+                        $parts[] = $variant->storage->storage;
+                    }
+                    if ($variant->color?->name) {
+                        $parts[] = 'màu ' . $variant->color->name;
+                    }
+                    $label = $parts ? implode(' - ', $parts) : ($variant->description ?: $variant->sku);
+                    return "• {$label}: " . number_format($variant->stock ?? 0, 0, ',', '.') . " sản phẩm";
+                })
+                ->take(5)
+                ->implode("\n");
+            
+            if ($variantDetails) {
+                $answer .= "\n\nChi tiết theo biến thể:\n{$variantDetails}";
+            }
+        }
+
+        return [
+            'answer' => $answer,
+            'suggestions' => collect([$product])->map(function (Product $p) {
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'price' => $this->resolveDisplayPrice($p),
+                    'slug' => $p->slug,
+                ];
+            }),
+            'coupons' => collect(),
+            'filters' => [
+                'inventory_for' => $product->id,
+            ],
+        ];
+    }
+
+    /**
+     * Tìm sản phẩm được đề cập trong câu hỏi
+     */
+    protected function findProductInMessage(string $message, string $normalized, string $normalizedAscii): ?Product
+    {
+        // 1) Thử tìm sản phẩm khớp với cả câu hỏi
+        $product = Product::query()
+            ->where('name', 'like', '%' . $message . '%')
+            ->first();
+
+        // 2) Nếu không tìm được, làm sạch câu hỏi và tìm lại
+        if (!$product) {
+            $clean = str_ireplace(
+                [
+                    'số lượng tồn kho', 'so luong ton kho', 'ton kho',
+                    'còn bao nhiêu', 'con bao nhieu', 'còn mấy', 'con may',
+                    'số lượng còn', 'so luong con', 'còn hàng bao nhiêu', 'con hang bao nhieu',
+                    'tồn kho hiện tại', 'ton kho hien tai', 'số lượng hiện tại', 'so luong hien tai',
+                    'của', 'cua', 'hiện tại', 'hien tai',
+                    '?', 'bao nhiêu', 'bao nhieu',
+                ],
+                '',
+                $normalized
+            );
+            $clean = trim(preg_replace('/\s+/', ' ', $clean));
+
+            if ($clean !== '') {
+                $product = Product::query()
+                    ->where('name', 'like', '%' . $clean . '%')
+                    ->first();
+            }
+        }
+
+        // 3) Nếu vẫn chưa tìm được, tách từ khóa và tìm
+        if (!$product) {
+            $stopWords = [
+                'so', 'luong', 'ton', 'kho', 'con', 'bao', 'nhieu', 'may',
+                'hien', 'tai', 'cua', 'của', 'cua', 'của',
+                'san', 'pham', 'sản', 'phẩm',
+            ];
+
+            $words = array_filter(preg_split('/\s+/', $normalizedAscii), function ($word) use ($stopWords) {
+                $word = trim($word);
+                return $word !== '' 
+                    && !in_array($word, $stopWords, true)
+                    && preg_match('/^[a-z0-9]+$/', $word)
+                    && strlen($word) >= 2;
+            });
+
+            if (!empty($words)) {
+                $importantWords = array_filter($words, function($w) {
+                    return strlen($w) >= 3;
+                });
+                $searchWords = !empty($importantWords) ? array_values($importantWords) : array_values($words);
+                $searchWords = array_slice($searchWords, 0, 4);
+
+                if (!empty($searchWords)) {
+                    $products = Product::query()
+                        ->where(function ($q) use ($searchWords) {
+                            $q->where(function($subQ) use ($searchWords) {
+                                foreach ($searchWords as $w) {
+                                    $subQ->orWhere('name', 'like', '%' . $w . '%');
+                                }
+                            });
+                        })
+                        ->get();
+
+                    if ($products->isNotEmpty()) {
+                        $products = $products->sortByDesc(function($p) use ($searchWords) {
+                            $name = Str::lower($p->name);
+                            $matchCount = 0;
+                            foreach ($searchWords as $w) {
+                                if (Str::contains($name, $w)) {
+                                    $matchCount++;
+                                }
+                            }
+                            return $matchCount;
+                        })->values();
+
+                        $product = $products->first();
+                    }
+                }
+            }
+        }
+
+        return $product;
+    }
+
     protected function extractFilters(string $message): array
     {
         $normalized = Str::lower($message);
@@ -586,7 +1036,32 @@ class ChatbotService
             $filters['ask_my_coupons'] = $askMyCoupons;
         }
 
-        if (preg_match('/\b(\d{5,9})\b/', preg_replace('/[^\d]/', ' ', $message), $match)) {
+        // Hỗ trợ nhận diện các biểu thức giá có đơn vị: "triệu", "k", "đ" hay các chữ số thẳng
+        // Ví dụ: "10 triệu", "5.5 triệu", "10k", "30.000.000đ", "10000000"
+        if (preg_match('/(\d+(?:[.,]\d+)?)\s*(triệu|trieu|tr|k|ngh[ií]n|nghin|ng|đ|vnd|dong)\b/iu', $message, $m)) {
+            $num = str_replace(',', '.', $m[1]);
+            $unit = Str::lower($m[2]);
+            $value = (float) $num;
+
+            if (Str::contains($unit, 'tri')) {
+                $price = (int) round($value * 1000000);
+            } elseif (in_array($unit, ['k', 'nghìn', 'nghin', 'ng'], true)) {
+                $price = (int) round($value * 1000);
+            } else {
+                // Đơn vị là đ/vnd/dong -> coi là số VND nguyên
+                $price = (int) round($value);
+            }
+
+            if (Str::contains($normalized, ['cao', 'trên', 'hơn', 'từ'])) {
+                $filters['min_price'] = $price;
+            } elseif (Str::contains($normalized, ['dưới', 'duoi', 'tối đa', 'toi da', 'không quá', 'khong qua'])) {
+                $filters['max_price'] = $price;
+            } else {
+                $filters['max_price'] = $price;
+            }
+
+        } elseif (preg_match('/\b(\d{5,9})\b/', preg_replace('/[^\d]/', ' ', $message), $match)) {
+            // Fallback: nếu người dùng nhập số VND liền (ví dụ 10000000)
             $price = (int) $match[1];
             if (Str::contains($normalized, ['cao', 'trên', 'hơn', 'từ'])) {
                 $filters['min_price'] = $price;
@@ -624,9 +1099,16 @@ class ChatbotService
             });
         }
 
-        if (!empty($filters['keyword']) && empty($filters['category_keyword'])) {
-            // Chỉ lọc theo tên khi không có gợi ý category rõ ràng
-            $query->where('name', 'like', '%' . $filters['keyword'] . '%');
+        // Lọc theo keyword nếu có (có thể kết hợp với category_keyword)
+        if (!empty($filters['keyword'])) {
+            // Nếu keyword là tên thương hiệu (samsung, iphone, xiaomi, etc.), lọc theo tên sản phẩm
+            $brandKeywords = ['samsung', 'iphone', 'xiaomi', 'oppo', 'vivo', 'realme'];
+            if (in_array($filters['keyword'], $brandKeywords)) {
+                $query->where('name', 'like', '%' . $filters['keyword'] . '%');
+            } elseif (empty($filters['category_keyword'])) {
+                // Nếu không phải brand keyword và không có category, vẫn lọc theo tên
+                $query->where('name', 'like', '%' . $filters['keyword'] . '%');
+            }
         }
 
         if (!empty($filters['min_price'])) {
@@ -762,26 +1244,33 @@ class ChatbotService
             if ($isCouponOnly) {
                 $systemPrompt .= ' Khi người dùng hỏi về mã khuyến mãi của họ, hãy chỉ trả lời về mã khuyến mãi, không đề cập đến sản phẩm.';
             }
-            
-            $response = Http::withToken($apiKey)
-                ->timeout(20)
-                ->post('https://api.openai.com/v1/chat/completions', [
-                    'model' => $model,
-                    'temperature' => 0.3,
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => $systemPrompt,
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => "Câu hỏi: {$message}\n\nContext:\n{$context}",
-                        ],
-                    ],
-                ]);
 
-            if ($response->successful()) {
-                return $response->json('choices.0.message.content', '') ?: $this->fallbackResponse($context);
+            try {
+                $response = Http::withToken($apiKey)
+                    ->timeout(20)
+                    ->post('https://api.openai.com/v1/chat/completions', [
+                        'model' => $model,
+                        'temperature' => 0.3,
+                        'messages' => [
+                            [
+                                'role' => 'system',
+                                'content' => $systemPrompt,
+                            ],
+                            [
+                                'role' => 'user',
+                                'content' => "Câu hỏi: {$message}\n\nContext:\n{$context}",
+                            ],
+                        ],
+                    ]);
+
+                if ($response->successful()) {
+                    return $response->json('choices.0.message.content', '') ?: $this->fallbackResponse($context);
+                }
+            } catch (\Throwable $e) {
+                // Nếu gọi OpenAI lỗi (mạng, key sai, timeout, ...), ghi log và dùng fallback
+                \Log::warning('Chatbot OpenAI request failed', [
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -791,6 +1280,85 @@ class ChatbotService
     protected function fallbackResponse(string $context): string
     {
         return "Hiện tại tôi đề xuất một vài lựa chọn nổi bật:\n{$context}\nBạn có thể cho tôi biết thêm nhu cầu cụ thể để mình tư vấn chính xác hơn nhé!";
+    }
+
+
+    /**
+     * Trả lời câu hỏi về sản phẩm bán chạy
+     */
+    protected function answerBestSellingQuestion(string $message): ?array
+    {
+        $normalized = Str::lower($message);
+        $normalizedAscii = Str::lower(Str::ascii($message));
+
+        $keywords = ['bán chạy', 'ban chay', 'hot', 'top', 'mua nhiều', 'mua nhieu', 'best seller'];
+        $hasKeyword = false;
+        foreach ($keywords as $keyword) {
+            if (Str::contains($normalized, $keyword) || Str::contains($normalizedAscii, $keyword)) {
+                $hasKeyword = true;
+                break;
+            }
+        }
+
+        if (!$hasKeyword) {
+            return null;
+        }
+
+        // Default 30 days
+        $end = Carbon::now()->endOfDay();
+        $start = Carbon::now()->subDays(30)->startOfDay();
+
+        $topProducts = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('orders.status', '!=', 'cancelled')
+            ->where('orders.payment_status', 1)
+            ->whereBetween('orders.created_at', [$start, $end])
+            ->select(
+                'order_items.product_id',
+                'order_items.product_name',
+                DB::raw('SUM(order_items.total_price) as revenue'),
+                DB::raw('SUM(order_items.quantity) as quantity_sold')
+            )
+            ->groupBy('order_items.product_id', 'order_items.product_name')
+            ->orderByDesc('quantity_sold')
+            ->limit(5)
+            ->get();
+
+        if ($topProducts->isEmpty()) {
+             return [
+                'answer' => 'Hiện tại chưa có đủ dữ liệu về sản phẩm bán chạy trong 30 ngày qua.',
+                'suggestions' => collect(),
+                'coupons' => collect(),
+                'filters' => [],
+            ];
+        }
+
+        $lines = ["Top 5 sản phẩm bán chạy nhất trong 30 ngày qua:"];
+        foreach ($topProducts as $index => $item) {
+            $rank = $index + 1;
+            $lines[] = "{$rank}. {$item->product_name} - Đã bán: {$item->quantity_sold}";
+        }
+        
+        $answer = implode("\n", $lines);
+
+        // Fetch product details for suggestions
+        $productIds = $topProducts->pluck('product_id');
+        $products = Product::whereIn('id', $productIds)->get();
+
+        $suggestions = $products->map(function ($p) {
+             return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'price' => $p->price,
+                'slug' => $p->slug,
+            ];
+        });
+
+        return [
+            'answer' => $answer,
+            'suggestions' => $suggestions,
+            'coupons' => collect(),
+            'filters' => [],
+        ];
     }
 }
 

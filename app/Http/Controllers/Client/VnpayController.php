@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 class VnpayController extends Controller
 {
@@ -25,11 +26,11 @@ class VnpayController extends Controller
 
         if ($responseCode === '00') {
             $order->update([
-                'payment_status' => 1, // 1 = đã thanh toán
                 'status' => 'da_xac_nhan', // Đã xác nhận sau khi thanh toán
                 'payment_method' => 'vnpay',
             ]);
-            return redirect()->route('client.checkout.success', ['order' => $order->id])
+            // Use signed route to allow access without session/login persistence issues
+            return redirect()->to(URL::signedRoute('client.checkout.success', ['order' => $order->id]))
                 ->with('success', 'Thanh toán VNPAY thành công!');
         }
 
