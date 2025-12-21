@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\URL;
 use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Wishlist;
+use Illuminate\Pagination\Paginator;
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,7 +30,8 @@ class AppServiceProvider extends ServiceProvider
         if (str_starts_with(config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
-
+        //phân trang
+         Paginator::useBootstrapFive();
         // Biến dùng cho mọi view: số lượng sản phẩm trong giỏ
         View::composer('*', function ($view) {
             // Nếu chưa login thì tạm dùng user_id = 1 (giống CartController)

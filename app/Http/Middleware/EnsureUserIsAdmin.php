@@ -21,6 +21,17 @@ class EnsureUserIsAdmin
             return redirect()->route('login')->with('error', 'Bạn cần đăng nhập để truy cập trang này.');
         }
 
+        $user = Auth::user();
+
+        //  BỊ BAN → ĐÁ VỀ LOGIN + LOGOUT
+        if ($user->status === 'banned') {
+            Auth::logout();
+
+            return redirect()
+                ->route('login')
+                ->with('error', 'Tài khoản của bạn đã bị khóa.');
+        }
+        
         // Kiểm tra quyền admin (role_id == 1)
         $user = Auth::user();
         if (!isset($user->role_id) || $user->role_id != 1) {

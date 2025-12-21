@@ -26,15 +26,27 @@
       </div>
       <div class="col-md-6">
         <div class="mb-3">
-          <strong>Vai trò:</strong>
-          <div>
-            @if($user->is_admin)
-              <span class="badge bg-danger">Quản trị viên</span>
+        <strong>Vai trò:</strong>
+        <div class="mt-1">
+            {{-- Ưu tiên roles (many-to-many) --}}
+            @if($user->roles && $user->roles->isNotEmpty())
+                @foreach($user->roles as $role)
+                    <span class="badge bg-info">{{ $role->name }}</span>
+                @endforeach
+
+            {{-- Fallback theo role_id --}}
+            @elseif($user->role_id == 1)
+                <span class="badge bg-danger">Admin</span>
+
+            @elseif($user->role_id == 2)
+                <span class="badge bg-primary">User</span>
+
             @else
-              <span class="badge bg-secondary">Người dùng</span>
+                <span class="badge bg-secondary">Chưa có vai trò</span>
             @endif
           </div>
-        </div>
+      </div>
+
       </div>
       <div class="col-md-6">
         <div class="mb-3">

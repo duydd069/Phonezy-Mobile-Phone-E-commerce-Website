@@ -17,14 +17,19 @@
 </div>
 
 <div class="mb-3">
-  <div class="form-check">
-    <input type="checkbox" name="is_admin" value="1" class="form-check-input" id="is_admin" {{ old('is_admin', $user->is_admin ?? 0) ? 'checked' : '' }}>
-    <label class="form-check-label" for="is_admin">
-      Là quản trị viên
-    </label>
-  </div>
-  @error('is_admin')<div class="text-danger small">{{ $message }}</div>@enderror
+    <div class="form-check">
+        <input type="checkbox"
+               name="is_admin"
+               value="1"
+               class="form-check-input"
+               id="is_admin"
+               {{ old('is_admin', $user->role_id == 1) ? 'checked' : '' }}>
+        <label class="form-check-label" for="is_admin">
+            Là quản trị viên
+        </label>
+    </div>
 </div>
+
 
 <div class="mb-3">
   <label class="form-label">Ngày xác thực email</label>

@@ -20,10 +20,17 @@ class ProductController extends Controller
         $q = $request->get('q');
 
         $products = Product::with(['category','brand','variants'])
-            ->when($q, function($qr) use ($q) {
-                $qr->where('name','like',"%$q%")
-                   ->orWhere('slug','like',"%$q%");
-            })
+        ->when($q, function ($qr) use ($q) {
+            $qr->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%$q%")
+                    ->orWhere('slug', 'like', "%$q%")
+                    ->orWhereHas('category', function ($c) use ($q) {
+                        $c->where('name', 'like', "%$q%");
+                    });
+            });
+        })
+
+            
             ->orderBy('id','desc')
             ->paginate(10)
             ->withQueryString();

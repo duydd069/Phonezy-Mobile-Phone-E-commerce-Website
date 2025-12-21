@@ -110,8 +110,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     
     // User management - no create/delete, add ban/unban
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->except(['create', 'store', 'destroy']);
-    Route::put('users/{user}/ban', [\App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
-    Route::put('users/{user}/unban', [\App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
+    // Route::put('users/{user}/ban', [\App\Http\Controllers\Admin\UserController::class, 'ban'])->name('users.ban');
+    // Route::put('users/{user}/unban', [\App\Http\Controllers\Admin\UserController::class, 'unban'])->name('users.unban');
+        Route::prefix('admin')->name('admin.')->group(function () {Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
+        Route::patch('users/{user}/toggle-ban',[\App\Http\Controllers\Admin\UserController::class, 'toggleBan'])->name('users.toggle-ban');
+});
+
 
     Route::resource('colors', \App\Http\Controllers\Admin\ColorController::class);
     Route::resource('storages', \App\Http\Controllers\Admin\StorageController::class);
