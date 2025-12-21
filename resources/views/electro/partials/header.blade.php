@@ -20,7 +20,8 @@
                 <div class="col-md-5">
                     <div class="header-search">
                         <form action="#" method="GET" style="display: flex; width: 100%;">
-                            <input class="input" placeholder="Search here" style="width: 100%; border-radius: 40px 0px 0px 40px; padding: 0px 20px;">
+                            <input id="search-input" class="input" placeholder="Search here" style="width: 100%; border-radius: 40px 0px 0px 40px; padding: 0px 20px;">
+                            <div id="search-suggestions" class="search-suggestions"></div>
                             <button class="search-btn" type="submit" style="border-radius: 0px 40px 40px 0px; background: #D10024; color: #fff; font-weight: bold; padding: 0 20px; border: none; height: 40px; display:flex; align-items:center; gap:8px;">
                                 <i class="fa fa-search search-icon" aria-hidden="true" style="display:none;"></i>
                                 <span class="search-text">Search</span>
@@ -427,6 +428,72 @@
     }
 }
 
+
+/* Search Suggestions */
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: calc(100% - 100px); /* Trừ đi nút search */
+    background: #fff;
+    z-index: 999;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: none;
+    overflow: hidden;
+    border: 1px solid #E4E7ED;
+    border-top: none;
+}
+
+.search-suggestions.active {
+    display: block;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+    text-decoration: none;
+    color: #333 !important;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #f9f9f9;
+}
+
+.suggestion-image {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    margin-right: 15px;
+    border-radius: 5px;
+}
+
+.suggestion-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.suggestion-name {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+    line-height: 1.2;
+}
+
+.suggestion-price {
+    font-size: 13px;
+    color: #D10024 !important;
+    font-weight: 700;
+}
 </style>
 
 <script>
@@ -451,5 +518,61 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    // Search Suggestions
+    const searchInput = document.getElementById('search-input');
+    const suggestionsBox = document.getElementById('search-suggestions');
+    let timeoutId;
+
+    if (searchInput && suggestionsBox) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            const query = this.value;
+
+            if (query.length < 2) {
+                suggestionsBox.innerHTML = '';
+                suggestionsBox.classList.remove('active');
+                searchInput.style.borderRadius = "40px 0px 0px 40px";
+                return;
+            }
+
+            timeoutId = setTimeout(() => {
+                // Use the route name directly if possible, or relative path
+                fetch(`{{ route('client.search.suggest') }}?query=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        suggestionsBox.innerHTML = '';
+                        if (data.length > 0) {
+                            data.forEach(item => {
+                                const a = document.createElement('a');
+                                a.href = item.url;
+                                a.className = 'suggestion-item';
+                                a.innerHTML = `
+                                    <img src="${item.image}" class="suggestion-image" alt="${item.name}">
+                                    <div class="suggestion-info">
+                                        <span class="suggestion-name">${item.name}</span>
+                                        <span class="suggestion-price">${item.price}</span>
+                                    </div>
+                                `;
+                                suggestionsBox.appendChild(a);
+                            });
+                            suggestionsBox.classList.add('active');
+                            searchInput.style.borderRadius = "20px 0px 0px 0px";
+                        } else {
+                            suggestionsBox.classList.remove('active');
+                            searchInput.style.borderRadius = "40px 0px 0px 40px";
+                        }
+                    })
+                    .catch(err => console.error(err));
+            }, 300);
+        });
+
+        // Hide when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.classList.remove('active');
+                searchInput.style.borderRadius = "40px 0px 0px 40px";
+            }
+        });
+    }
 });
 </script>

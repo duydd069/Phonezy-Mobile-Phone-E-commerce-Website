@@ -93,6 +93,67 @@ class ProductController extends Controller
 
         return view('electro.promotions', compact('products'));
     }
+
+    public function suggest(\Illuminate\Http\Request $request)
+    {
+        $query = $request->input('query');
+        
+        if (empty($query)) {
+            return response()->json([]);
+        }
+
+        $products = Product::with('variants')
+            ->where('name', 'like', "%{$query}%")
+            ->limit(5)
+            ->get();
+            
+        // Format lại dữ liệu để dễ hiển thị (xử lý hình ảnh)
+        $results = $products->map(function($product) {
+            $price = $product->price;
+            
+            // Logic tính giá hiển thị:
+            // 1. Nếu có biến thể, duyệt qua tất cả để tìm giá thấp nhất (ưu tiên giá sale)
+            if ($product->variants->isNotEmpty()) {
+                $minPrice = null;
+                foreach ($product->variants as $variant) {
+                    // Xác định giá thực tế của variant này
+                    $variantPrice = $variant->price;
+                    if ($variant->price_sale && $variant->price_sale < $variant->price) {
+                        $variantPrice = $variant->price_sale;
+                    }
+                    
+                    // Cập nhật giá thấp nhất
+                    if ($minPrice === null || $variantPrice < $minPrice) {
+                        $minPrice = $variantPrice;
+                    }
+                }
+                
+                // Nếu tìm được giá từ biến thể, sử dụng nó
+                if ($minPrice !== null && $minPrice > 0) {
+                    $price = $minPrice;
+                }
+            }
+            
+            // Xử lý ảnh: Check nếu là URL đầy đủ thì dùng luôn, sai thì nối path
+            $image = asset('img/no-image.png');
+            if ($product->image) {
+                if (preg_match('/^https?:\/\//', $product->image)) {
+                    $image = $product->image;
+                } else {
+                    $image = asset('storage/' . $product->image);
+                }
+            }
+
+            return [
+                'name' => $product->name,
+                'url' => route('client.product.show', $product->slug),
+                'image' => $image,
+                'price' => $price > 0 ? (number_format($price) . 'đ') : 'Liên hệ'
+            ];
+        });
+
+        return response()->json($results);
+    }
 }
 
 

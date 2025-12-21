@@ -21,6 +21,7 @@ Route::prefix('api')->group(function () {
 // Electro frontend routes (Client)
 Route::prefix('client')->name('client.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('index');
+    Route::get('/search/suggest', [\App\Http\Controllers\Client\ProductController::class, 'suggest'])->name('search.suggest');
     Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('product.show');
     Route::get('/store', function () {
         return view('electro.store');
