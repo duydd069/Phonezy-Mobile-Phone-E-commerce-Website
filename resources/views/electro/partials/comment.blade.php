@@ -19,7 +19,7 @@
 	</div>
 	<div class="comment-content">
 		@if($comment->replied_to_user_id && $comment->repliedToUser)
-			<span class="reply-to">@{{ $comment->repliedToUser->name }}</span>
+			<span class="reply-to">
 		@endif
 		{{ $comment->content }}
 	</div>
