@@ -51,6 +51,11 @@ class CartController extends Controller
     // Thêm sản phẩm vào giỏ
     public function add(Request $request)
     {
+        // Ngăn admin thêm sản phẩm vào giỏ
+        if (auth()->check() && auth()->user()->role_id == 1) {
+            return $this->respondError($request, 'Admin không thể mua hàng.');
+        }
+
         $request->validate([
             'product_id'         => 'required|integer|exists:products,id', // Validate product_id
             'product_variant_id' => 'required|integer|exists:product_variants,id',
@@ -158,19 +163,33 @@ class CartController extends Controller
         // Kiểm tra tồn kho và trạng thái của biến thể trước khi cập nhật
         $variant = $cartItem->variant()->lockForUpdate()->first();
         if (!$variant) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['error' => 'Biến thể không tồn tại.'], 400);
+            }
             return redirect()->route('cart.index')->with('error', 'Biến thể không tồn tại.');
         }
 
         if ($variant->status !== 'available') {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['error' => 'Biến thể này không còn bán.'], 400);
+            }
             return redirect()->route('cart.index')->with('error', 'Biến thể này không còn bán.');
         }
 
         if ($variant->stock < $request->quantity) {
-            return redirect()->route('cart.index')->with('error', 'Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
+            $msg = 'Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['error' => $msg], 400);
+            }
+            return redirect()->route('cart.index')->with('error', $msg);
         }
 
         if ($request->quantity > 10) {
-            return redirect()->route('cart.index')->with('error', 'Bạn chỉ được mua tối đa 10 sản phẩm mỗi loại.');
+            $msg = 'Bạn chỉ được mua tối đa 10 sản phẩm mỗi loại.';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['error' => $msg], 400);
+            }
+            return redirect()->route('cart.index')->with('error', $msg);
         }
 
         // Kiểm tra tổng số lượng trong giỏ sau khi cập nhật
@@ -178,7 +197,11 @@ class CartController extends Controller
         $otherTotal = $cart->items()->where('id', '!=', $cartItem->id)->sum('quantity');
         $newTotal = $otherTotal + $request->quantity;
         if ($newTotal > 10) {
-            return redirect()->route('cart.index')->with('error', 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).');
+            $msg = 'Số lượng sản phẩm trong giỏ hàng vượt quá quy định (tối đa 10 sản phẩm).';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['error' => $msg], 400);
+            }
+            return redirect()->route('cart.index')->with('error', $msg);
         }
 
         // Cập nhật quantity và snapshot price (nếu giá đã thay đổi, cập nhật lại snapshot)
@@ -186,6 +209,10 @@ class CartController extends Controller
         $cartItem->price_at_time = $variant->price;
         $cartItem->price_sale_at_time = $variant->price_sale;
         $cartItem->save();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Cập nhật giỏ hàng thành công!']);
+        }
 
         return redirect()->route('cart.index')->with('success', 'Cập nhật giỏ hàng thành công!');
     }

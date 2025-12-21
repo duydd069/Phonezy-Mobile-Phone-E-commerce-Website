@@ -19,6 +19,11 @@ class CheckoutController extends Controller
 
     public function show()
     {
+        // Ngăn admin đặt hàng
+        if (auth()->check() && auth()->user()->role_id == 1) {
+            return redirect()->route('client.index')->with('error', 'Admin không thể đặt hàng.');
+        }
+
         $cart = $this->getOrCreateActiveCart();
         $items = $cart->items()->with(['variant.product', 'variant'])->get();
 
@@ -84,6 +89,11 @@ class CheckoutController extends Controller
 
     public function store(CheckoutRequest $request)
     {
+        // Ngăn admin đặt hàng
+        if (auth()->check() && auth()->user()->role_id == 1) {
+            return redirect()->route('client.index')->with('error', 'Admin không thể đặt hàng.');
+        }
+
         $cart = $this->getOrCreateActiveCart();
         // Load variant với tất cả các trường cần thiết, đặc biệt là stock
         $items = $cart->items()->with(['variant.product', 'variant'])->get();
