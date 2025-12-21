@@ -57,7 +57,7 @@
                                     <strong>{{ $product->name }}</strong>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge badge-info" style="font-size: 14px;">
+                                    <span  style="font-size: 20px;">
                                         {{ $product->comments_count }}
                                     </span>
                                 </td>

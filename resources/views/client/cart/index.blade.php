@@ -51,7 +51,7 @@
                                     $variant = $item->variant;
                                     $product = $variant ? $variant->product : null;
                                     $price = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
-                                    
+
                                     // Lấy ảnh từ variant hoặc product
                                     $image = null;
                                     if ($variant && $variant->image) {
@@ -59,7 +59,7 @@
                                     } elseif ($product && $product->image) {
                                         $image = preg_match('/^https?:\/\//', $product->image) ? $product->image : asset('storage/' . $product->image);
                                     }
-                                    
+
                                     // Tạo tên sản phẩm với thông tin variant
                                     $productName = $product ? $product->name : 'Sản phẩm';
                                     $variantInfo = [];
@@ -162,7 +162,7 @@
                                         $product = $variant ? $variant->product : null;
                                         $price = $variant ? ($variant->price_sale ?? $variant->price ?? 0) : 0;
                                         $productName = $product ? $product->name : 'Sản phẩm';
-                                        
+
                                         // Thêm thông tin variant vào tên
                                         $variantInfo = [];
                                         if ($variant) {
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const val = parseInt(qtyInput?.value) || 0;
             if (max > 0 && val > max) {
                 e.preventDefault();
-                showCartAlert('Vượt quá số lượng tối đa cho phép trong giỏ (tối đa 10 sản phẩm).', 'warning');
+                showCartAlert('Vượt quá số lượng tối đa hàng tồn kho.', 'warning');
                 qtyInput.value = max;
                 qtyInput.focus();
             }

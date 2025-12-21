@@ -86,4 +86,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Wishlist::class);
     }
+
+    public function isBanned(): bool
+    {
+        return $this->status === 'banned';
+    }
+
 }

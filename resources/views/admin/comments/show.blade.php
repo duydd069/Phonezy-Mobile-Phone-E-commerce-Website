@@ -39,7 +39,7 @@
                     <div class="col-md-10">
                         <p><strong>Danh mục:</strong> {{ $product->category->name ?? 'N/A' }}</p>
                         <p><strong>Tổng bình luận:</strong> 
-                            <span class="badge badge-info">{{ $product->comments->count() }}</span>
+                            <span >{{ $product->comments->count() }}</span>
                         </p>
                     </div>
                 </div>

@@ -110,7 +110,7 @@
                   <i class="bi bi-pencil"></i> Sửa
                 </a>
                 
-                @if($user->status == 'banned')
+                {{-- @if($user->status == 'banned')
                   <form action="{{ route('admin.users.unban', $user) }}" method="post" class="d-inline">
                     @csrf
                     @method('PUT')
@@ -126,7 +126,26 @@
                       <i class="bi bi-lock"></i> Ban
                     </button>
                   </form>
-                @endif
+                @endif --}}
+
+                <form action="{{ route('admin.admin.users.toggle-ban', $user) }}"
+                      method="POST"
+                      class="d-inline">
+                    @csrf
+                    @method('PATCH')
+
+                    @if ($user->isBanned())
+                        <button class="btn btn-success btn-sm"
+                                onclick="return confirm('Unban người dùng này?')">
+                            <i class="bi bi-unlock"></i> Unban
+                        </button>
+                    @else
+                        <button class="btn btn-danger btn-sm"
+                                onclick="return confirm('Ban người dùng này?')">
+                            <i class="bi bi-lock"></i> Ban
+                        </button>
+                    @endif
+                </form>
               </div>
 
             </td>

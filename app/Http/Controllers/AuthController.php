@@ -36,7 +36,7 @@ class AuthController extends Controller
             $user = Auth::user();
             
             // Check if user is banned
-            if ($user && $user->is_banned) {
+            if ($user && $user->status === 'banned') {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -51,10 +51,11 @@ class AuthController extends Controller
             if ($user && isset($user->role_id)) {
                 if ($user->role_id == 1) {
                     // Admin redirect
-                    return redirect()->intended(route('admin.dashboard'));
+                    // return redirect()->intended(route('admin.dashboard'));
+                    return redirect()->route('admin.dashboard');
                 } elseif ($user->role_id == 2) {
                     // User redirect to client
-                    return redirect()->intended(route('client.index'));
+                    return redirect()->route('client.index');
                 }
             }
 
