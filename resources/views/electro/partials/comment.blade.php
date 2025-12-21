@@ -19,13 +19,12 @@
 	</div>
 	<div class="comment-content">
 		@if($comment->replied_to_user_id && $comment->repliedToUser)
-			<span class="reply-to">
 		@endif
 		{{ $comment->content }}
 	</div>
 	<div class="comment-actions">
 		@auth
-			<button class="reply-btn" 
+			<button class="reply-btn"
 				data-parent-id="{{ $replyParentId }}"
 				data-replied-to-user-id="{{ $replyToUserId }}"
 				data-replied-to-name="{{ $replyToName }}">
@@ -33,7 +32,7 @@
 			</button>
 		@endauth
 	</div>
-	
+
 	@auth
 		<div id="replyForm-{{ $comment->id }}" class="reply-form">
 			<form data-parent-id="{{ $replyParentId }}" data-replied-to-user-id="{{ $replyToUserId }}">
@@ -50,7 +49,7 @@
 			</form>
 		</div>
 	@endauth
-	
+
 	@if($level === 0 && $comment->replies->count() > 0)
 		<div class="comment-replies">
 			@foreach($comment->replies as $reply)
