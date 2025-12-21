@@ -15,6 +15,7 @@
 
 <section class="content">
     <div class="container-fluid">
+
         <!-- Back button -->
         <div class="mb-3">
             <a href="{{ route('admin.comments.index') }}" class="btn btn-secondary">
@@ -31,15 +32,18 @@
                 <div class="row">
                     <div class="col-md-2">
                         @if($product->image)
-                            <img src="{{ preg_match('/^https?:\/\//', $product->image) ? $product->image : asset('storage/' . $product->image) }}" 
-                                 alt="{{ $product->name }}" 
-                                 class="img-thumbnail">
+                            <img src="{{ preg_match('/^https?:\/\//', $product->image)
+                                ? $product->image
+                                : asset('storage/' . $product->image) }}"
+                                alt="{{ $product->name }}"
+                                class="img-thumbnail">
                         @endif
                     </div>
                     <div class="col-md-10">
                         <p><strong>Danh mục:</strong> {{ $product->category->name ?? 'N/A' }}</p>
-                        <p><strong>Tổng bình luận:</strong> 
-                            <span >{{ $product->comments->count() }}</span>
+                        <p>
+                            <strong>Tổng bình luận:</strong>
+                            {{ $product->comments->count() }}
                         </p>
                     </div>
                 </div>
@@ -48,77 +52,105 @@
 
         <!-- Success message -->
         @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <i class="icon fas fa-check"></i> {{ session('success') }}
-        </div>
+            <div class="alert alert-success alert-dismissible fade show">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                <i class="icon fas fa-check"></i> {{ session('success') }}
+            </div>
         @endif
 
         <!-- Comments list -->
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Danh sách bình luận ({{ $product->comments->count() }})</h3>
+                <h3 class="card-title">
+                    Danh sách bình luận ({{ $product->comments->count() }})
+                </h3>
             </div>
             <div class="card-body">
+
                 @if($product->comments->count() > 0)
                     @foreach($product->comments as $comment)
-                        @include('admin.comments.partials.comment-item', ['comment' => $comment, 'level' => 0])
+                        @include('admin.comments.partials.comment-item', [
+                            'comment' => $comment,
+                            'level'   => 0,
+                            'product' => $product
+                        ])
                     @endforeach
                 @else
                     <div class="alert alert-info">
                         <i class="icon fas fa-info"></i>
-                        Chưa có bình luận nào cho sản phẩm này.
+Chưa có bình luận nào cho sản phẩm này.
                     </div>
                 @endif
+
             </div>
         </div>
     </div>
 </section>
+@endsection
 
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Toggle reply form
-    $('.btn-reply').on('click', function() {
-        const commentId = $(this).data('comment-id');
-        $('#replyForm-' + commentId).slideToggle();
-    });
+document.addEventListener('DOMContentLoaded', function () {
 
-    // Delete comment
-    $('.btn-delete-comment').on('click', function(e) {
-        e.preventDefault();
-        
-        if (!confirm('Bạn có chắc chắn muốn xóa bình luận này? Tất cả phản hồi cũng sẽ bị xóa.')) {
-            return;
-        }
-
-        const commentId = $(this).data('comment-id');
-        const url = $(this).data('url');
-        const commentElement = $(this).closest('.comment-item');
-
-        $.ajax({
-            url: url,
-            type: 'DELETE',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    commentElement.fadeOut(300, function() {
-                        $(this).remove();
-                        // Reload page to update counter
-                        location.reload();
-                    });
-                } else {
-                    alert(response.message || 'Có lỗi xảy ra');
-                }
-            },
-            error: function(xhr) {
-                alert('Có lỗi xảy ra khi xóa bình luận');
-            }
+    /* =========================
+       TOGGLE REPLY FORM
+    ========================== */
+    document.querySelectorAll('.btn-reply').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const commentId = this.dataset.commentId;
+            toggleReply(commentId);
         });
     });
+
+    /* =========================
+       DELETE COMMENT (AJAX)
+    ========================== */
+    document.querySelectorAll('.btn-delete-comment').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            if (!confirm('Bạn có chắc chắn muốn xóa bình luận này? Tất cả phản hồi cũng sẽ bị xóa.')) {
+                return;
+            }
+
+            const url = this.dataset.url;
+            const commentElement = this.closest('.comment-item');
+
+            fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    commentElement.remove();
+                    location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra');
+                }
+            })
+            .catch(() => {
+                alert('Có lỗi xảy ra khi xóa bình luận');
+            });
+        });
+    });
+
 });
+
+/* =========================
+   TOGGLE REPLY FUNCTION
+========================== */
+function toggleReply(commentId) {
+    const form = document.getElementById('replyForm-' + commentId);
+    if (!form) return;
+
+    form.style.display =
+        (form.style.display === 'none' || form.style.display === '')
+            ? 'block'
+            : 'none';
+}
 </script>
 @endpush
-@endsection
