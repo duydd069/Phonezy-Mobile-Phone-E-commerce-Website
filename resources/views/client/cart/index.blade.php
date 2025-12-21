@@ -109,12 +109,14 @@
                                                    value="{{ $item->quantity }}"
                                                    min="1"
                                                    data-max="{{ $max }}"
-                                                   class="input"
+                                                   data-cart-item-id="{{ $item->id }}"
+                                                   class="input quantity-input"
                                                    style="width: 80px; display:inline-block; margin-right:5px;"
                                                    {{ $stock <= 0 ? 'disabled' : '' }}>
-                                            <button type="submit" class="primary-btn">
+                                            <button type="submit" class="primary-btn update-btn" style="display:none;">
                                                 Cập nhật
                                             </button>
+                                            <span class="update-status" style="margin-left: 10px; display:none; color: #28a745;">✓ Đã cập nhật</span>
                                         </form>
                                     </div>
 
@@ -221,7 +223,86 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
 
-    // Check quantity against max before submit
+    // Auto update quantity on input change
+    const quantityInputs = document.querySelectorAll('.quantity-input');
+    quantityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const max = parseInt(this.dataset.max) || 0;
+            const val = parseInt(this.value) || 1;
+            
+            // Validate quantity
+            if (val < 1) {
+                this.value = 1;
+                return;
+            }
+            if (max > 0 && val > max) {
+                showCartAlert('Vượt quá số lượng tối đa hàng tồn kho (' + max + ').', 'warning');
+                this.value = max;
+                return;
+            }
+
+            // Auto submit
+            const form = this.closest('.cart-update-form');
+            const cartItemId = this.dataset.cartItemId;
+            const updateBtn = form.querySelector('.update-btn');
+            const updateStatus = form.querySelector('.update-status');
+
+            // Show loading state
+            if (updateStatus) {
+                updateStatus.textContent = '⟳ Đang cập nhật...';
+                updateStatus.style.display = 'inline';
+                updateStatus.style.color = '#ffc107';
+            }
+
+            // Send AJAX request
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: new URLSearchParams({
+                    cart_item_id: cartItemId,
+                    quantity: val
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || data.message || 'Lỗi cập nhật');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (updateStatus) {
+                    updateStatus.textContent = '✓ Đã cập nhật';
+                    updateStatus.style.color = '#28a745';
+                    setTimeout(() => {
+                        updateStatus.style.display = 'none';
+                    }, 2000);
+                }
+                // Reload page for more accurate total calculation
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showCartAlert(error.message || 'Lỗi khi cập nhật giỏ hàng', 'danger');
+                if (updateStatus) {
+                    updateStatus.textContent = '✗ Lỗi';
+                    updateStatus.style.color = '#dc3545';
+                    setTimeout(() => {
+                        updateStatus.style.display = 'none';
+                    }, 2000);
+                }
+            });
+        });
+    });
+
+    // Check quantity against max before submit (fallback)
     const forms = document.querySelectorAll('.cart-update-form');
     forms.forEach(form => {
         form.addEventListener('submit', function(e) {
