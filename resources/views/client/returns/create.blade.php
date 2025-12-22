@@ -99,6 +99,19 @@
         padding: 20px;
         font-size: 0.9rem;
     }
+    .invalid-feedback {
+        display: none;
+        color: #dc3545 !important;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        width: 100%;
+    }
+    .form-control.is-invalid ~ .invalid-feedback {
+        display: block;
+    }
+    .form-control.is-invalid {
+        border-color: #dc3545 !important;
+    }
 </style>
 
 <div class="container return-page py-5">
@@ -146,8 +159,9 @@
                                     <label for="contact_phone" class="form-label">Điện thoại liên hệ *</label>
                                     <input type="text" class="form-control @error('contact_phone') is-invalid @enderror" 
                                            id="contact_phone" name="contact_phone" 
-                                           value="{{ old('contact_phone', $order->shipping_phone) }}" required>
+                                           value="{{ old('contact_phone', $order->shipping_phone) }}">
                                     @error('contact_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    <div class="invalid-feedback" id="contact_phone_error"></div>
                                 </div>
 
                                 <div class="mb-4">
@@ -163,16 +177,22 @@
                                 <div id="bankFields" style="display: none;" class="p-3 border mb-4 bg-light">
                                     <div class="mb-3">
                                         <label for="bank_name" class="form-label">Tên ngân hàng</label>
-                                        <input type="text" class="form-control" id="bank_name" name="bank_name" value="{{ old('bank_name') }}">
+                                        <input type="text" class="form-control @error('bank_name') is-invalid @enderror" id="bank_name" name="bank_name" value="{{ old('bank_name') }}">
+                                        @error('bank_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        <div class="invalid-feedback" id="bank_name_error"></div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label for="bank_account_number" class="form-label">Số tài khoản</label>
-                                            <input type="text" class="form-control" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number') }}">
+                                            <input type="text" class="form-control @error('bank_account_number') is-invalid @enderror" id="bank_account_number" name="bank_account_number" value="{{ old('bank_account_number') }}">
+                                            @error('bank_account_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            <div class="invalid-feedback" id="bank_account_number_error"></div>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label for="bank_account_name" class="form-label">Tên chủ tài khoản</label>
-                                            <input type="text" class="form-control" id="bank_account_name" name="bank_account_name" value="{{ old('bank_account_name') }}">
+                                            <input type="text" class="form-control @error('bank_account_name') is-invalid @enderror" id="bank_account_name" name="bank_account_name" value="{{ old('bank_account_name') }}">
+                                            @error('bank_account_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            <div class="invalid-feedback" id="bank_account_name_error"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -180,7 +200,7 @@
                                 <div class="mb-4">
                                     <label for="reason" class="form-label">Lý do hoàn trả *</label>
                                     <select class="form-control @error('reason') is-invalid @enderror" 
-                                            id="reason" name="reason" required>
+                                            id="reason" name="reason">
                                         <option value="">-- Chọn lý do hoàn trả --</option>
                                         <option value="Sản phẩm bị lỗi/hư hỏng" {{ old('reason') == 'Sản phẩm bị lỗi/hư hỏng' ? 'selected' : '' }}>Sản phẩm bị lỗi/hư hỏng</option>
                                         <option value="Sản phẩm không đúng mô tả" {{ old('reason') == 'Sản phẩm không đúng mô tả' ? 'selected' : '' }}>Sản phẩm không đúng mô tả</option>
@@ -190,13 +210,16 @@
                                         <option value="Khác" {{ old('reason') == 'Khác' ? 'selected' : '' }}>Khác (ghi rõ trong ghi chú)</option>
                                     </select>
                                     @error('reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    <div class="invalid-feedback" id="reason_error"></div>
                                 </div>
 
                                 <div class="mb-5">
                                     <label for="images" class="form-label">Hình ảnh minh chứng *</label>
                                     <input type="file" class="form-control @error('images.*') is-invalid @enderror" 
-                                           id="images" name="images[]" accept="image/*" multiple required>
+                                           id="images" name="images[]" accept="image/*" multiple>
                                     <small class="text-muted d-block mt-1">Tối đa 5 ảnh. Dung lượng không quá 2MB/ảnh.</small>
+                                    @error('images.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                    <div class="invalid-feedback" id="images_error"></div>
                                     <div id="imagePreview" class="d-flex flex-wrap gap-2 mt-3"></div>
                                 </div>
 
@@ -222,14 +245,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     const refundMethods = document.querySelectorAll('input[name="refund_method"]');
     const bankFields = document.getElementById('bankFields');
+    const returnForm = document.getElementById('returnForm');
     
     function toggleBank(value) {
         if (value === 'Ngân hàng') {
             bankFields.style.display = 'block';
-            ['bank_name', 'bank_account_number', 'bank_account_name'].forEach(id => document.getElementById(id).required = true);
         } else {
             bankFields.style.display = 'none';
-            ['bank_name', 'bank_account_number', 'bank_account_name'].forEach(id => document.getElementById(id).required = false);
         }
     }
 
@@ -249,12 +271,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const files = Array.from(e.target.files);
         
         if (files.length > 5) {
-            alert('Tối đa 5 ảnh');
+            showError('images', 'Bạn chỉ được tải lên tối đa 5 ảnh');
             e.target.value = '';
             return;
         }
         
+        // Clear error when valid files selected
+        clearError('images');
+        
         files.forEach(file => {
+            // Validate file size
+            if (file.size > 2048 * 1024) {
+                showError('images', 'Kích thước ảnh không được vượt quá 2MB');
+                e.target.value = '';
+                imagePreview.innerHTML = '';
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = document.createElement('img');
@@ -266,12 +299,108 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Char counter
-    const reason = document.getElementById('reason');
-    const charCount = document.getElementById('charCount');
-    reason.addEventListener('input', function() {
-        charCount.innerText = `${this.value.length} ký tự`;
+    // Form validation
+    returnForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Clear all previous errors
+        clearAllErrors();
+        
+        let isValid = true;
+        
+        // Validate contact phone
+        const contactPhone = document.getElementById('contact_phone').value.trim();
+        if (!contactPhone) {
+            showError('contact_phone', 'Vui lòng nhập số điện thoại liên hệ');
+            isValid = false;
+        } else if (contactPhone.length < 10 || contactPhone.length > 11) {
+            showError('contact_phone', 'Số điện thoại phải có 10-11 chữ số');
+            isValid = false;
+        }
+        
+        // Validate bank fields if refund method is bank
+        const refundMethod = document.querySelector('input[name="refund_method"]:checked');
+        if (refundMethod && refundMethod.value === 'Ngân hàng') {
+            const bankName = document.getElementById('bank_name').value.trim();
+            const bankAccountNumber = document.getElementById('bank_account_number').value.trim();
+            const bankAccountName = document.getElementById('bank_account_name').value.trim();
+            
+            if (!bankName) {
+                showError('bank_name', 'Vui lòng nhập tên ngân hàng');
+                isValid = false;
+            }
+            
+            if (!bankAccountNumber) {
+                showError('bank_account_number', 'Vui lòng nhập số tài khoản');
+                isValid = false;
+            }
+            
+            if (!bankAccountName) {
+                showError('bank_account_name', 'Vui lòng nhập tên chủ tài khoản');
+                isValid = false;
+            }
+        }
+        
+        // Validate reason
+        const reason = document.getElementById('reason').value;
+        if (!reason) {
+            showError('reason', 'Vui lòng chọn lý do hoàn trả');
+            isValid = false;
+        }
+        
+        // Validate images
+        const images = document.getElementById('images').files;
+        if (images.length === 0) {
+            showError('images', 'Vui lòng tải lên ít nhất 1 ảnh minh chứng');
+            isValid = false;
+        } else if (images.length > 5) {
+            showError('images', 'Bạn chỉ được tải lên tối đa 5 ảnh');
+            isValid = false;
+        }
+        
+        if (isValid) {
+            returnForm.submit();
+        } else {
+            // Scroll to first error
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
     });
+    
+    function showError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(fieldId + '_error');
+        
+        if (field) {
+            field.classList.add('is-invalid');
+        }
+        
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+    
+    function clearError(fieldId) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(fieldId + '_error');
+        
+        if (field) {
+            field.classList.remove('is-invalid');
+        }
+        
+        if (errorDiv) {
+            errorDiv.textContent = '';
+            errorDiv.style.display = 'none';
+        }
+    }
+    
+    function clearAllErrors() {
+        const fields = ['contact_phone', 'bank_name', 'bank_account_number', 'bank_account_name', 'reason', 'images'];
+        fields.forEach(fieldId => clearError(fieldId));
+    }
 });
 </script>
 @endpush

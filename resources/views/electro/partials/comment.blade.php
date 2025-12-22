@@ -14,7 +14,7 @@
 			@endif
 		</span>
 		<span class="comment-time">
-			<i class="fa fa-clock-o"></i> {{ $comment->created_at->diffForHumans() }}
+			<i class="fa fa-clock-o"></i> {{ $comment->created_at->locale('vi')->diffForHumans() }}
 		</span>
 	</div>
 		<div class="comment-content">
