@@ -14,8 +14,7 @@ class CartController extends Controller
     // Lấy hoặc tạo giỏ hàng active cho user hiện tại
     protected function getOrCreateActiveCart()
     {
-        // Nếu chưa có login thì tạm fix user_id = 1
-        $userId = auth()->check() ? auth()->id() : 1;
+        $userId = auth()->id();
 
         return Cart::firstOrCreate(
             [
@@ -31,6 +30,10 @@ class CartController extends Controller
     // Hiển thị giỏ
     public function index()
     {
+        if (!auth()->check()) {
+            return redirect()->route('client.login')->with('error', 'Vui lòng đăng nhập để xem giỏ hàng.');
+        }
+
         $cart = $this->getOrCreateActiveCart();
 
         $items = $cart->items()->with(['variant.product', 'variant.storage', 'variant.version', 'variant.color'])->get();
@@ -51,8 +54,13 @@ class CartController extends Controller
     // Thêm sản phẩm vào giỏ
     public function add(Request $request)
     {
+        // Kiểm tra đăng nhập
+        if (!auth()->check()) {
+            return $this->respondError($request, 'Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.');
+        }
+
         // Ngăn admin thêm sản phẩm vào giỏ
-        if (auth()->check() && auth()->user()->role_id == 1) {
+        if (auth()->user()->role_id == 1) {
             return $this->respondError($request, 'Admin không thể mua hàng.');
         }
 
@@ -66,32 +74,36 @@ class CartController extends Controller
         $variantId = $request->product_variant_id;
         $productId = $request->product_id;
 
-        // Lock variant và kiểm tra trong transaction để tránh race condition
-        $variant = DB::transaction(function () use ($variantId, $productId, $quantity, $request) {
-            // Lock variant row để tránh race condition
-            $variant = \App\Models\ProductVariant::lockForUpdate()->find($variantId);
-            
-            if (!$variant) {
-                throw new \Exception('Biến thể sản phẩm không tồn tại.');
+        try {
+            // Lock variant và kiểm tra trong transaction để tránh race condition
+            $variant = DB::transaction(function () use ($variantId, $productId, $quantity, $request) {
+                // Lock variant row để tránh race condition
+                $variant = \App\Models\ProductVariant::lockForUpdate()->find($variantId);
+                
+                if (!$variant) {
+                    throw new \Exception('Biến thể sản phẩm không tồn tại.');
+                }
+                
+                // Validate variant thuộc đúng product (bảo mật quan trọng)
+                if ($variant->product_id !== (int)$productId) {
+                    throw new \Exception('Biến thể không thuộc sản phẩm này.');
+                }
+                
+                // Kiểm tra trạng thái
+            if ($variant->status !== 'available') {
+                    throw new \Exception('Sản phẩm này hiện không khả dụng!');
             }
-            
-            // Validate variant thuộc đúng product (bảo mật quan trọng)
-            if ($variant->product_id !== (int)$productId) {
-                throw new \Exception('Biến thể không thuộc sản phẩm này.');
-            }
-            
-            // Kiểm tra trạng thái
-        if ($variant->status !== 'available') {
-                throw new \Exception('Sản phẩm này hiện không khả dụng!');
-        }
 
-            // Kiểm tra stock (sau khi lock, đảm bảo không bị race condition)
-        if ($variant->stock < $quantity) {
-                throw new \Exception('Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
+                // Kiểm tra stack (sau khi lock, đảm bảo không bị race condition)
+            if ($variant->stock < $quantity) {
+                    throw new \Exception('Số lượng vượt quá tồn kho hiện có (' . $variant->stock . ').');
+            }
+                
+                return $variant;
+            });
+        } catch (\Exception $e) {
+            return $this->respondError($request, $e->getMessage());
         }
-            
-            return $variant;
-        });
 
         $cart = $this->getOrCreateActiveCart();
         $currentTotal = $cart->items()->sum('quantity');
@@ -149,12 +161,16 @@ class CartController extends Controller
     // Cập nhật số lượng
     public function update(Request $request)
     {
+        if (!auth()->check()) {
+            return $this->respondError($request, 'Vui lòng đăng nhập để cập nhật giỏ hàng.');
+        }
+
         $request->validate([
             'cart_item_id' => 'required|integer|exists:cart_items,id',
             'quantity'     => 'required|integer|min:1|max:10',
         ]);
 
-        $userId = auth()->check() ? auth()->id() : 1;
+        $userId = auth()->id();
 
         $cartItem = CartItem::whereHas('cart', function ($q) use ($userId) {
             $q->where('user_id', $userId)->where('status', 'active');
@@ -231,6 +247,10 @@ class CartController extends Controller
     // Xóa 1 item
     public function remove(Request $request)
     {
+        if (!auth()->check()) {
+            return redirect()->route('client.login')->with('error', 'Vui lòng đăng nhập.');
+        }
+
         $request->validate([
             'cart_item_id' => 'required|integer|exists:cart_items,id',
         ]);
@@ -249,6 +269,10 @@ class CartController extends Controller
     // Xóa toàn bộ giỏ
     public function clear()
     {
+        if (!auth()->check()) {
+            return redirect()->route('client.login')->with('error', 'Vui lòng đăng nhập.');
+        }
+
         $cart = $this->getOrCreateActiveCart();
         $cart->items()->delete();
 

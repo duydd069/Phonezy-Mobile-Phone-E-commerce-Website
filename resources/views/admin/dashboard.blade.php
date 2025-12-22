@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container">
-    <h1>Admin Dashboard</h1>
+    <h1>Trang Quản Trị</h1>
     
     <div class="row mt-4">
         <div class="col-md-3">
@@ -40,8 +40,8 @@
         <div class="col-md-3">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Orders</h5>
-                    <p class="card-text"><a href="{{ route('admin.orders.index') }}">Manage Orders</a></p>
+                    <h5 class="card-title">Đơn Hàng</h5>
+                    <p class="card-text"><a href="{{ route('admin.orders.index') }}">Quản lý Đơn Hàng</a></p>
                 </div>
             </div>
         </div>

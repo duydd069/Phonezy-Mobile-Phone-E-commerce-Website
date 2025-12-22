@@ -12,17 +12,6 @@
                 <div class="section-title">
                     <h3 class="title">Đơn hàng của tôi</h3>
                 </div>
-
-        @if($orders->isEmpty())
-            <div class="alert alert-info text-center">
-                <h4>Bạn chưa có đơn hàng nào</h4>
-                <p>Hãy bắt đầu mua sắm để tạo đơn hàng đầu tiên!</p>
-                <a href="{{ route('client.index') }}" class="btn btn-primary mt-3">
-                    <i class="fa fa-shopping-bag"></i> Mua sắm ngay
-                </a>
-            </div>
-        @else
-            <!-- Filter by status -->
             <div class="mb-4">
                 <form method="GET" action="{{ route('client.orders.index') }}" class="d-flex gap-2">
                     <select name="status" class="form-control" style="max-width: 250px;" onchange="this.form.submit()">
@@ -35,6 +24,17 @@
                     </select>
                 </form>
             </div>
+        @if($orders->isEmpty())
+            <div class="alert alert-info text-center">
+                <h4>Bạn chưa có đơn hàng nào</h4>
+                <p>Hãy bắt đầu mua sắm để tạo đơn hàng đầu tiên!</p>
+                <a href="{{ route('client.index') }}" class="btn btn-primary mt-3">
+                    <i class="fa fa-shopping-bag"></i> Mua sắm ngay
+                </a>
+            </div>
+        @else
+            <!-- Filter by status -->
+            
 
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
@@ -158,11 +158,10 @@
                                             <div class="modal-footer border-0 pt-0">
                                                 <a href="{{ route('client.orders.index') }}" class="btn btn-secondary">
                                                         <i class="fa fa-arrow-left"></i> Quay lại </a>
-                                                <button type="submit" class="btn btn-danger px-4">
+                                                <button type="button" id="confirmCancelOrder" class="btn btn-danger px-4">
                                                     <i class="fas fa-check me-1"></i> Xác nhận hủy
                                                 </button>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -216,7 +215,7 @@ $('#cancelReason').on('change', function () {
 });
 
 // Xác nhận hủy
-$('#confirmCancelOrder').on('click', function () {
+$(document).on('click', '#confirmCancelOrder', function (){
     let reason = $('#cancelReason').val();
 
     if (!reason) {
@@ -236,19 +235,12 @@ $('#confirmCancelOrder').on('click', function () {
         method: 'POST',
         action: cancelUrl
     })
-    .append('@csrf')
+    .append(`<input type="hidden" name="_token" value="${$('meta[name="csrf-token"]').attr('content')}">`)
     .append(`<input type="hidden" name="cancel_reason" value="${reason}">`)
     .appendTo('body')
     .submit();
 });
 
-$('#cancelReason').on('change', function () {
-    if ($(this).val() === 'Khác') {
-        $('#otherReasonWrapper').removeClass('d-none');
-    } else {
-        $('#otherReasonWrapper').addClass('d-none');
-    }
-});
 </script>
 
 

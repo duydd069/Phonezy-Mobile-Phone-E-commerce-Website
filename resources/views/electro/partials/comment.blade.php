@@ -28,11 +28,11 @@
 
 			{{ $comment->content }}
 		</div>
-	<div class="comment-content">
+	{{-- <div class="comment-content">
 		@if($comment->replied_to_user_id && $comment->repliedToUser)
 		@endif
 		{{ $comment->content }}
-	</div>
+	</div> --}}
 
 	<div class="comment-actions">
 		@auth

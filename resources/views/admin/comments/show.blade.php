@@ -130,6 +130,8 @@ $(document).ready(function() {
             console.log(xhr.responseText);
             alert('Xóa lỗi');
         }
+    });
+  });
 
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-reply').forEach(function (btn) {
@@ -175,8 +177,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 });
-
-
 function toggleReply(commentId) {
     const form = document.getElementById('replyForm-' + commentId);
     if (!form) return;
@@ -186,6 +186,5 @@ function toggleReply(commentId) {
             ? 'block'
             : 'none';
 }
-
 </script>
 @endpush

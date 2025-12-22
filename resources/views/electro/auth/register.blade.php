@@ -8,7 +8,7 @@
     <div class="row">
       <div class="col-md-6 offset-md-3">
         <div class="billing-details card" style="padding:24px; margin-top:30px;">
-          <h2 class="section-title">Register</h2>
+          <h2 class="section-title">Đăng ký</h2>
 
           @if ($errors->any())
             <div class="alert alert-danger">
@@ -24,7 +24,7 @@
             @csrf
 
             <div class="form-group">
-              <label for="name">Name</label>
+              <label for="name">Họ và tên</label>
               <input id="name" type="text" name="name" value="{{ old('name') }}" required class="input">
             </div>
 
@@ -34,21 +34,21 @@
             </div>
 
             <div class="form-group">
-              <label for="password_hash">Password</label>
+              <label for="password_hash">Mật khẩu</label>
               <input id="password_hash" type="password" name="password_hash" required class="input">
             </div>
 
             <div class="form-group">
-              <label for="password_hash_confirmation">Confirm Password</label>
+              <label for="password_hash_confirmation">Xác nhận mật khẩu</label>
               <input id="password_hash_confirmation" type="password" name="password_hash_confirmation" required class="input">
             </div>
 
             <div class="form-group">
-              <button type="submit" class="primary-btn btn-block">Register</button>
+              <button type="submit" class="primary-btn btn-block">Đăng ký</button>
             </div>
           </form>
 
-          <p class="text-center">Do you have an account? <a href="{{ route('client.login') }}">Login</a></p>
+          <p class="text-center">Đã có tài khoản? <a href="{{ route('client.login') }}">Đăng nhập</a></p>
         </div>
       </div>
     </div>

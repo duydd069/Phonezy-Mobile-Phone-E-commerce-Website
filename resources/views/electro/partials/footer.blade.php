@@ -5,49 +5,49 @@
 			<div class="row">
 				<div class="col-md-3 col-xs-6">
 					<div class="footer">
-						<h3 class="footer-title">About Us</h3>
-						<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut.</p>
+						<h3 class="footer-title">Về PhoneZy</h3>
+						<p>Chuyên cung cấp điện thoại, máy tính bảng và phụ kiện chính hãng với giá tốt nhất thị trường.</p>
 						<ul class="footer-links">
-							<li><a href="#"><i class="fa fa-map-marker"></i>1734 Stonecoal Road</a></li>
-							<li><a href="#"><i class="fa fa-phone"></i>+021-95-51-84</a></li>
-							<li><a href="#"><i class="fa fa-envelope-o"></i>email@email.com</a></li>
+							<li><a href="#"><i class="fa fa-map-marker"></i>Hà Nội, Việt Nam</a></li>
+							<li><a href="tel:0123456789"><i class="fa fa-phone"></i>0123-456-789</a></li>
+							<li><a href="mailto:support@phonezy.vn"><i class="fa fa-envelope-o"></i>support@phonezy.vn</a></li>
 						</ul>
 					</div>
 				</div>
 				<div class="col-md-3 col-xs-6">
 					<div class="footer">
-						<h3 class="footer-title">Categories</h3>
+						<h3 class="footer-title">Danh Mục Sản Phẩm</h3>
 						<ul class="footer-links">
-							<li><a href="#">Hot deals</a></li>
-							<li><a href="#">Laptops</a></li>
-							<li><a href="#">Smartphones</a></li>
-							<li><a href="#">Cameras</a></li>
-							<li><a href="#">Accessories</a></li>
+							<li><a href="{{ route('client.promotions') }}">Khuyến Mãi Hot</a></li>
+							<li><a href="{{ route('client.index') }}#categories">Điện Thoại</a></li>
+							<li><a href="{{ route('client.index') }}#categories">Máy Tính Bảng</a></li>
+							<li><a href="{{ route('client.index') }}#categories">Đồng Hồ Thông Minh</a></li>
+							<li><a href="{{ route('client.index') }}#categories">Phụ Kiện</a></li>
 						</ul>
 					</div>
 				</div>
 				<div class="clearfix visible-xs"></div>
 				<div class="col-md-3 col-xs-6">
 					<div class="footer">
-						<h3 class="footer-title">Information</h3>
+						<h3 class="footer-title">Hỗ Trợ Khách Hàng</h3>
 						<ul class="footer-links">
-							<li><a href="#">About Us</a></li>
-							<li><a href="#">Contact Us</a></li>
-							<li><a href="#">Privacy Policy</a></li>
-							<li><a href="#">Orders and Returns</a></li>
-							<li><a href="#">Terms & Conditions</a></li>
+							<li><a href="#">Giới Thiệu</a></li>
+							<li><a href="#">Liên Hệ</a></li>
+							<li><a href="#">Chính Sách Bảo Mật</a></li>
+							<li><a href="#">Chính Sách Đổi Trả</a></li>
+							<li><a href="#">Điều Khoản Sử Dụng</a></li>
 						</ul>
 					</div>
 				</div>
 				<div class="col-md-3 col-xs-6">
 					<div class="footer">
-						<h3 class="footer-title">Service</h3>
+						<h3 class="footer-title">Tài Khoản</h3>
 						<ul class="footer-links">
-							<li><a href="#">My Account</a></li>
-							<li><a href="#">View Cart</a></li>
-							<li><a href="#">Wishlist</a></li>
-							<li><a href="#">Track My Order</a></li>
-							<li><a href="#">Help</a></li>
+							<li><a href="{{ route('client.account.index') }}">Tài Khoản Của Tôi</a></li>
+							<li><a href="{{ route('cart.index') }}">Giỏ Hàng</a></li>
+							<li><a href="{{ route('client.wishlist.index') }}">Yêu Thích</a></li>
+							<li><a href="{{ route('client.orders.index') }}">Theo Dõi Đơn Hàng</a></li>
+							<li><a href="#">Trợ Giúp</a></li>
 						</ul>
 					</div>
 				</div>
@@ -61,19 +61,17 @@
 					<ul class="footer-payments">
 						<li><a href="#"><i class="fa fa-cc-visa"></i></a></li>
 						<li><a href="#"><i class="fa fa-credit-card"></i></a></li>
-						<li><a href="#"><i class="fa fa-cc-paypal"></i></a></li>
 						<li><a href="#"><i class="fa fa-cc-mastercard"></i></a></li>
-						<li><a href="#"><i class="fa fa-cc-discover"></i></a></li>
-						<li><a href="#"><i class="fa fa-cc-amex"></i></a></li>
+						<li><span style="padding: 10px; background: #fff; border-radius: 3px; display: inline-block;">
+							<img src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png" alt="VNPay" style="height: 20px;">
+						</span></li>
 					</ul>
 					<span class="copyright">
-						Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved |
-						Template by <a href="https://colorlib.com" target="_blank">Colorlib</a>
+						Bản quyền &copy;<script>document.write(new Date().getFullYear());</script> PhoneZy - Điện thoại chính hãng giá tốt
 					</span>
 				</div>
 			</div>
 		</div>
 	</div>
 </footer>
-
 
