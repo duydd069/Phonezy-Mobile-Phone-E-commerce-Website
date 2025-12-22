@@ -33,23 +33,31 @@ class CheckoutController extends Controller
         }
 
         // Lọc items được chọn từ request (sent via query parameter from cart page)
+        // Lọc items được chọn từ request (sent via query parameter from cart page)
         $selectedItemIds = request('selected_items');
+        
         if ($selectedItemIds) {
+            // Case 1: Có request params (từ giỏ hàng sang) -> Cập nhật session
             // Convert comma-separated string to array
             $selectedItemIds = is_array($selectedItemIds) ? $selectedItemIds : explode(',', $selectedItemIds);
             $selectedItemIds = array_filter(array_map('intval', $selectedItemIds));
             
-            // Filter items
+            // Save to session for use in store() and subsequent requests
+            session(['selected_cart_items' => $selectedItemIds]);
+        } else {
+            // Case 2: Không có request params (redirect back, validated fail, f5) -> Lấy từ session
+            $selectedItemIds = session('selected_cart_items');
+        }
+
+        if ($selectedItemIds && is_array($selectedItemIds)) {
+            // Filter items based on IDs
             $items = $allItems->filter(function($item) use ($selectedItemIds) {
                 return in_array($item->id, $selectedItemIds);
             });
-            
-            // Save to session for use in store()
-            session(['selected_cart_items' => $selectedItemIds]);
         } else {
-            // Fallback: use all items if no selection
+            // Fallback: use all items only if no selection in request OR session
+            // (Only happens if user goes directly to checkout without selecting anything ever)
             $items = $allItems;
-            session()->forget('selected_cart_items');
         }
 
         if ($items->isEmpty()) {
@@ -136,14 +144,33 @@ class CheckoutController extends Controller
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
         }
 
-        // Lọc items được chọn từ session
-        $selectedItemIds = session('selected_cart_items');
-        if ($selectedItemIds && is_array($selectedItemIds)) {
-            $items = $allItems->filter(function($item) use ($selectedItemIds) {
-                return in_array($item->id, $selectedItemIds);
-            });
+        // Lọc items được chọn
+        // Ưu tiên lấy từ request (hidden field) để đảm bảo chính xác những gì user nhìn thấy
+        $selectedItemIds = request('selected_items');
+        
+        if (!$selectedItemIds) {
+            // Fallback: Lấy từ session (trường hợp redirect back hoặc logic cũ)
+            $selectedItemIds = session('selected_cart_items');
+        }
+
+        if ($selectedItemIds) {
+            // Nếu là string từ hidden input (comma separated)
+            if (!is_array($selectedItemIds)) {
+                $selectedItemIds = explode(',', $selectedItemIds);
+            }
+            // Filter empty values and validate int
+            $selectedItemIds = array_filter(array_map('intval', $selectedItemIds));
+            
+            if (!empty($selectedItemIds)) {
+                 $items = $allItems->filter(function($item) use ($selectedItemIds) {
+                    return in_array($item->id, $selectedItemIds);
+                });
+            } else {
+                 // Trường hợp selected_items rỗng (ví dụ value="") -> Không chọn sản phẩm nào
+                 return redirect()->route('cart.index')->with('error', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán.');
+            }
         } else {
-            // Fallback: use all items if no selection
+            // Fallback: use all items if no selection found anywhere (old behavior)
             $items = $allItems;
         }
 
@@ -156,7 +183,7 @@ class CheckoutController extends Controller
             'cart_id' => $cart->id,
             'cart_user_id' => $cart->user_id,
             'current_user_id' => $userId,
-            'raw_items_count' => $rawItems->count(),
+            'raw_items_count' => $allItems->count(),
             'items_count' => $items->count(),
             'items' => $items->map(function ($item) {
                 return [
@@ -357,7 +384,7 @@ class CheckoutController extends Controller
                     // Quantity đã được tổng hợp khi group ở trên
                     $quantity = $item->quantity;
 
-                    OrderItem::create([
+                    $orderItem = OrderItem::create([
                         'order_id'             => $order->id,
                         'product_id'           => $product?->id,
                         'product_variant_id'   => $variant->id, // Lưu variant ID để hoàn stock chính xác
