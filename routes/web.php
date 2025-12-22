@@ -21,6 +21,7 @@ Route::prefix('api')->group(function () {
 // Electro frontend routes (Client)
 Route::prefix('client')->name('client.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('index');
+    Route::get('/search/suggest', [\App\Http\Controllers\Client\ProductController::class, 'suggest'])->name('search.suggest');
     Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('product.show');
     Route::get('/store', function () {
         return view('electro.store');
@@ -52,7 +53,7 @@ use App\Http\Controllers\Client\CartController;
 use App\Http\Controllers\Client\OrderController;
 use App\Http\Controllers\Client\VnpayController;
 
-Route::middleware(['web'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
     Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');

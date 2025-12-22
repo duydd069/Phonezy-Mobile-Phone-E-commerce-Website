@@ -58,7 +58,7 @@
                                 </td>
                                 <td class="text-center">
                                     <span  style="font-size: 20px;">
-                                        {{ $product->comments_count }}
+{{ $product->comments_count }}
                                     </span>
                                 </td>
                                 <td>
