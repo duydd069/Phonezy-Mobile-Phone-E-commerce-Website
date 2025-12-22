@@ -30,7 +30,7 @@
                             : number_format($coupon->discount_value, 0, ',', '.') . ' ₫';
                     @endphp
                     
-                    <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="col-md-6 col-lg-4 mb-5 pb-2" style="margin-bottom: 30px !important;">
                         <div class="card h-100 {{ $isExpired ? 'border-secondary' : 'border-primary' }}" 
                              style="box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
                             <div class="card-header {{ $isExpired ? 'bg-secondary' : ($isPrivate ? 'bg-warning' : 'bg-primary') }} text-white">
