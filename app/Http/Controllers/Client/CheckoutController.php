@@ -539,7 +539,6 @@ class CheckoutController extends Controller
         // Fallback: Ưu tiên giá sale, nếu không có thì dùng giá thường (trường hợp cũ, không có snapshot)
         return (float) ($variant->price_sale ?? $variant->price ?? 0);
     }
-
     /**
      * Tạo URL thanh toán VNPAY
      */
@@ -581,7 +580,6 @@ class CheckoutController extends Controller
 //     'query' => $queryString,
 //     'secureHash' => $vnpSecureHash,
 // ]);
-
         return $vnp_Url . "?" . http_build_query($inputData) . '&vnp_SecureHash=' . $vnpSecureHash;
     }
 }

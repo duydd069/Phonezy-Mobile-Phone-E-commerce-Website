@@ -58,26 +58,23 @@
                             <div class="form-group">
                                 <input class="input" type="text" name="address"
                                        value="{{ old('address', $prefill['address']) }}"
-                                       placeholder="Địa chỉ nhận hàng *">
+                                       placeholder="Địa chỉ cụ thể">
                                 @error('address') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
                             <div class="form-group">
-                                <input class="input" type="text" name="city"
-                                       value="{{ old('city', $prefill['city']) }}"
-                                       placeholder="Tỉnh / Thành phố">
-                                @error('city') <small class="text-danger">{{ $message }}</small> @enderror
+                                <select id="province" name="province" class="form-control" required>
+                                    <option value="">Chọn Tỉnh / Thành phố</option>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <input class="input" type="text" name="district"
-                                       value="{{ old('district', $prefill['district']) }}"
-                                       placeholder="Quận / Huyện">
-                                @error('district') <small class="text-danger">{{ $message }}</small> @enderror
+                                <select id="district" name="district" class="form-control" required disabled>
+                                    <option value="">Chọn Quận / Huyện</option>
+                                </select>
                             </div>
                             <div class="form-group">
-                                <input class="input" type="text" name="ward"
-                                       value="{{ old('ward', $prefill['ward']) }}"
-                                       placeholder="Phường / Xã">
-                                @error('ward') <small class="text-danger">{{ $message }}</small> @enderror
+                                <select id="ward" name="ward" class="form-control" required disabled>
+                                    <option value="">Chọn Phường / Xã</option>
+                                </select>
                             </div>
                             <div class="order-notes">
                                 <textarea class="input" name="notes" placeholder="Ghi chú thêm">{{ old('notes', $prefill['notes']) }}</textarea>
@@ -242,6 +239,7 @@
             </form>
         </div>
     </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
         // Định nghĩa function selectCoupon trước để có thể gọi từ onclick
@@ -475,6 +473,69 @@
                 });
             }
         });
+
+
+        const API = "https://provinces.open-api.vn/api";
+
+// Load toàn bộ tỉnh thành
+fetch(API + "/p/")
+    .then(res => res.json())
+    .then(data => {
+        data.forEach(p => {
+            $('#province').append(
+                `<option value="${p.name}" data-code="${p.code}">
+                    ${p.name}
+                </option>`
+            );
+        });
+    });
+
+// Khi chọn tỉnh → load huyện
+$('#province').on('change', function () {
+    const code = $(this).find(':selected').data('code');
+
+    $('#district').prop('disabled', false)
+                  .html('<option value="">-- Chọn Quận / Huyện --</option>');
+    $('#ward').prop('disabled', true)
+              .html('<option value="">-- Chọn Phường / Xã --</option>');
+
+    if (!code) return;
+
+    fetch(`${API}/p/${code}?depth=2`)
+        .then(res => res.json())
+        .then(data => {
+            data.districts.forEach(d => {
+                $('#district').append(
+                    `<option value="${d.name}" data-code="${d.code}">
+                        ${d.name}
+                    </option>`
+                );
+            });
+        });
+});
+
+// Khi chọn huyện → load xã
+$('#district').on('change', function () {
+    const code = $(this).find(':selected').data('code');
+
+    $('#ward').prop('disabled', false)
+              .html('<option value="">-- Chọn Phường / Xã --</option>');
+
+    if (!code) return;
+
+    fetch(`${API}/d/${code}?depth=2`)
+        .then(res => res.json())
+        .then(data => {
+            data.wards.forEach(w => {
+                $('#ward').append(
+                    `<option value="${w.name}">
+                        ${w.name}
+                    </option>`
+                );
+            });
+        });
+});
+
 
     </script>
 @endsection

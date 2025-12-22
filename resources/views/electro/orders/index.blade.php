@@ -12,17 +12,6 @@
                 <div class="section-title">
                     <h3 class="title">Đơn hàng của tôi</h3>
                 </div>
-
-        @if($orders->isEmpty())
-            <div class="alert alert-info text-center">
-                <h4>Bạn chưa có đơn hàng nào</h4>
-                <p>Hãy bắt đầu mua sắm để tạo đơn hàng đầu tiên!</p>
-                <a href="{{ route('client.index') }}" class="btn btn-primary mt-3">
-                    <i class="fa fa-shopping-bag"></i> Mua sắm ngay
-                </a>
-            </div>
-        @else
-            <!-- Filter by status -->
             <div class="mb-4">
                 <form method="GET" action="{{ route('client.orders.index') }}" class="d-flex gap-2">
                     <select name="status" class="form-control" style="max-width: 250px;" onchange="this.form.submit()">
@@ -35,6 +24,17 @@
                     </select>
                 </form>
             </div>
+        @if($orders->isEmpty())
+            <div class="alert alert-info text-center">
+                <h4>Bạn chưa có đơn hàng nào</h4>
+                <p>Hãy bắt đầu mua sắm để tạo đơn hàng đầu tiên!</p>
+                <a href="{{ route('client.index') }}" class="btn btn-primary mt-3">
+                    <i class="fa fa-shopping-bag"></i> Mua sắm ngay
+                </a>
+            </div>
+        @else
+            <!-- Filter by status -->
+            
 
             <div class="table-responsive">
                 <table class="table table-bordered table-hover">
