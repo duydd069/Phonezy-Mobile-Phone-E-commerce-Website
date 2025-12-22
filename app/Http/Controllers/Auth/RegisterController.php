@@ -18,64 +18,43 @@ class RegisterController extends Controller
     }
 
     /**
-     * Handle registration submission.
+     * Handle registration submission with email verification.
      */
-    // public function store(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name' => 'required|string|max:255',
-    //         'email' => 'required|email|max:255|unique:users,email',
-    //         'password_hash' => ['required', 'confirmed', Rules\Password::defaults()],
-    //     ]);
-
-    //     // Generate verification token
-    //     $verificationToken = \Illuminate\Support\Str::random(64);
-    //     $verificationExpires = now()->addHours(24);
-
-    //     $user = User::create([
-    //         'name' => $data['name'],
-    //         'email' => $data['email'],
-    //         'password_hash' => \Illuminate\Support\Facades\Hash::make($data['password_hash']),
-    //         'role_id' => 2, // 2 = normal user
-    //         'verification_token' => $verificationToken,
-    //         'verification_expires_at' => $verificationExpires,
-    //     ]);
-
-    //     // Generate verification URL
-    //     $verificationUrl = route('email.verify', ['token' => $verificationToken]);
-
-    //     // Send verification email
-    //     try {
-    //         \Illuminate\Support\Facades\Mail::to($user->email)
-    //             ->send(new \App\Mail\VerificationEmail($verificationUrl, $user->name));
-    //     } catch (\Exception $e) {
-    //         // Log error but don't block registration
-    //         \Illuminate\Support\Facades\Log::error('Failed to send verification email: ' . $e->getMessage());
-    //     }
-
-    //     // Redirect to verification-sent page instead of auto-login
-    //     return redirect()->route('verification.sent')
-    //         ->with('email', $user->email);
-    // }
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|max:255|unique:users,email',
-        'password_hash' => ['required', 'confirmed'],
-    ]);
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password_hash' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
 
-    $user = User::create([
-        'name' => $data['name'],
-        'email' => $data['email'],
-        'password_hash' => Hash::make($data['password_hash']),
-        'role_id' => 2,
-        'email_verified_at' => null,
-    ]);
+        // Generate verification token
+        $verificationToken = \Illuminate\Support\Str::random(64);
+        $verificationExpires = now()->addHours(24);
 
-    return redirect()->route('client.login')
-        ->with('success', 'Đăng ký thành công, vui lòng đăng nhập');
-}
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password_hash' => Hash::make($data['password_hash']),
+            'role_id' => 2, // 2 = normal user
+            'verification_token' => $verificationToken,
+            'verification_expires_at' => $verificationExpires,
+        ]);
 
+        // Generate verification URL
+        $verificationUrl = route('email.verify', ['token' => $verificationToken]);
 
+        // Send verification email
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)
+                ->send(new \App\Mail\VerificationEmail($verificationUrl, $user->name));
+        } catch (\Exception $e) {
+            // Log error but don't block registration
+            \Log::error('Failed to send verification email: ' . $e->getMessage());
+        }
+
+        // Redirect to verification-sent page instead of login
+        return redirect()->route('verification.sent')
+            ->with('email', $user->email);
+    }
 }

@@ -200,6 +200,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Handle all status update buttons
     document.querySelectorAll('.update-status-btn, .cancel-btn').forEach(button => {
+        // Skip if handler already attached
+        if (button.hasAttribute('data-handler-attached')) {
+            return;
+        }
+        
+        // Mark as handled
+        button.setAttribute('data-handler-attached', 'true');
+        
         button.addEventListener('click', function() {
             const orderId = this.dataset.orderId;
             const newStatus = this.dataset.status;
@@ -229,19 +237,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Show success message
-                    const alert = document.createElement('div');
-                    alert.className = 'alert alert-success alert-dismissible fade show';
-                    alert.innerHTML = `
-                        ${data.message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    document.querySelector('.container-fluid').insertBefore(alert, document.querySelector('.container-fluid').children[1]);
-                    
-                    // Reload page to reflect changes
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                    // Reload page to show session flash message
+                    window.location.reload();
                 } else {
                     alert('Có lỗi xảy ra, vui lòng thử lại!');
                     this.disabled = false;

@@ -132,6 +132,14 @@ class OrderReturnController extends Controller
         // Process refund
         $return->processRefund(Auth::id());
 
+        // Gửi email thông báo đã hoàn tiền
+        try {
+            $return->order->user->notify(new \App\Notifications\RefundProcessedNotification($return));
+        } catch (\Exception $e) {
+            // Log lỗi nhưng không làm gián đoạn flow hoàn tiền
+            \Log::error('Failed to send refund notification email: ' . $e->getMessage());
+        }
+
         return back()->with('success', 'Đã hoàn tiền thành công. Trạng thái đơn hàng đã được cập nhật.');
     }
 }

@@ -54,11 +54,11 @@ class OrderReturnController extends Controller
         // Validate request
         $validated = $request->validate([
             'contact_phone' => ['required', 'string', 'max:30'],
-            'refund_method' => ['required', 'in:Momo,Ngân hàng'],
+            'refund_method' => ['required', 'in:Ngân hàng'],
             'bank_name' => ['required_if:refund_method,Ngân hàng', 'nullable', 'string', 'max:150'],
             'bank_account_number' => ['required_if:refund_method,Ngân hàng', 'nullable', 'string', 'max:50'],
             'bank_account_name' => ['required_if:refund_method,Ngân hàng', 'nullable', 'string', 'max:150'],
-            'reason' => ['required', 'string', 'min:20'],
+            'reason' => ['required', 'string'],
             'images.*' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'], // 2MB max per image
         ], [
             'contact_phone.required' => 'Vui lòng nhập số điện thoại liên hệ',
@@ -66,8 +66,7 @@ class OrderReturnController extends Controller
             'bank_name.required_if' => 'Vui lòng nhập tên ngân hàng',
             'bank_account_number.required_if' => 'Vui lòng nhập số tài khoản',
             'bank_account_name.required_if' => 'Vui lòng nhập tên chủ tài khoản',
-            'reason.required' => 'Vui lòng nhập lý do hoàn trả',
-            'reason.min' => 'Lý do phải có ít nhất 20 ký tự',
+            'reason.required' => 'Vui lòng chọn lý do hoàn trả',
             'images.*.required' => 'Vui lòng tải lên ít nhất 1 ảnh',
             'images.*.image' => 'File phải là ảnh',
             'images.*.mimes' => 'Ảnh phải có định dạng: jpeg, jpg, png, webp',

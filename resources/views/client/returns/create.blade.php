@@ -154,11 +154,7 @@
                                     <label class="form-label">Phương thức hoàn tiền *</label>
                                     <div class="method-selector">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="refund_method" id="refund_momo" value="Momo" {{ old('refund_method') == 'Momo' ? 'checked' : '' }}>
-                                            <label class="form-check-label small" for="refund_momo">VÍ MOMO</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="refund_method" id="refund_bank" value="Ngân hàng" {{ old('refund_method') == 'Ngân hàng' ? 'checked' : '' }}>
+                                            <input class="form-check-input" type="radio" name="refund_method" id="refund_bank" value="Ngân hàng" {{ old('refund_method', 'Ngân hàng') == 'Ngân hàng' ? 'checked' : '' }}>
                                             <label class="form-check-label small" for="refund_bank">NGÂN HÀNG</label>
                                         </div>
                                     </div>
@@ -183,13 +179,17 @@
 
                                 <div class="mb-4">
                                     <label for="reason" class="form-label">Lý do hoàn trả *</label>
-                                    <textarea class="form-control @error('reason') is-invalid @enderror" 
-                                              id="reason" name="reason" rows="4" 
-                                              placeholder="Mô tả chi tiết tình trạng sản phẩm..." required>{{ old('reason') }}</textarea>
-                                    <div class="d-flex justify-content-between mt-1">
-                                        <small class="text-muted">Tối thiểu 20 ký tự</small>
-                                        <small id="charCount" class="text-muted">0 ký tự</small>
-                                    </div>
+                                    <select class="form-control @error('reason') is-invalid @enderror" 
+                                            id="reason" name="reason" required>
+                                        <option value="">-- Chọn lý do hoàn trả --</option>
+                                        <option value="Sản phẩm bị lỗi/hư hỏng" {{ old('reason') == 'Sản phẩm bị lỗi/hư hỏng' ? 'selected' : '' }}>Sản phẩm bị lỗi/hư hỏng</option>
+                                        <option value="Sản phẩm không đúng mô tả" {{ old('reason') == 'Sản phẩm không đúng mô tả' ? 'selected' : '' }}>Sản phẩm không đúng mô tả</option>
+                                        <option value="Nhận sai sản phẩm" {{ old('reason') == 'Nhận sai sản phẩm' ? 'selected' : '' }}>Nhận sai sản phẩm</option>
+                                        <option value="Sản phẩm bị hư hại trong vận chuyển" {{ old('reason') == 'Sản phẩm bị hư hại trong vận chuyển' ? 'selected' : '' }}>Sản phẩm bị hư hại trong vận chuyển</option>
+                                        <option value="Đổi ý, không muốn mua nữa" {{ old('reason') == 'Đổi ý, không muốn mua nữa' ? 'selected' : '' }}>Đổi ý, không muốn mua nữa</option>
+                                        <option value="Khác" {{ old('reason') == 'Khác' ? 'selected' : '' }}>Khác (ghi rõ trong ghi chú)</option>
+                                    </select>
+                                    @error('reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
 
                                 <div class="mb-5">

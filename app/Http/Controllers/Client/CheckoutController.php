@@ -490,6 +490,14 @@ class CheckoutController extends Controller
                     ->with('error', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
             }
 
+            // Gửi email xác nhận đơn hàng
+            try {
+                $order->user->notify(new \App\Notifications\OrderConfirmationNotification($order));
+            } catch (\Exception $e) {
+                // Log lỗi nhưng không làm gián đoạn flow đặt hàng
+                \Log::error('Failed to send order confirmation email: ' . $e->getMessage());
+            }
+
             // Nếu chọn VNPAY, chuyển hướng sang cổng thanh toán
             if ($order->payment_method === 'vnpay') {
                 $paymentUrl = $this->buildVnpayUrl($order);

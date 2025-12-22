@@ -265,6 +265,13 @@ class Order extends Model
     {
         $updates = [];
 
+        // Nếu đơn hàng giao thành công và chưa thanh toán, tự động đánh dấu đã thanh toán
+        // (COD orders are paid upon successful delivery)
+        if ($this->status === 'giao_thanh_cong' && $this->payment_status == 0) {
+            $updates['payment_status'] = 1;
+            $updates['paid_at'] = now();
+        }
+
         // Nếu đơn hàng hoàn thành và chưa thanh toán, tự động đánh dấu đã thanh toán
         if ($this->status === 'hoan_thanh' && $this->payment_status == 0) {
             $updates['payment_status'] = 1;
