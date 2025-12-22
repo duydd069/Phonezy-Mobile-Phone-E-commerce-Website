@@ -14,7 +14,7 @@ class OrderController extends Controller
         $user = auth()->user();
         
         if (!$user) {
-            return redirect()->route('client.login')->with('error', 'Please login to view your orders.');
+            return redirect()->route('client.login')->with('error', 'Vui lòng đăng nhập để xem đơn hàng.');
         }
 
         $query = Order::where('user_id', $user->id)
@@ -37,7 +37,7 @@ class OrderController extends Controller
 
         // Check order access permission
         if (!$user || (int) $order->user_id !== (int) $user->id) {
-            abort(403, 'You do not have permission to view this order.');
+            abort(403, 'Bạn không có quyền xem đơn hàng này.');
         }
 
         $order->load(['items', 'user', 'coupon', 'returns.images']);
@@ -55,6 +55,9 @@ class OrderController extends Controller
     if ($order->status !== Order::STATUS_PENDING) {
         return back()->with('error', 'Đơn hàng này không thể hủy.');
     }
+
+    // Hoàn trả stock trước khi hủy đơn
+    $order->restoreStock();
 
     $order->status = Order::STATUS_CANCELLED;
     $order->cancel_reason = $request->cancel_reason; // nhớ có cột này

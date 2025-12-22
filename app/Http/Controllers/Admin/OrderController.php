@@ -76,6 +76,11 @@ class OrderController extends Controller
                 ->with('error', $errorMessage);
         }
 
+        // Hoàn trả stock nếu chuyển sang trạng thái da_huy
+        if ($newStatus === 'da_huy' && $oldStatus !== 'da_huy') {
+            $order->restoreStock();
+        }
+
         // Cập nhật trạng thái
         $order->update(['status' => $newStatus]);
 
@@ -129,8 +134,14 @@ class OrderController extends Controller
             'status' => ['required', 'in:' . implode(',', $availableStatuses)],
         ]);
 
+        $oldStatus = $order->status;
         $newStatus = $request->status;
         $updates = ['status' => $newStatus];
+
+        // Hoàn trả stock nếu chuyển sang trạng thái da_huy
+        if ($newStatus === 'da_huy' && $oldStatus !== 'da_huy') {
+            $order->restoreStock();
+        }
 
         // Auto-update shipping status based on order status
         if ($newStatus === 'da_xac_nhan') {

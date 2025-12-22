@@ -20,11 +20,11 @@
                 <div class="col-md-5">
                     <div class="header-search">
                         <form action="#" method="GET" style="display: flex; width: 100%;">
-                            <input id="search-input" class="input" placeholder="Search here" style="width: 100%; border-radius: 40px 0px 0px 40px; padding: 0px 20px;">
+                            <input id="search-input" class="input" placeholder="Tìm kiếm..." style="width: 100%; border-radius: 40px 0px 0px 40px; padding: 0px 20px;">
                             <div id="search-suggestions" class="search-suggestions"></div>
                             <button class="search-btn" type="submit" style="border-radius: 0px 40px 40px 0px; background: #D10024; color: #fff; font-weight: bold; padding: 0 20px; border: none; height: 40px; display:flex; align-items:center; gap:8px;">
                                 <i class="fa fa-search search-icon" aria-hidden="true" style="display:none;"></i>
-                                <span class="search-text">Search</span>
+                                <span class="search-text">Tìm kiếm</span>
                             </button>
                         </form>
                     </div>
@@ -36,7 +36,7 @@
                         <div class="wishlist">
                             <a href="{{ Auth::check() ? route('client.wishlist.index') : route('client.login') }}" style="text-align: center; display: block; position: relative;">
                                 <i class="fa fa-heart-o" style="font-size: 18px;"></i>
-                                <span style="display: block; font-size: 10px; text-transform: uppercase;">Wishlist</span>
+                                <span style="display: block; font-size: 10px; text-transform: uppercase;">Yêu thích</span>
                                 <div class="qty" style="position: absolute; right: -10px; top: -10px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; font-size: 10px; color: #FFF; background-color: #D10024;">{{ $wishlistCount ?? 0 }}</div>
                             </a>
                         </div>
@@ -44,7 +44,7 @@
                         <div class="cart">
                             <a href="{{ route('cart.index') }}" style="text-align: center; display: block; position: relative;">
                                 <i class="fa fa-shopping-cart" style="font-size: 18px;"></i>
-                                <span style="display: block; font-size: 10px; text-transform: uppercase;">Your Cart</span>
+                                <span style="display: block; font-size: 10px; text-transform: uppercase;">Giỏ hàng</span>
                                 <div class="qty" style="position: absolute; right: -10px; top: -10px; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; font-size: 10px; color: #FFF; background-color: #D10024;">{{ $cartCount ?? 0 }}</div>
                             </a>
                         </div>
@@ -69,7 +69,7 @@
                             @else
                                 <a href="{{ route('client.login') }}" style="text-align: center; display: block;">
                                     <i class="fa fa-user-o" style="font-size: 18px;"></i>
-                                    <span style="display: block; font-size: 10px; text-transform: uppercase;">Login</span>
+                                    <span style="display: block; font-size: 10px; text-transform: uppercase;">Đăng nhập</span>
                                 </a>
                             @endauth
                         </div>

@@ -45,6 +45,14 @@
                             Tiếp tục mua sắm
                         </a>
                     @else
+                        {{-- Checkbox chọn tất cả --}}
+                        <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                            <label style="cursor: pointer; margin: 0;">
+                                <input type="checkbox" id="select-all-checkbox" style="margin-right: 8px; cursor: pointer;">
+                                <strong>Chọn tất cả sản phẩm</strong>
+                            </label>
+                        </div>
+
                         <div class="shopping-cart">
                             @foreach($items as $item)
                                 @php
@@ -73,61 +81,80 @@
                                     }
                                 @endphp
 
-                                <div class="product-widget" style="border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 15px;">
-                                    <div class="product-img">
-                                        @if($image)
-                                            <img src="{{ $image }}" alt="{{ $productName }}">
-                                        @else
-                                            <img src="{{ asset('electro/img/product01.png') }}" alt="">
-                                        @endif
+                                <div class="cart-item" data-item-id="{{ $item->id }}" data-price="{{ $price }}" data-quantity="{{ $item->quantity }}" style="display: flex; align-items: flex-start; gap: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 15px; position: relative;">
+                                    {{-- Checkbox bên trái --}}
+                                    <div style="padding-top: 40px;">
+                                        <input type="checkbox" 
+                                               class="item-checkbox" 
+                                               data-item-id="{{ $item->id }}"
+                                               data-price="{{ $price }}"
+                                               data-quantity="{{ $item->quantity }}"
+                                               checked
+                                               style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
                                     </div>
-                                    <div class="product-body">
-                                        <h3 class="product-name">
-                                            <a href="{{ $product ? route('client.product.show', $product->slug) : '#' }}">
-                                                {{ $productName }}
-                                            </a>
-                                        </h3>
-                                        @if($variant && $variant->sku)
-                                            <p class="text-muted small" style="margin: 5px 0;">SKU: {{ $variant->sku }}</p>
-                                        @endif
 
-                                        <h4 class="product-price">
-                                            <span class="qty">{{ $item->quantity }}x</span>
-                                            {{ number_format($price, 0, ',', '.') }} ₫
-                                        </h4>
+                                    {{-- Product widget --}}
+                                    <div class="product-widget" style="flex: 1; border: none; padding: 0; margin: 0; display: flex; gap: 15px;">
+                                        <div class="product-img">
+                                            @if($image)
+                                                <img src="{{ $image }}" alt="{{ $productName }}">
+                                            @else
+                                                <img src="{{ asset('electro/img/product01.png') }}" alt="">
+                                            @endif
+                                        </div>
+                                        <div class="product-body" style="flex: 1;">
+                                            <h3 class="product-name">
+                                                <a href="{{ $product ? route('client.product.show', $product->slug) : '#' }}">
+                                                    {{ $productName }}
+                                                </a>
+                                            </h3>
+                                            @if($variant && $variant->sku)
+                                                <p class="text-muted small" style="margin: 5px 0;">SKU: {{ $variant->sku }}</p>
+                                            @endif
 
-                                        {{-- Form cập nhật số lượng --}}
-                                        <form action="{{ route('cart.update') }}" method="POST" class="form-inline cart-update-form" style="margin-top: 5px;">
+                                            <h4 class="product-price">
+                                                <span class="qty">{{ $item->quantity }}x</span>
+                                                {{ number_format($price, 0, ',', '.') }} ₫
+                                            </h4>
+
+                                            {{-- Form cập nhật số lượng --}}
+                                            <form action="{{ route('cart.update') }}" method="POST" class="form-inline cart-update-form" style="margin-top: 5px;">
+                                                @csrf
+                                                <input type="hidden" name="cart_item_id" value="{{ $item->id }}">
+                                                @php
+                                                    $stock = $variant->stock ?? 0;
+                                                    $max = max(1, min($stock, 10)); // tối đa 10/sp
+                                                @endphp
+                                                <input type="number"
+                                                       name="quantity"
+                                                       value="{{ $item->quantity }}"
+                                                       min="1"
+                                                       data-max="{{ $max }}"
+                                                       data-cart-item-id="{{ $item->id }}"
+                                                       class="input quantity-input"
+                                                       style="width: 80px; display:inline-block; margin-right:5px;"
+                                                       {{ $stock <= 0 ? 'disabled' : '' }}>
+                                                <button type="submit" class="primary-btn update-btn" style="display:none;">
+                                                    Cập nhật
+                                                </button>
+                                                <span class="update-status" style="margin-left: 10px; display:none; color: #28a745;">✓ Đã cập nhật</span>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    {{-- Nút xóa bên phải --}}
+                                    <div style="padding-top: 10px;">
+                                        <form action="{{ route('cart.remove') }}" method="POST">
                                             @csrf
                                             <input type="hidden" name="cart_item_id" value="{{ $item->id }}">
-                                            @php
-                                                $stock = $variant->stock ?? 0;
-                                                $max = max(1, min($stock, 10)); // tối đa 10/sp
-                                            @endphp
-                                            <input type="number"
-                                                   name="quantity"
-                                                   value="{{ $item->quantity }}"
-                                                   min="1"
-                                                   data-max="{{ $max }}"
-                                                   data-cart-item-id="{{ $item->id }}"
-                                                   class="input quantity-input"
-                                                   style="width: 80px; display:inline-block; margin-right:5px;"
-                                                   {{ $stock <= 0 ? 'disabled' : '' }}>
-                                            <button type="submit" class="primary-btn update-btn" style="display:none;">
-                                                Cập nhật
+                                            <button type="submit" 
+                                                    class="delete" 
+                                                    onclick="return confirm('Xóa sản phẩm này?')"
+                                                    style="position: static; background: #f44336; color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
+                                                <i class="fa fa-close" style="font-size: 16px;"></i>
                                             </button>
-                                            <span class="update-status" style="margin-left: 10px; display:none; color: #28a745;">✓ Đã cập nhật</span>
                                         </form>
                                     </div>
-
-                                    {{-- Xóa sản phẩm --}}
-                                    <form action="{{ route('cart.remove') }}" method="POST">
-                                        @csrf
-                                        <input type="hidden" name="cart_item_id" value="{{ $item->id }}">
-                                        <button class="delete" onclick="return confirm('Xóa sản phẩm này?')">
-                                            <i class="fa fa-close"></i>
-                                        </button>
-                                    </form>
                                 </div>
                             @endforeach
                         </div>
@@ -149,6 +176,9 @@
                     <div class="order-details">
                         <div class="section-title text-center">
                             <h3 class="title"> Giỏ hàng</h3>
+                            <p class="text-muted" id="selected-count" style="font-size: 14px; margin-top: 5px;">
+                                Đã chọn <span id="selected-item-count">{{ $items->count() }}</span>/{{ $items->count() }} sản phẩm
+                            </p>
                         </div>
 
                         <div class="order-summary">
@@ -157,7 +187,7 @@
                                 <div><strong>TỔNG</strong></div>
                             </div>
 
-                            <div class="order-products">
+                            <div class="order-products" id="selected-products-list">
                                 @foreach($items as $item)
                                     @php
                                         $variant = $item->variant;
@@ -176,7 +206,7 @@
                                             $productName .= ' (' . implode(', ', $variantInfo) . ')';
                                         }
                                     @endphp
-                                    <div class="order-col">
+                                    <div class="order-col summary-item" data-item-id="{{ $item->id }}">
                                         <div>{{ $item->quantity }}x {{ $productName }}</div>
                                         <div>{{ number_format($price * $item->quantity, 0, ',', '.') }} ₫</div>
                                     </div>
@@ -185,14 +215,14 @@
 
                             <div class="order-col">
                                 <div><strong>TỔNG CỘNG</strong></div>
-                                <div><strong class="order-total">
+                                <div><strong class="order-total" id="cart-total">
                                         {{ number_format($total, 0, ',', '.') }} ₫
                                     </strong>
                                 </div>
                             </div>
                         </div>
 
-                        <a href="{{ route('client.checkout') }}" class="primary-btn order-submit">
+                        <a href="{{ route('client.checkout') }}" class="primary-btn order-submit" id="checkout-btn">
                             Tiến hành thanh toán
                         </a>
 
@@ -211,6 +241,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const alertBox = document.getElementById('cart-alert');
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const cartTotal = document.getElementById('cart-total');
+    const selectedCountSpan = document.getElementById('selected-item-count');
+    const selectedProductsList = document.getElementById('selected-products-list');
+    const checkoutBtn = document.getElementById('checkout-btn');
 
     function showCartAlert(message, type = 'danger') {
         if (!alertBox) return;
@@ -221,6 +257,99 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             alertBox.style.display = 'none';
         }, 4000);
+    }
+
+    // Calculate total from selected items
+    function updateTotal() {
+        let total = 0;
+        let selectedCount = 0;
+        const selectedItems = [];
+
+        itemCheckboxes.forEach(checkbox => {
+            const summaryItem = document.querySelector(`.summary-item[data-item-id="${checkbox.dataset.itemId}"]`);
+            
+            if (checkbox.checked) {
+                const price = parseFloat(checkbox.dataset.price) || 0;
+                const quantity = parseInt(checkbox.dataset.quantity) || 0;
+                total += price * quantity;
+                selectedCount++;
+                selectedItems.push(checkbox.dataset.itemId);
+                
+                // Show in summary
+                if (summaryItem) {
+                    summaryItem.style.display = '';
+                }
+            } else {
+                // Hide from summary
+                if (summaryItem) {
+                    summaryItem.style.display = 'none';
+                }
+            }
+        });
+
+        // Update total display
+        if (cartTotal) {
+            cartTotal.textContent = total.toLocaleString('vi-VN') + ' ₫';
+        }
+
+        // Update selected count
+        if (selectedCountSpan) {
+            selectedCountSpan.textContent = selectedCount;
+        }
+
+        // Save selected items to sessionStorage for checkout
+        sessionStorage.setItem('selectedCartItems', JSON.stringify(selectedItems));
+
+        // Update "select all" checkbox state
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = selectedCount === itemCheckboxes.length && selectedCount > 0;
+        }
+
+        return selectedCount;
+    }
+
+    // Handle item checkbox change
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateTotal();
+        });
+    });
+
+    // Handle "select all" checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            itemCheckboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+            updateTotal();
+        });
+    }
+
+    // Validate before checkout
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function(e) {
+            const selectedCount = updateTotal();
+            if (selectedCount === 0) {
+                e.preventDefault();
+                showCartAlert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!', 'warning');
+                return;
+            }
+            
+            // Get selected item IDs
+            const selectedItems = [];
+            itemCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                    selectedItems.push(checkbox.dataset.itemId);
+                }
+            });
+            
+            // Append to checkout URL
+            e.preventDefault();
+            const baseUrl = this.href;
+            const separator = baseUrl.includes('?') ? '&' : '?';
+            window.location.href = baseUrl + separator + 'selected_items=' + selectedItems.join(',');
+        });
     }
 
     // Auto update quantity on input change
@@ -283,7 +412,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         updateStatus.style.display = 'none';
                     }, 2000);
                 }
-                // Reload page for more accurate total calculation
+                
+                // Update data attributes for recalculation
+                const checkbox = document.querySelector(`.item-checkbox[data-item-id="${cartItemId}"]`);
+                if (checkbox) {
+                    checkbox.dataset.quantity = val;
+                }
+                
+                // Recalculate total
+                updateTotal();
+                
+                // Reload page after a delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
@@ -333,6 +472,9 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (e) {
         console.error('Cannot parse validation errors', e);
     }
+
+    // Initialize total calculation on page load
+    updateTotal();
 });
 </script>
 @endpush

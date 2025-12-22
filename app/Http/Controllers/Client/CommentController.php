@@ -84,7 +84,7 @@ class CommentController extends Controller
     public function destroy(Comment $comment)
         {
             if (!auth()->check()) {
-                return response()->json(['message' => 'Unauthenticated'], 401);
+                return response()->json(['message' => 'Chưa đăng nhập'], 401);
             }
 
             // ADMIN: xóa được tất cả
@@ -97,7 +97,7 @@ class CommentController extends Controller
 
             // USER THƯỜNG: chỉ xóa comment của mình
             if (auth()->id() !== $comment->user_id) {
-                return response()->json(['message' => 'Forbidden'], 403);
+                return response()->json(['message' => 'Bạn không có quyền xóa bình luận này'], 403);
             }
 
             $comment->replies()->delete();

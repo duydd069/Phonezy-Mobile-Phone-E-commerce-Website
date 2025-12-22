@@ -62,7 +62,7 @@ class UserController extends Controller
 
         User::create($data);
 
-        return redirect()->route('admin.users.index')->with('success', 'User created successfully');
+        return redirect()->route('admin.users.index')->with('success', 'Tạo người dùng thành công');
     }
 
     public function show(User $user): View
@@ -93,7 +93,7 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('admin.users.index')->with('success', 'User updated successfully');
+        return redirect()->route('admin.users.index')->with('success', 'Cập nhật người dùng thành công');
     }
 
     /**

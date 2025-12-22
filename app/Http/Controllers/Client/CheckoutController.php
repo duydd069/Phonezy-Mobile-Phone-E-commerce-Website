@@ -25,10 +25,34 @@ class CheckoutController extends Controller
         }
 
         $cart = $this->getOrCreateActiveCart();
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        $allItems = $cart->items()->with(['variant.product', 'variant'])->get();
+
+        if ($allItems->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
+        }
+
+        // Lọc items được chọn từ request (sent via query parameter from cart page)
+        $selectedItemIds = request('selected_items');
+        if ($selectedItemIds) {
+            // Convert comma-separated string to array
+            $selectedItemIds = is_array($selectedItemIds) ? $selectedItemIds : explode(',', $selectedItemIds);
+            $selectedItemIds = array_filter(array_map('intval', $selectedItemIds));
+            
+            // Filter items
+            $items = $allItems->filter(function($item) use ($selectedItemIds) {
+                return in_array($item->id, $selectedItemIds);
+            });
+            
+            // Save to session for use in store()
+            session(['selected_cart_items' => $selectedItemIds]);
+        } else {
+            // Fallback: use all items if no selection
+            $items = $allItems;
+            session()->forget('selected_cart_items');
+        }
 
         if ($items->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
+            return redirect()->route('cart.index')->with('error', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán.');
         }
 
         // Giới hạn tổng số lượng sản phẩm trong đơn hàng
@@ -96,10 +120,25 @@ class CheckoutController extends Controller
 
         $cart = $this->getOrCreateActiveCart();
         // Load variant với tất cả các trường cần thiết, đặc biệt là stock
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        $allItems = $cart->items()->with(['variant.product', 'variant'])->get();
+
+        if ($allItems->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
+        }
+
+        // Lọc items được chọn từ session
+        $selectedItemIds = session('selected_cart_items');
+        if ($selectedItemIds && is_array($selectedItemIds)) {
+            $items = $allItems->filter(function($item) use ($selectedItemIds) {
+                return in_array($item->id, $selectedItemIds);
+            });
+        } else {
+            // Fallback: use all items if no selection
+            $items = $allItems;
+        }
 
         if ($items->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
+            return redirect()->route('cart.index')->with('error', 'Vui lòng chọn ít nhất một sản phẩm để thanh toán.');
         }
 
         try {
@@ -225,13 +264,14 @@ class CheckoutController extends Controller
                     $quantity = $item->quantity;
 
                     OrderItem::create([
-                        'order_id'      => $order->id,
-                        'product_id'    => $product?->id,
-                        'product_name'  => $product->name ?? 'Sản phẩm',
-                        'product_image' => $product->image ?? null,
-                        'quantity'      => $quantity,
-                        'unit_price'    => $unitPrice,
-                        'total_price'   => $unitPrice * $quantity,
+                        'order_id'             => $order->id,
+                        'product_id'           => $product?->id,
+                        'product_variant_id'   => $variant->id, // Lưu variant ID để hoàn stock chính xác
+                        'product_name'         => $product->name ?? 'Sản phẩm',
+                        'product_image'        => $product->image ?? null,
+                        'quantity'             => $quantity,
+                        'unit_price'           => $unitPrice,
+                        'total_price'          => $unitPrice * $quantity,
                     ]);
 
                     // Trừ số lượng sản phẩm (stock) khi đặt hàng thành công
@@ -270,8 +310,30 @@ class CheckoutController extends Controller
                     }
                 }
 
-                $cart->update(['status' => 'converted']);
-                $cart->items()->delete();
+                // Chỉ xóa các items đã được chọn và tạo order
+                // Giữ lại các items không được chọn trong giỏ hàng
+                $selectedItemIds = session('selected_cart_items');
+                if ($selectedItemIds && is_array($selectedItemIds)) {
+                    // Chỉ xóa items đã chọn
+                    CartItem::whereIn('id', $selectedItemIds)
+                        ->where('cart_id', $cart->id)
+                        ->delete();
+                    
+                    // Kiểm tra xem còn items nào trong giỏ không
+                    $remainingItems = $cart->items()->count();
+                    if ($remainingItems === 0) {
+                        // Nếu không còn items, đánh dấu cart là converted
+                        $cart->update(['status' => 'converted']);
+                    }
+                    // Nếu còn items, giữ nguyên cart status là 'active'
+                } else {
+                    // Fallback: xóa tất cả items (trường hợp checkout tất cả)
+                    $cart->update(['status' => 'converted']);
+                    $cart->items()->delete();
+                }
+                
+                // Xóa session selected items
+                session()->forget('selected_cart_items');
 
                 // Record coupon usage sau khi tạo order thành công
                 if ($validatedCoupon) {

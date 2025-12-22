@@ -8,7 +8,7 @@
     <div class="row">
       <div class="col-md-6 offset-md-3">
         <div class="billing-details card" style="padding:24px; margin-top:30px;">
-          <h2 class="section-title">Login</h2>
+          <h2 class="section-title">Đăng nhập</h2>
 
           @if ($errors->any())
             <div class="alert alert-danger">
@@ -35,16 +35,16 @@
 
             <div class="form-group">
               <label class="checkbox-inline">
-                <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}> Remember me
+                <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}> Ghi nhớ tôi
               </label>
             </div>
 
             <div class="form-group">
-              <button type="submit" class="primary-btn btn-block">Login</button>
+              <button type="submit" class="primary-btn btn-block">Đăng nhập</button>
             </div>
           </form>
 
-          <p class="text-center">Do you not have an account? <a href="{{ route('client.register') }}">Register</a></p>
+          <p class="text-center">Bạn chưa có tài khoản? <a href="{{ route('client.register') }}">Đăng ký</a></p>
         </div>
       </div>
     </div>

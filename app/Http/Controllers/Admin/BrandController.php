@@ -47,7 +47,7 @@ class BrandController extends Controller
 
         Brand::create($data);
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand created');
+        return redirect()->route('admin.brands.index')->with('success', 'Tạo thương hiệu thành công');
     }
 
     public function show(Brand $brand): View
@@ -74,13 +74,13 @@ class BrandController extends Controller
 
         $brand->update($data);
 
-        return redirect()->route('admin.brands.index')->with('success', 'Brand updated');
+        return redirect()->route('admin.brands.index')->with('success', 'Cập nhật thương hiệu thành công');
     }
 
     public function destroy(Brand $brand): RedirectResponse
     {
         $brand->delete();
-        return redirect()->route('admin.brands.index')->with('success', 'Brand deleted');
+        return redirect()->route('admin.brands.index')->with('success', 'Xóa thương hiệu thành công');
     }
 }
 
