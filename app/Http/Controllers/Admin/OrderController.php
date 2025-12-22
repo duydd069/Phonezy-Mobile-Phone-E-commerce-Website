@@ -12,7 +12,7 @@ class OrderController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Order::with(['user', 'items'])->orderByDesc('created_at');
+        $query = Order::with(['user', 'items'])->orderByDesc('id');
 
         // Tìm kiếm
         if ($search = $request->string('q')->toString()) {

@@ -112,10 +112,22 @@
                                         </h4>
 
                                         {{-- Rating --}}
-                                        <div class="product-rating" itemprop="aggregateRating" itemscope
-                                            itemtype="https://schema.org/AggregateRating">
-                                            <!-- <span itemprop="ratingValue">5</span> ⭐ -->
-                                            <meta itemprop="reviewCount" content="1">
+                                        <div class="product-rating">
+                                            @php
+                                                $avgRating = $product->avgRating;
+                                                $fullStars = floor($avgRating);
+                                                $halfStar = $avgRating - $fullStars >= 0.5;
+                                                $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
+                                            @endphp
+                                            @for ($i = 0; $i < $fullStars; $i++)
+                                                <i class="fa fa-star"></i>
+                                            @endfor
+                                            @if ($halfStar)
+                                                <i class="fa fa-star-half-o"></i>
+                                            @endif
+                                            @for ($i = 0; $i < $emptyStars; $i++)
+                                                <i class="fa fa-star-o"></i>
+                                            @endfor
                                         </div>
 
                                         <div class="product-btns">
@@ -208,6 +220,24 @@
                                     <h4 class="product-price">
                                         {{ number_format($price, 0, ',', '.') }} ₫
                                     </h4>
+
+                                    <div class="product-rating">
+                                        @php
+                                            $avgRating = $product->avgRating;
+                                            $fullStars = floor($avgRating);
+                                            $halfStar = $avgRating - $fullStars >= 0.5;
+                                            $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
+                                        @endphp
+                                        @for ($i = 0; $i < $fullStars; $i++)
+                                            <i class="fa fa-star"></i>
+                                        @endfor
+                                        @if ($halfStar)
+                                            <i class="fa fa-star-half-o"></i>
+                                        @endif
+                                        @for ($i = 0; $i < $emptyStars; $i++)
+                                            <i class="fa fa-star-o"></i>
+                                        @endfor
+                                    </div>
 
                                     <div class="product-btns">
                                         <button class="add-to-wishlist wishlist-btn"

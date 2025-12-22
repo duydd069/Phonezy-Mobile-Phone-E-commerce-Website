@@ -45,7 +45,7 @@
 		@endauth
 	</div>
 
-	<div class="comment_item">
+	<div class="comment-actions-secondary">
 		@if(auth()->check() && (
 			auth()->user()->role_id == 1 || auth()->id() === $comment->user_id))
 		<div class="comment-actions mt-2">

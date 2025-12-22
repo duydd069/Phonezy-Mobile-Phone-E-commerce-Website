@@ -86,7 +86,12 @@
                             @foreach($order->items->take(2) as $item)
                                 <div class="d-flex align-items-center mb-1">
                                     @if($item->product_image)
-                                        <img src="{{ asset('storage/' . $item->product_image) }}" 
+                                        @php
+                                            $imgUrl = preg_match('/^https?:\/\//', $item->product_image) 
+                                                ? $item->product_image 
+                                                : asset('storage/' . $item->product_image);
+                                        @endphp
+                                        <img src="{{ $imgUrl }}" 
                                              alt="{{ $item->product_name }}" 
                                              style="width: 40px; height: 40px; object-fit: cover; margin-right: 8px;">
                                     @endif

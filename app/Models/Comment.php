@@ -13,6 +13,7 @@ class Comment extends Model
         'parent_id',
         'replied_to_user_id',
         'content',
+        'rating',
     ];
 
     public function product()

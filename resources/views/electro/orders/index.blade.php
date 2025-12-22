@@ -106,6 +106,24 @@
                                         title="{{ !$isPending ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}">
                                         <i class="fas fa-times me-1"></i> Hủy đơn
                                     </button>
+
+                                    @if(in_array($order->status, ['giao_thanh_cong', 'hoan_thanh']))
+                                        @php
+                                            $reviewItems = $order->items->map(fn($item) => [
+                                                "id" => $item->id,
+                                                "name" => $item->product_name,
+                                                "image" => $item->product_image,
+                                                "slug" => $item->product->slug ?? $item->product->id,
+                                                "product_id" => $item->product_id
+                                            ]);
+                                        @endphp
+                                        <button type="button" 
+                                                class="btn btn-sm btn-success mt-1 btn-review-order"
+                                                data-order-id="{{ $order->id }}"
+                                                data-items="{{ json_encode($reviewItems) }}">
+                                            <i class="fa fa-star me-1"></i> Đánh giá
+                                        </button>
+                                    @endif
                                     <div class="modal fade" id="cancelOrderModal" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content shadow-lg border-0 rounded-4">
@@ -180,12 +198,154 @@
 
     </div>
 </div>
+
 </div>
 </div>
+    <!-- Review Modal -->
+    <div class="modal fade" id="reviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title">Đánh giá sản phẩm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="reviewModalBody">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
+
 <script>
+    $(document).ready(function() {
+        // Star rating HTML generator
+        function getStarRatingHtml(itemId) {
+            return `
+                <div class="star-rating mb-3">
+                    <div class="rating-group">
+                        <input type="radio" id="star5-${itemId}" name="rating-${itemId}" value="5" checked />
+                        <label for="star5-${itemId}" title="5 sao"><i class="fa fa-star"></i></label>
+                        <input type="radio" id="star4-${itemId}" name="rating-${itemId}" value="4" />
+                        <label for="star4-${itemId}" title="4 sao"><i class="fa fa-star"></i></label>
+                        <input type="radio" id="star3-${itemId}" name="rating-${itemId}" value="3" />
+                        <label for="star3-${itemId}" title="3 sao"><i class="fa fa-star"></i></label>
+                        <input type="radio" id="star2-${itemId}" name="rating-${itemId}" value="2" />
+                        <label for="star2-${itemId}" title="2 sao"><i class="fa fa-star"></i></label>
+                        <input type="radio" id="star1-${itemId}" name="rating-${itemId}" value="1" />
+                        <label for="star1-${itemId}" title="1 sao"><i class="fa fa-star"></i></label>
+                    </div>
+                </div>
+                <style>
+                    .rating-group { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
+                    .rating-group input { display: none; }
+                    .rating-group label { cursor: pointer; color: #ccc; font-size: 24px; transition: 0.2s; }
+                    .rating-group label:hover, .rating-group label:hover ~ label, .rating-group input:checked ~ label { color: #ffc107; }
+                </style>
+            `;
+        }
+
+        // Open review modal
+        $('.btn-review-order').click(function() {
+            const items = $(this).data('items');
+            const modalBody = $('#reviewModalBody');
+            modalBody.empty();
+
+            if (!items || items.length === 0) {
+                modalBody.html('<p class="text-center text-muted">Không có sản phẩm nào để đánh giá.</p>');
+                return;
+            }
+
+            items.forEach(function(item) {
+                const imageUrl = item.image ? (item.image.startsWith('http') ? item.image : '/storage/' + item.image) : '/electro/img/product01.png';
+                const productUrl = `/client/p/${item.slug}`; 
+                
+                const itemHtml = `
+                    <div class="review-item border-bottom pb-4 mb-4 product-review-container" data-product-id="${item.product_id}">
+                        <div class="d-flex gap-3 mb-3 align-items-center">
+                            <img src="${imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                            <div>
+                                <h6 class="mb-0"><a href="${productUrl}" target="_blank" class="text-dark decoration-none">${item.name}</a></h6>
+                            </div>
+                        </div>
+                        
+                        <div class="review-form">
+                            <form class="submit-review-form" data-product-id="${item.product_id}" data-product-slug="${item.slug}">
+                                <div class="mb-2">
+                                    <label class="form-label fw-semibold">Đánh giá của bạn</label>
+                                    ${getStarRatingHtml(item.id)}
+                                </div>
+                                <!-- textarea removed -->
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">
+                                        <i class="fa fa-paper-plane me-1"></i> Gửi đánh giá
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                modalBody.append(itemHtml);
+            });
+
+            // Remove last border
+            modalBody.find('.review-item:last-child').removeClass('border-bottom pb-4 mb-4');
+
+            $('#reviewModal').modal('show');
+        });
+
+        // Handle form submission
+        $(document).on('submit', '.submit-review-form', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const btn = form.find('button[type="submit"]');
+            const productSlug = form.data('product-slug');
+            // Auto-generate content since textarea is removed
+            const rating = form.find('input[type="radio"]:checked').val();
+            const content = 'Đánh giá ' + rating + ' sao';
+
+            if (!rating) {
+                alert('Vui lòng chọn số sao đánh giá!');
+                return;
+            }
+
+            // Disable button
+            btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Đang gửi...');
+
+            $.ajax({
+                url: `/client/comments/${productSlug}`,
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    content: content,
+                    rating: rating
+                },
+                success: function(response) {
+                    if (response.success) {
+                        form.closest('.review-item').html(`
+                            <div class="alert alert-success mt-3 mb-0">
+                                <i class="fa fa-check-circle me-1"></i> Đã gửi đánh giá thành công!
+                            </div>
+                        `);
+                    } else {
+                         alert(response.message || 'Có lỗi xảy ra.');
+                         btn.prop('disabled', false).html('<i class="fa fa-paper-plane me-1"></i> Gửi đánh giá');
+                    }
+                },
+                error: function(xhr) {
+                    let msg = 'Có lỗi xảy ra.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    alert(msg);
+                    btn.prop('disabled', false).html('<i class="fa fa-paper-plane me-1"></i> Gửi đánh giá');
+                }
+            });
+        });
+    });
+</script>
 let cancelUrl = null;
 
 $(document).on('click', '.btn-cancel-order', function () {

@@ -18,7 +18,7 @@ class OrderController extends Controller
         }
 
         $query = Order::where('user_id', $user->id)
-            ->with(['items', 'coupon'])
+            ->with(['items.product', 'coupon'])
             ->orderByDesc('created_at');
 
         // Lọc theo trạng thái

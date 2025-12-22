@@ -39,4 +39,13 @@ class Product extends Model
     {
         return 'slug';
     }
+    public function getAvgRatingAttribute()
+    {
+        return round($this->comments()->whereNotNull('rating')->avg('rating'), 1) ?: 5.0; // Default 5 if no ratings
+    }
+
+    public function getCountRatingAttribute()
+    {
+        return $this->comments()->whereNotNull('rating')->count();
+    }
 }

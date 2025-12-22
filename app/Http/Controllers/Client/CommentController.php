@@ -23,7 +23,8 @@ class CommentController extends Controller
         $request->validate([
             'content' => 'required|string|max:1000',
             'parent_id' => 'nullable|exists:comments,id',
-            'replied_to_user_id' => 'nullable|exists:users,id'
+            'replied_to_user_id' => 'nullable|exists:users,id',
+            'rating' => 'nullable|integer|min:1|max:5',
         ]);
 
         // Check for bad words
@@ -54,12 +55,16 @@ class CommentController extends Controller
             }
         }
 
+        // Check if user purchased the product - REMOVED per user request
+        // $hasPurchased = \App\Models\Order::where('user_id', auth()->id()) ...
+
         $comment = Comment::create([
             'product_id' => $product->id,
             'user_id' => Auth::id(),
             'parent_id' => $parentId,
             'replied_to_user_id' => $repliedToUserId,
             'content' => $request->content,
+            'rating' => $parentId ? null : $request->rating, // Only allow rating on parent comments
         ]);
 
         $comment->load('user', 'repliedToUser', 'replies.user');

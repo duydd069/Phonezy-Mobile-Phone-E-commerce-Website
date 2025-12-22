@@ -687,13 +687,24 @@
                     
                     <div class="product-meta">
                         <div class="product-rating">
-                            <i class="fa fa-star"></i>
-                            <i class="fa fa-star"></i>
-                            <i class="fa fa-star"></i>
-                            <i class="fa fa-star"></i>
-                            <i class="fa fa-star"></i>
+                            @php
+                                $avgRating = $product->avgRating;
+                                $fullStars = floor($avgRating);
+                                $halfStar = $avgRating - $fullStars >= 0.5;
+                                $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
+                            @endphp
+                            @for ($i = 0; $i < $fullStars; $i++)
+                                <i class="fa fa-star"></i>
+                            @endfor
+                            @if ($halfStar)
+                                <i class="fa fa-star-half-o"></i>
+                            @endif
+                            @for ($i = 0; $i < $emptyStars; $i++)
+                                <i class="fa fa-star-o"></i>
+                            @endfor
                         </div>
                         <div class="product-views">
+                            <span style="margin-right: 15px; color: #D10024; font-weight: bold;">{{ $avgRating }}/5</span>
                             <i class="fa fa-eye"></i> {{ number_format($product->views) }} lượt xem
                         </div>
                         <div class="product-sku">
@@ -1190,28 +1201,15 @@
 
 				<!-- Comment Form -->
 				@auth
-					<div class="comment-form-wrapper" style="margin-bottom: 40px;">
-						<form id="commentForm" class="comment-form">
-							@csrf
+						<form class="review-form" id="mainCommentForm">
 							<div class="form-group">
-								<textarea 
-									name="content" 
-									id="commentContent" 
-									class="form-control" 
-									rows="4" 
-									placeholder="Viết bình luận của bạn..." 
-									required
-									style="resize: vertical; min-height: 100px;"
-								></textarea>
+								<textarea class="input" placeholder="Nội dung bình luận" id="commentContent"></textarea>
 							</div>
-							<button type="submit" class="btn btn-primary">
-								<i class="fa fa-paper-plane"></i> Gửi bình luận
-							</button>
+							<button class="primary-btn">Gửi bình luận</button>
 						</form>
-					</div>
 				@else
 					<div class="alert alert-info" style="margin-bottom: 40px;">
-						<p>Vui lòng <a href="{{ route('client.login') }}" style="color: #D10024; font-weight: bold;">đăng nhập</a> để bình luận.</p>
+						<p>Vui lòng <a href="{{ route('client.login') }}" style="color: #D10024; font-weight: bold;">đăng nhập</a> để xem bình luận.</p>
 					</div>
 				@endauth
 
@@ -1400,7 +1398,7 @@
 @push('scripts')
 <script>
 	document.addEventListener('DOMContentLoaded', function() {
-		const commentForm = document.getElementById('commentForm');
+		const commentForm = document.getElementById('mainCommentForm');
 		const commentsList = document.getElementById('commentsList');
 		const productId = {{ $product->id }};
 		const commentUrl = '{{ route("client.comments.store", $product->slug) }}';
@@ -1491,7 +1489,7 @@
 			})
 			.catch(error => {
 				console.error('Error:', error);
-				alert('Có lỗi xảy ra khi gửi bình luận');
+				alert('Có lỗi xảy ra khi gửi bình luận: ' + error.message);
 			});
 		}
 	});
