@@ -158,11 +158,10 @@
                                             <div class="modal-footer border-0 pt-0">
                                                 <a href="{{ route('client.orders.index') }}" class="btn btn-secondary">
                                                         <i class="fa fa-arrow-left"></i> Quay lại </a>
-                                                <button type="submit" class="btn btn-danger px-4">
+                                                <button type="button" id="confirmCancelOrder" class="btn btn-danger px-4">
                                                     <i class="fas fa-check me-1"></i> Xác nhận hủy
                                                 </button>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -216,7 +215,7 @@ $('#cancelReason').on('change', function () {
 });
 
 // Xác nhận hủy
-$('#confirmCancelOrder').on('click', function () {
+$(document).on('click', '#confirmCancelOrder', function (){
     let reason = $('#cancelReason').val();
 
     if (!reason) {
@@ -236,19 +235,12 @@ $('#confirmCancelOrder').on('click', function () {
         method: 'POST',
         action: cancelUrl
     })
-    .append('@csrf')
+    .append(`<input type="hidden" name="_token" value="${$('meta[name="csrf-token"]').attr('content')}">`)
     .append(`<input type="hidden" name="cancel_reason" value="${reason}">`)
     .appendTo('body')
     .submit();
 });
 
-$('#cancelReason').on('change', function () {
-    if ($(this).val() === 'Khác') {
-        $('#otherReasonWrapper').removeClass('d-none');
-    } else {
-        $('#otherReasonWrapper').addClass('d-none');
-    }
-});
 </script>
 
 

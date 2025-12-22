@@ -15,6 +15,7 @@
                 @if($comment->user && ($comment->user->role_id == 1 || ($comment->user->roles && $comment->user->roles->contains('name', 'admin'))))
                     <span class="badge bg-danger text-white">ADMIN</span>
                 <i class="fas fa-user"></i> {{ $replyToName }}
+                @endif
                 @if(
                     $comment->user &&
                     (
@@ -66,15 +67,15 @@
         {{ $comment->content }}
 
     <!-- Content -->
-    <div class="comment-content mb-2">
+    {{-- <div class="comment-content mb-2">
         @if($comment->replied_to_user_id && $comment->repliedToUser)
     <span class="badge badge-info">
         {{ $comment->repliedToUser->name }}
     </span>
-@endif
+        @endif
         <p class="mb-0">{{ $comment->content }}</p>
 
-    </div>
+    </div> --}}
 
     <!-- Reply form -->
     <div id="replyForm-{{ $comment->id }}" class="mt-3" style="display:none;">
@@ -95,13 +96,13 @@
                     required></textarea>
 
                 <label>
-                    Trả lời bình luận của <strong>{{ $replyToName }}</strong>
+                    {{-- Trả lời bình luận của <strong>{{ $replyToName }}</strong>
                 </label>
                 <textarea name="content"
                           class="form-control"
                           rows="3"
                           required
-placeholder="Nhập nội dung trả lời..."> </textarea>
+                        placeholder="Nhập nội dung trả lời..."> </textarea> --}}
 
             </div>
 
