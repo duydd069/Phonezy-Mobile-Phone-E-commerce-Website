@@ -32,7 +32,7 @@
       <label for="remember" class="form-check-label">Ghi nhớ tôi</label>
     </div>
 
-    <button type="submit" class="btn btn-primary">Login</button>
+    <button type="submit" class="btn btn-primary">Đăng nhập</button>
   </form>
 
   <p>Bạn chưa có tài khoản? <a href="{{ route('register') }}">Đăng ký</a></p>

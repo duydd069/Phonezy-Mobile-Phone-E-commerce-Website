@@ -277,6 +277,59 @@ class Order extends Model
             $this->update($updates);
         }
     }
+
+    /**
+     * Restore product stock when order is cancelled
+     */
+    public function restoreStock(): void
+    {
+        // Load order items
+        $this->load(['items']);
+
+        foreach ($this->items as $item) {
+            // Lấy product_variant_id từ order_item
+            $variantId = $item->product_variant_id;
+            
+            if (!$variantId) {
+                // Nếu không có variant_id (đơn hàng cũ), thử tìm theo product_id
+                $productId = $item->product_id;
+                if ($productId) {
+                    $variant = \App\Models\ProductVariant::where('product_id', $productId)->first();
+                } else {
+                    \Log::warning("Order item #{$item->id} không có variant_id và product_id");
+                    continue;
+                }
+            } else {
+                // Tìm variant theo ID
+                $variant = \App\Models\ProductVariant::find($variantId);
+            }
+            
+            if (!$variant) {
+                \Log::warning("Không tìm thấy variant (ID: {$variantId}) cho order_item #{$item->id} khi hoàn stock cho order #{$this->id}");
+                continue;
+            }
+
+            // Cộng lại số lượng vào stock
+            $quantity = $item->quantity;
+            
+            if ($variant->stock !== null) {
+                $newStock = $variant->stock + $quantity;
+                $newSold = max(($variant->sold ?? 0) - $quantity, 0); // Không cho sold âm
+                
+                $variant->update([
+                    'stock' => $newStock,
+                    'sold' => $newSold,
+                ]);
+
+                // Cập nhật status nếu có hàng trở lại
+                if ($newStock > 0 && $variant->status === \App\Models\ProductVariant::STATUS_OUT_OF_STOCK) {
+                    $variant->update(['status' => \App\Models\ProductVariant::STATUS_AVAILABLE]);
+                }
+                
+                \Log::info("Đã hoàn {$quantity} sản phẩm variant #{$variant->id} cho order #{$this->id}. Stock mới: {$newStock}");
+            }
+        }
+    }
     // hủy đơn khi chưa xác nhận
         const STATUS_PENDING = 'cho_xac_nhan';
         const STATUS_WAIT_PAYMENT = 'cho_thanh_toan';
