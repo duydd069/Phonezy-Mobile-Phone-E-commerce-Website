@@ -277,5 +277,26 @@ class Order extends Model
             $this->update($updates);
         }
     }
+    // hủy đơn khi chưa xác nhận
+        const STATUS_PENDING = 'cho_xac_nhan';
+        const STATUS_WAIT_PAYMENT = 'cho_thanh_toan';
+        const STATUS_CONFIRMED = 'da_xac_nhan';
+        const STATUS_CANCELLED = 'da_huy';
+
+        public function isPending()
+        {
+            return $this->status === self::STATUS_PENDING;
+        }
+
+        public function getStatusLabel()
+        {
+            return match ($this->status) {
+                self::STATUS_PENDING => 'Chờ xác nhận',
+                self::STATUS_WAIT_PAYMENT => 'Chờ thanh toán',
+                self::STATUS_CONFIRMED => 'Đã xác nhận',
+                self::STATUS_CANCELLED => 'Đã hủy',
+                default => 'Không xác định',
+            };
+        }
 }
 

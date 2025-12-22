@@ -10,7 +10,7 @@
             <strong>
                 <i class="fas fa-user"></i> {{ $comment->user ? $comment->user->name : 'Khách' }}
                 @if($comment->user && ($comment->user->role_id == 1 || ($comment->user->roles && $comment->user->roles->contains('name', 'admin'))))
-                    <span class="badge badge-danger ml-1">ADMIN</span>
+                    <span class="badge bg-danger text-white">ADMIN</span>
                 @endif
             </strong>
             <br>
@@ -25,8 +25,8 @@
                     data-comment-id="{{ $comment->id }}">
                 <i class="fas fa-reply"></i> Trả lời
             </button>
-            <button type="button" 
-                    class="btn btn-sm btn-danger btn-delete-comment" 
+            <button type="button"
+                    class="btn btn-sm btn-danger btn-delete-comment"
                     data-comment-id="{{ $comment->id }}"
                     data-url="{{ route('admin.comments.destroy', $comment->id) }}">
                 <i class="fas fa-trash"></i> Xóa
@@ -35,10 +35,15 @@
     </div>
 
     <div class="comment-content">
-        @if($comment->replied_to_user_id && $comment->repliedToUser)
-            <span class="badge badge-info">@{{ $comment->repliedToUser->name }}</span>
+        @if ($comment->replied_to_user_id && $comment->repliedToUser)
+            @if (!\Illuminate\Support\Str::startsWith($comment->content, '@'))
+                <span class="reply-to">
+                    {{ '@' . $comment->repliedToUser->name }}
+                </span>
+            @endif
         @endif
-        <p class="mb-0">{{ $comment->content }}</p>
+
+        {{ $comment->content }}
     </div>
 
     <!-- Reply form -->
@@ -51,11 +56,11 @@
             
             <div class="form-group">
                 <label>Trả lời bình luận của <strong>{{ $replyToName }}</strong>:</label>
-                <textarea name="content" 
-                          class="form-control" 
-                          rows="3" 
-                          placeholder="Nhập nội dung trả lời..." 
-                          required>@{{ $replyToName }} </textarea>
+                <textarea name="content"
+                    class="form-control"
+                    rows="3"
+                    placeholder="Nhập nội dung trả lời..."
+                    required></textarea>
             </div>
             
             <div class="form-group mb-0">

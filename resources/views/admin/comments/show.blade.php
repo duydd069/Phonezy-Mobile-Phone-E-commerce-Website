@@ -77,47 +77,50 @@
 
 @push('scripts')
 <script>
+    
+
 $(document).ready(function() {
+    
     // Toggle reply form
-    $('.btn-reply').on('click', function() {
-        const commentId = $(this).data('comment-id');
-        $('#replyForm-' + commentId).slideToggle();
-    });
+    $(document).off('click', '.btn-reply').on('click', '.btn-reply', function (e) {
+      e.preventDefault();
+
+      const commentId = $(this).data('comment-id');
+      $('#replyForm-' + commentId).slideToggle();
+  });
 
     // Delete comment
-    $('.btn-delete-comment').on('click', function(e) {
-        e.preventDefault();
-        
-        if (!confirm('Bạn có chắc chắn muốn xóa bình luận này? Tất cả phản hồi cũng sẽ bị xóa.')) {
-            return;
+   $(document).on('click', '.btn-delete-comment', function (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+//    e.stopPropagation();
+    
+    console.log('CLICK OK'); // debug
+
+    const ok = confirm('Bạn có chắc chắn muốn xóa bình luận này? Tất cả phản hồi cũng sẽ bị xóa.');
+    if (!ok) return;
+
+    const url = $(this).data('url');
+    const commentElement = $(this).closest('.comment-item');
+
+    $.ajax({
+        url: url,
+        type: 'DELETE',
+        data: {
+            _token: '{{ csrf_token() }}'
+        },
+        success: function (res) {
+            alert('XÓA OK');
+            commentElement.fadeOut(300, function () {
+                $(this).remove();
+            });
+        },
+        error: function (xhr) {
+            console.log(xhr.responseText);
+            alert('Xóa lỗi');
         }
-
-        const commentId = $(this).data('comment-id');
-        const url = $(this).data('url');
-        const commentElement = $(this).closest('.comment-item');
-
-        $.ajax({
-            url: url,
-            type: 'DELETE',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    commentElement.fadeOut(300, function() {
-                        $(this).remove();
-                        // Reload page to update counter
-                        location.reload();
-                    });
-                } else {
-                    alert(response.message || 'Có lỗi xảy ra');
-                }
-            },
-            error: function(xhr) {
-                alert('Có lỗi xảy ra khi xóa bình luận');
-            }
-        });
     });
+});
 });
 </script>
 @endpush

@@ -72,6 +72,7 @@
 		<script src="{{ asset('electro/js/jquery.zoom.min.js') }}"></script>
 		<script src="{{ asset('electro/js/main.js') }}"></script>
 		
+		
 		<!-- Wishlist JavaScript -->
 		<script>
 		$(document).ready(function() {
@@ -215,6 +216,7 @@
 		
 		@stack('scripts')
 		<link rel="stylesheet" href="{{ asset('dist/css/category.css') }}">
+
 	</body>
 </html>
 

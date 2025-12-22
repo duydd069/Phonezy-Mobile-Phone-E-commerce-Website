@@ -39,6 +39,7 @@ Route::prefix('client')->name('client.')->group(function () {
     // Comments routes
     Route::post('/comments/{product}', [\App\Http\Controllers\Client\CommentController::class, 'store'])->name('comments.store');
     Route::get('/comments/{product}', [\App\Http\Controllers\Client\CommentController::class, 'index'])->name('comments.index');
+    Route::delete('/comments/{comment}', [\App\Http\Controllers\Client\CommentController::class, 'destroy'])->name('comments.destroy');
 
     Route::get('/login', [\App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login'])->name('login.post');
@@ -65,12 +66,17 @@ Route::middleware(['auth'])->prefix('client')->name('client.')->group(function (
     Route::post('/account', [\App\Http\Controllers\Client\AccountController::class, 'update'])->name('account.update');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::middleware('auth')->prefix('client')->name('client.')->group(function () {
+        Route::post('/orders/{order}/cancel',[OrderController::class, 'cancel'])->name('orders.cancel');
+    });
     Route::get('/coupons', [\App\Http\Controllers\Client\CouponController::class, 'index'])->name('coupons.index');
     
     // Order return routes
     Route::get('/orders/{order}/return', [\App\Http\Controllers\Client\OrderReturnController::class, 'create'])->name('orders.return.create');
     Route::post('/orders/{order}/return', [\App\Http\Controllers\Client\OrderReturnController::class, 'store'])->name('orders.return.store');
     Route::post('/returns/{return}/mark-shipped', [\App\Http\Controllers\Client\OrderReturnController::class, 'markAsShipped'])->name('returns.mark-shipped');
+    
+
     
     // Wishlist routes
     Route::get('/wishlist', [\App\Http\Controllers\Client\WishlistController::class, 'index'])->name('wishlist.index');
@@ -155,6 +161,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/comments/{product}', [\App\Http\Controllers\Admin\CommentController::class, 'show'])->name('comments.show');
     Route::delete('/comments/{comment}', [\App\Http\Controllers\Admin\CommentController::class, 'destroy'])->name('comments.destroy');
     Route::post('/comments/reply', [\App\Http\Controllers\Admin\CommentController::class, 'reply'])->name('comments.reply');
+    
+
 
     // Order Return Management routes
     Route::get('/returns', [\App\Http\Controllers\Admin\OrderReturnController::class, 'index'])->name('returns.index');

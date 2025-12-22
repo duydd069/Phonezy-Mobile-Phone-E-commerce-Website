@@ -80,5 +80,32 @@ class CommentController extends Controller
             'comments' => $comments
         ]);
     }
+
+    public function destroy(Comment $comment)
+        {
+            if (!auth()->check()) {
+                return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+
+            // ADMIN: xóa được tất cả
+            if (auth()->user()->role_id == 1) {
+                $comment->replies()->delete();
+                $comment->delete();
+
+                return response()->json(['success' => true]);
+            }
+
+            // USER THƯỜNG: chỉ xóa comment của mình
+            if (auth()->id() !== $comment->user_id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+
+            $comment->replies()->delete();
+            $comment->delete();
+
+            return response()->json(['success' => true]);
+        }
+
+
 }
 

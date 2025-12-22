@@ -45,4 +45,24 @@ class OrderController extends Controller
 
         return view('electro.orders.show', compact('order', 'paymentMethods'));
     }
+
+    public function cancel(Request $request, Order $order)
+{
+    if (auth()->id() !== $order->user_id) {
+        abort(403);
+    }
+
+    if ($order->status !== Order::STATUS_PENDING) {
+        return back()->with('error', 'Đơn hàng này không thể hủy.');
+    }
+
+    $order->status = Order::STATUS_CANCELLED;
+    $order->cancel_reason = $request->cancel_reason; // nhớ có cột này
+    $order->save();
+
+    return back()->with('success', 'Đơn hàng đã được hủy thành công.');
+}
+
+
+
 }
