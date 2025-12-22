@@ -227,7 +227,7 @@
                     
                     <div class="summary-line">
                         <span class="text-muted">Tạm tính</span>
-                        <span>{{ number_format($order->subtotal, 0, ',', '.') }}₫</span>
+                        <span>{{ number_format($order->calculateSubtotalFromItems(), 0, ',', '.') }}₫</span>
                     </div>
                     <div class="summary-line">
                         <span class="text-muted">Phí vận chuyển</span>
@@ -242,7 +242,7 @@
                     
                     <div class="total-line d-flex justify-content-between">
                         <span>TỔNG CỘNG</span>
-                        <span>{{ number_format($order->total, 0, ',', '.') }}₫</span>
+                        <span>{{ number_format(max($order->calculateSubtotalFromItems() - $order->discount_amount + $order->shipping_fee, 0), 0, ',', '.') }}₫</span>
                     </div>
 
                     <div class="mt-4 pt-4 border-top">

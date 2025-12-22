@@ -55,6 +55,15 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * Calculate subtotal from order items (for verification/correction)
+     * This ensures the subtotal always matches the sum of all order items
+     */
+    public function calculateSubtotalFromItems(): float
+    {
+        return $this->items()->sum('total_price');
+    }
+
     public function coupon()
     {
         return $this->belongsTo(Coupon::class);

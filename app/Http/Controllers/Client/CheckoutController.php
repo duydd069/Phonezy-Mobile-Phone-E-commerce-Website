@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Concerns\HandlesActiveCart;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutRequest;
+use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Coupon;
 use App\Models\Order;
@@ -25,7 +26,43 @@ class CheckoutController extends Controller
         }
 
         $cart = $this->getOrCreateActiveCart();
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        $userId = $this->resolveCartUserId();
+        
+        // Đảm bảo cart thuộc về user hiện tại
+        if ((int)$cart->user_id !== (int)$userId) {
+            return redirect()->route('cart.index')
+                ->with('error', 'Giỏ hàng không thuộc về bạn. Vui lòng thử lại.');
+        }
+        
+        // Đảm bảo chỉ lấy items từ cart của user hiện tại
+        // Load items và group theo product_variant_id để tránh duplicate
+        // Chỉ load items có variant hợp lệ (status = 'available')
+        // Đảm bảo items thuộc về cart này
+        $rawItems = $cart->items()
+            ->where('cart_id', $cart->id) // Đảm bảo items thuộc về cart này
+            ->with(['variant.product', 'variant'])
+            ->whereHas('variant', function ($query) {
+                $query->where('status', 'available');
+            })
+            ->get();
+        
+        // Filter items có variant hợp lệ và thuộc về cart này
+        $rawItems = $rawItems->filter(function ($item) use ($cart) {
+            return $item->cart_id === $cart->id 
+                && $item->variant 
+                && $item->variant->status === 'available';
+        });
+        
+        // Group items theo product_variant_id và tổng hợp quantity
+        $items = $rawItems
+            ->groupBy('product_variant_id')
+            ->map(function ($group) {
+                // Lấy item đầu tiên và tổng hợp quantity
+                $firstItem = $group->first();
+                $firstItem->quantity = $group->sum('quantity');
+                return $firstItem;
+            })
+            ->values();
 
         if ($items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
@@ -95,12 +132,66 @@ class CheckoutController extends Controller
         }
 
         $cart = $this->getOrCreateActiveCart();
+        $userId = $this->resolveCartUserId();
+        
+        // Đảm bảo cart thuộc về user hiện tại
+        if ((int)$cart->user_id !== (int)$userId) {
+            return redirect()->route('cart.index')
+                ->with('error', 'Giỏ hàng không thuộc về bạn. Vui lòng thử lại.');
+        }
+        
+        // Đảm bảo chỉ lấy items từ cart của user hiện tại
         // Load variant với tất cả các trường cần thiết, đặc biệt là stock
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        // Chỉ load items có variant hợp lệ (status = 'available')
+        // Đảm bảo items thuộc về cart này
+        $rawItems = $cart->items()
+            ->where('cart_id', $cart->id) // Đảm bảo items thuộc về cart này
+            ->with(['variant.product', 'variant'])
+            ->whereHas('variant', function ($query) {
+                $query->where('status', 'available');
+            })
+            ->get();
+        
+        // Filter items có variant hợp lệ và thuộc về cart này
+        $rawItems = $rawItems->filter(function ($item) use ($cart) {
+            return $item->cart_id === $cart->id 
+                && $item->variant 
+                && $item->variant->status === 'available';
+        });
+        
+        // Group items theo product_variant_id và tổng hợp quantity
+        $items = $rawItems
+            ->groupBy('product_variant_id')
+            ->map(function ($group) {
+                // Lấy item đầu tiên và tổng hợp quantity
+                $firstItem = $group->first();
+                $firstItem->quantity = $group->sum('quantity');
+                return $firstItem;
+            })
+            ->values();
 
         if ($items->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng của bạn đang trống.');
         }
+        
+        // Debug: Log chi tiết để kiểm tra
+        \Log::info('Checkout store - Cart and Items', [
+            'cart_id' => $cart->id,
+            'cart_user_id' => $cart->user_id,
+            'current_user_id' => $userId,
+            'raw_items_count' => $rawItems->count(),
+            'items_count' => $items->count(),
+            'items' => $items->map(function ($item) {
+                return [
+                    'cart_item_id' => $item->id,
+                    'cart_id' => $item->cart_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'product_id' => $item->variant->product_id ?? null,
+                    'product_name' => $item->variant->product->name ?? 'N/A',
+                    'quantity' => $item->quantity,
+                ];
+            })->toArray()
+        ]);
 
         try {
             $this->guardItemsHaveVariant($items);
@@ -139,6 +230,34 @@ class CheckoutController extends Controller
 
         try {
             $order = DB::transaction(function () use ($cart, $items, $summary, $data, $coupon, $couponCode, $userId) {
+                // QUAN TRỌNG: Lock cart và kiểm tra xem đã có order nào được tạo từ cart này chưa
+                // Điều này ngăn chặn race condition khi nhiều requests cùng checkout với cùng cart
+                $lockedCart = Cart::lockForUpdate()->find($cart->id);
+                if (!$lockedCart) {
+                    throw new \Exception('Giỏ hàng không tồn tại. Vui lòng thử lại.');
+                }
+                
+                // Kiểm tra cart đã được converted chưa
+                if ($lockedCart->status === 'converted') {
+                    \Log::warning('Attempt to create order from already converted cart', [
+                        'cart_id' => $cart->id,
+                        'cart_status' => $lockedCart->status,
+                        'user_id' => $userId,
+                    ]);
+                    throw new \Exception('Giỏ hàng này đã được sử dụng để tạo đơn hàng. Vui lòng sử dụng giỏ hàng mới.');
+                }
+                
+                // Kiểm tra xem đã có order nào được tạo từ cart này chưa (double check)
+                $existingOrder = Order::where('cart_id', $lockedCart->id)->first();
+                if ($existingOrder) {
+                    \Log::warning('Order already exists for cart', [
+                        'cart_id' => $lockedCart->id,
+                        'existing_order_id' => $existingOrder->id,
+                        'user_id' => $userId,
+                    ]);
+                    throw new \Exception('Đơn hàng đã được tạo từ giỏ hàng này. Vui lòng kiểm tra đơn hàng của bạn.');
+                }
+                
                 // Giới hạn tổng số lượng sản phẩm trong đơn hàng
                 $totalQuantity = $items->sum('quantity');
                 if ($totalQuantity > 10) {
@@ -191,8 +310,8 @@ class CheckoutController extends Controller
                 }
 
                 $order = Order::create([
-                    'cart_id'             => $cart->id,
-                    'user_id'             => $cart->user_id,
+                    'cart_id'             => $lockedCart->id,
+                    'user_id'             => $lockedCart->user_id,
                     'coupon_id'           => $validatedCoupon?->id,
                     'subtotal'            => $summary['subtotal'],
                     'shipping_fee'        => $summary['shipping_fee'],
@@ -211,8 +330,44 @@ class CheckoutController extends Controller
                     'notes'               => $data['notes'] ?? null,
                 ]);
 
+                // Items đã được group theo product_variant_id ở trên, giờ chỉ cần loop qua
+                // Mỗi item trong $items đã là unique và quantity đã được tổng hợp
+                // Đảm bảo chỉ tạo order items từ items trong cart của user hiện tại
+                
+                // Log trước khi tạo order items
+                \Log::info('Creating order items', [
+                    'order_id' => $order->id,
+                    'cart_id' => $lockedCart->id,
+                    'user_id' => $userId,
+                    'items_count' => $items->count(),
+                    'items_detail' => $items->map(function ($item) {
+                        return [
+                            'cart_item_id' => $item->id,
+                            'cart_id' => $item->cart_id,
+                            'product_variant_id' => $item->product_variant_id,
+                            'product_id' => $item->variant->product_id ?? null,
+                            'product_name' => $item->variant->product->name ?? 'N/A',
+                            'quantity' => $item->quantity,
+                        ];
+                    })->toArray()
+                ]);
+                
+                $createdOrderItems = [];
                 foreach ($items as $item) {
+                    // Triple check: đảm bảo item thuộc về cart này
+                    if ($item->cart_id !== $lockedCart->id) {
+                        \Log::warning('Cart item does not belong to cart - SKIPPING', [
+                            'item_id' => $item->id,
+                            'item_cart_id' => $item->cart_id,
+                            'cart_id' => $lockedCart->id,
+                            'user_id' => $userId,
+                            'product_name' => $item->variant->product->name ?? 'N/A',
+                        ]);
+                        continue; // Bỏ qua item không thuộc về cart này
+                    }
+                    
                     $variant = $item->variant;
+                    
                     if (!$variant) {
                         throw new \Exception("Sản phẩm trong giỏ hàng chưa được chọn biến thể. Vui lòng thử lại sau khi cập nhật giỏ hàng.");
                     }
@@ -222,9 +377,11 @@ class CheckoutController extends Controller
                     // Sử dụng giá sale nếu có, nếu không thì dùng giá thường
                     $unitPrice = $this->getVariantPrice($variant, $item);
 
+                    // Quantity đã được tổng hợp khi group ở trên
                     $quantity = $item->quantity;
 
-                    OrderItem::create([
+                    // Chỉ tạo 1 OrderItem cho mỗi variant
+                    $orderItem = OrderItem::create([
                         'order_id'      => $order->id,
                         'product_id'    => $product?->id,
                         'product_name'  => $product->name ?? 'Sản phẩm',
@@ -232,6 +389,21 @@ class CheckoutController extends Controller
                         'quantity'      => $quantity,
                         'unit_price'    => $unitPrice,
                         'total_price'   => $unitPrice * $quantity,
+                    ]);
+                    
+                    $createdOrderItems[] = [
+                        'order_item_id' => $orderItem->id,
+                        'product_name' => $orderItem->product_name,
+                        'quantity' => $orderItem->quantity,
+                        'total_price' => $orderItem->total_price,
+                    ];
+                    
+                    \Log::info('Order item created', [
+                        'order_item_id' => $orderItem->id,
+                        'order_id' => $order->id,
+                        'product_name' => $orderItem->product_name,
+                        'quantity' => $orderItem->quantity,
+                        'total_price' => $orderItem->total_price,
                     ]);
 
                     // Trừ số lượng sản phẩm (stock) khi đặt hàng thành công
@@ -270,8 +442,42 @@ class CheckoutController extends Controller
                     }
                 }
 
-                $cart->update(['status' => 'converted']);
-                $cart->items()->delete();
+                // Log tất cả order items sau khi tạo
+                $allOrderItems = $order->items()->get();
+                \Log::info('All order items after creation', [
+                    'order_id' => $order->id,
+                    'order_items_count' => $allOrderItems->count(),
+                    'order_items' => $allOrderItems->map(function ($item) {
+                        return [
+                            'order_item_id' => $item->id,
+                            'product_name' => $item->product_name,
+                            'quantity' => $item->quantity,
+                            'total_price' => $item->total_price,
+                        ];
+                    })->toArray(),
+                    'created_items_count' => count($createdOrderItems ?? []),
+                    'created_items' => $createdOrderItems ?? [],
+                ]);
+                
+                // Verify và cập nhật subtotal từ order items để đảm bảo tính chính xác
+                $calculatedSubtotal = $order->items()->sum('total_price');
+                if (abs($order->subtotal - $calculatedSubtotal) > 0.01) {
+                    // Nếu có sự khác biệt, cập nhật lại subtotal và total
+                    $correctTotal = max($calculatedSubtotal - $order->discount_amount + $order->shipping_fee, 0);
+                    \Log::warning('Subtotal mismatch - updating', [
+                        'order_id' => $order->id,
+                        'saved_subtotal' => $order->subtotal,
+                        'calculated_subtotal' => $calculatedSubtotal,
+                        'new_total' => $correctTotal,
+                    ]);
+                    $order->update([
+                        'subtotal' => $calculatedSubtotal,
+                        'total' => $correctTotal,
+                    ]);
+                }
+
+                $lockedCart->update(['status' => 'converted']);
+                $lockedCart->items()->delete();
 
                 // Record coupon usage sau khi tạo order thành công
                 if ($validatedCoupon) {

@@ -251,7 +251,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Tạm tính:</span>
-                        <strong>{{ number_format($order->subtotal, 0, ',', '.') }} ₫</strong>
+                        <strong>{{ number_format($order->calculateSubtotalFromItems(), 0, ',', '.') }} ₫</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Phí vận chuyển:</span>
@@ -267,7 +267,7 @@
                     <div class="d-flex justify-content-between">
                         <strong>Tổng cộng:</strong>
                         <strong style="color: #F7941D; font-size: 18px;">
-                            {{ number_format($order->total, 0, ',', '.') }} ₫
+                            {{ number_format(max($order->calculateSubtotalFromItems() - $order->discount_amount + $order->shipping_fee, 0), 0, ',', '.') }} ₫
                         </strong>
                     </div>
                 </div>

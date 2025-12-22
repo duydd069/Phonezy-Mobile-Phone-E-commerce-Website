@@ -30,11 +30,6 @@ Route::prefix('client')->name('client.')->group(function () {
     Route::get('/promotions', [\App\Http\Controllers\Client\ProductController::class, 'promotions'])->name('promotions');
     Route::view('/assistant', 'client.chatbot')->name('assistant');
 
-    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
-    Route::post('/checkout/validate-coupon', [CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
-    Route::get('/payment/vnpay/return', [\App\Http\Controllers\Client\VnpayController::class, 'return'])->name('vnpay.return');
     Route::post('/payment/vnpay/ipn', [\App\Http\Controllers\Client\VnpayController::class, 'ipn'])->name('vnpay.ipn');
 
     // Comments routes
@@ -59,6 +54,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/cart/update', [CartController::class, 'update'])->name('cart.update');
     Route::post('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
     Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+
+    // Checkout routes (Moved here to ensure auth)
+    Route::prefix('client')->name('client.')->group(function () {
+        Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
+        Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+        Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+        Route::post('/checkout/validate-coupon', [CheckoutController::class, 'validateCoupon'])->name('checkout.validate-coupon');
+        Route::get('/payment/vnpay/return', [\App\Http\Controllers\Client\VnpayController::class, 'return'])->name('vnpay.return');
+    });
 });
 
 // Client Account - Yêu cầu đăng nhập

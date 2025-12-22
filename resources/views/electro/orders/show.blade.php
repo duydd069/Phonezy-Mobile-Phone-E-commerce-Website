@@ -206,7 +206,7 @@
 
                     <div class="order-col">
                         <div>Tạm tính</div>
-                        <div>{{ number_format($order->subtotal, 0, ',', '.') }} ₫</div>
+                        <div>{{ number_format($order->calculateSubtotalFromItems(), 0, ',', '.') }} ₫</div>
                     </div>
                     <div class="order-col">
                         <div>Phí vận chuyển</div>
@@ -229,7 +229,7 @@
                     @endif
                     <div class="order-col">
                         <div><strong>Tổng cộng</strong></div>
-                        <div><strong class="order-total">{{ number_format($order->total, 0, ',', '.') }} ₫</strong></div>
+                        <div><strong class="order-total">{{ number_format(max($order->calculateSubtotalFromItems() - $order->discount_amount + $order->shipping_fee, 0), 0, ',', '.') }} ₫</strong></div>
                     </div>
                 </div>
             </div>
