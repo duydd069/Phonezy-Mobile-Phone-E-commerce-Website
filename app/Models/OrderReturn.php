@@ -213,6 +213,7 @@ class OrderReturn extends Model
         // Update main order status
         if ($updated) {
             $this->order->update(['status' => 'da_hoan_tien']);
+            $this->order->restoreStock();
         }
 
         return $updated;
