@@ -57,7 +57,7 @@ class ProductVariantController extends Controller
             );
         }
 
-        // Tự động tạo barcode nếu chưa có
+        // Tự động tạo barcode nếu chưa có (mỗi sản phẩm chỉ có 1 mã barcode)
         if (empty($validated['barcode'])) {
             $validated['barcode'] = ProductVariant::generateBarcode($product->id);
         }
@@ -102,9 +102,10 @@ class ProductVariantController extends Controller
             );
         }
 
-        // Tự động tạo barcode nếu chưa có (hoặc nếu user muốn regenerate)
-        if (empty($validated['barcode']) || $request->has('regenerate_barcode')) {
-            $validated['barcode'] = ProductVariant::generateBarcode($product->id, $variant->id);
+        // Tự động tạo barcode nếu chưa có (mỗi sản phẩm chỉ có 1 mã barcode)
+        // Nếu sản phẩm đã có barcode, sử dụng lại barcode đó
+        if (empty($validated['barcode'])) {
+            $validated['barcode'] = ProductVariant::generateBarcode($product->id);
         }
 
         // Handle image update - delete old image if new one is uploaded
@@ -129,7 +130,7 @@ class ProductVariantController extends Controller
     {
         $product = Product::findOrFail($productId);
         $variant = $this->findVariantOrFail($product->id, $variantId);
-        
+
         // Load relationships để kiểm tra
         $variant->load(['images', 'inventoryLogs', 'warehouseStock', 'cartItems', 'orderItems']);
 
@@ -196,7 +197,9 @@ class ProductVariantController extends Controller
         $data['version_id'] = $data['version_id'] ?? null;
         $data['color_id'] = $data['color_id'] ?? null;
         $data['price_sale'] = $data['price_sale'] ?? null;
-        $data['sold'] = $data['sold'] ?? 0;
+
+        // Không cho phép cập nhật "sold" từ form - số lượng này được tự động tính từ đơn hàng
+        unset($data['sold']);
 
         return $data;
     }
@@ -215,7 +218,7 @@ class ProductVariantController extends Controller
     public function generateSku(Request $request, int $productId)
     {
         $product = Product::findOrFail($productId);
-        
+
         $versionId = $request->input('version_id');
         $storageId = $request->input('storage_id');
         $colorId = $request->input('color_id');
@@ -234,7 +237,7 @@ class ProductVariantController extends Controller
     public function generateBarcode(Request $request, int $productId)
     {
         $variantId = $request->input('variant_id');
-        
+
         $barcode = ProductVariant::generateBarcode($productId, $variantId);
 
         return response()->json([

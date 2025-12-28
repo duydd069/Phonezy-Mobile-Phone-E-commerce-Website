@@ -96,13 +96,24 @@ class ProductVariant extends Model
     }
 
     /**
-     * 🔴 FIX CHÍNH Ở ĐÂY
-     * order_items KHÔNG có product_variant_id
-     * → map theo product_id
+     * Order items của variant này
      */
     public function orderItems()
     {
-        return $this->hasMany(OrderItem::class, 'product_id', 'product_id');
+        return $this->hasMany(OrderItem::class, 'product_variant_id');
+    }
+
+    /**
+     * Tính số lượng đã bán thực tế từ các đơn hàng đã thanh toán và không bị hủy/hoàn tiền
+     */
+    public function getActualSoldAttribute(): int
+    {
+        return OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->where('order_items.product_variant_id', $this->id)
+            ->where('orders.status', '!=', 'cancelled')
+            ->where('orders.status', '!=', 'da_hoan_tien')
+            ->where('orders.payment_status', 1) // Đã thanh toán
+            ->sum('order_items.quantity') ?? 0;
     }
 
     /* =========================
@@ -191,13 +202,24 @@ class ProductVariant extends Model
         return $sku;
     }
 
-    public static function generateBarcode(int $productId): string
+    public static function generateBarcode(int $productId, ?int $variantId = null): string
     {
-        $productPart   = str_pad($productId, 4, '0', STR_PAD_LEFT);
-        $variantCount  = self::where('product_id', $productId)->count() + 1;
-        $variantPart   = str_pad($variantCount, 4, '0', STR_PAD_LEFT);
-        $timestampPart = substr(time(), -5);
+        // Kiểm tra xem sản phẩm đã có barcode chưa (từ bất kỳ variant nào)
+        $existingBarcode = self::where('product_id', $productId)
+            ->whereNotNull('barcode')
+            ->where('barcode', '!=', '')
+            ->value('barcode');
 
-        return substr($productPart . $variantPart . $timestampPart, 0, 13);
+        // Nếu đã có barcode, sử dụng lại barcode đó
+        if ($existingBarcode) {
+            return $existingBarcode;
+        }
+
+        // Nếu chưa có, tạo mới dựa trên product_id
+        $productPart   = str_pad($productId, 4, '0', STR_PAD_LEFT);
+        $timestampPart = substr(time(), -5);
+        $randomPart    = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+
+        return substr($productPart . $timestampPart . $randomPart, 0, 13);
     }
 }

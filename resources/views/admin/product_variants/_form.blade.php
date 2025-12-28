@@ -82,11 +82,14 @@
     </div>
 
     <div class="col-md-4">
-        <label class="form-label">Đã bán</label>
-        <input type="number" name="sold"
+        <label class="form-label">Đã bán <small class="text-muted">(tự động tính từ đơn hàng)</small></label>
+        <input type="number"
                class="form-control"
-               min="0" step="1"
-               value="{{ old('sold', $variant->sold ?? 0) }}">
+               value="{{ isset($variant) ? $variant->actual_sold : 0 }}"
+               readonly
+               style="background-color: #f8f9fa; cursor: not-allowed;"
+               title="Số lượng này được tự động tính từ các đơn hàng đã thanh toán">
+        <input type="hidden" name="sold" value="{{ old('sold', $variant->sold ?? 0) }}">
     </div>
 
     <div class="col-md-4">
@@ -101,13 +104,13 @@
     </div>
 
     <div class="col-md-6">
-        <label class="form-label">Barcode <small class="text-muted">(để trống để tự động tạo)</small></label>
+        <label class="form-label">Barcode <small class="text-muted">(mỗi sản phẩm chỉ có 1 mã, để trống để tự động tạo)</small></label>
         <div class="input-group">
             <input type="text" name="barcode" id="barcode-input"
                    class="form-control"
                    maxlength="100"
                    value="{{ old('barcode', $variant->barcode ?? '') }}"
-                   placeholder="Tự động tạo khi lưu">
+                   placeholder="Tự động tạo khi lưu (sử dụng lại nếu sản phẩm đã có)">
             <button type="button" class="btn btn-outline-secondary" id="generate-barcode-btn" title="Tự động tạo Barcode">
                 <i class="bi bi-arrow-clockwise"></i> Tạo
             </button>
@@ -127,8 +130,8 @@
         <input type="file" name="image" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp">
         @if(isset($variant) && $variant->image)
             <div class="mt-2">
-                <img src="{{ preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image) }}" 
-                     alt="Variant image" 
+                <img src="{{ preg_match('/^https?:\\/\\//', $variant->image) ? $variant->image : asset('storage/' . $variant->image) }}"
+                     alt="Variant image"
                      style="max-width: 200px; max-height: 200px; object-fit: contain; border: 1px solid #ddd; padding: 5px; border-radius: 4px;">
                 <p class="text-muted small mt-1">Ảnh hiện tại (upload ảnh mới để thay thế)</p>
             </div>
@@ -155,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
-    
+
     const skuInput = document.getElementById('sku-input');
     const barcodeInput = document.getElementById('barcode-input');
     const generateSkuBtn = document.getElementById('generate-sku-btn');
@@ -178,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
                                document.querySelector('input[name="_token"]')?.value
             },
             body: JSON.stringify({
@@ -225,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
                                document.querySelector('input[name="_token"]')?.value
             },
             body: JSON.stringify({

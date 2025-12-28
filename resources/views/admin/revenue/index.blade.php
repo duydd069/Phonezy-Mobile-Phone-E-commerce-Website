@@ -19,12 +19,12 @@
             <form method="GET" action="{{ route('admin.revenue.index') }}" class="row g-3">
                 <div class="col-md-3">
                     <label for="start_date" class="form-label">Từ ngày</label>
-                    <input type="date" name="start_date" id="start_date" class="form-control" 
+                    <input type="date" name="start_date" id="start_date" class="form-control"
                            value="{{ $start->format('Y-m-d') }}">
                 </div>
                 <div class="col-md-3">
                     <label for="end_date" class="form-label">Đến ngày</label>
-                    <input type="date" name="end_date" id="end_date" class="form-control" 
+                    <input type="date" name="end_date" id="end_date" class="form-control"
                            value="{{ $end->format('Y-m-d') }}">
                 </div>
                 <div class="col-md-3">
@@ -128,6 +128,73 @@
                         </div>
                         <div class="revenue-card-icon ms-2">
                             <i class="bi bi-tag"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Return Statistics Cards --}}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3"><i class="bi bi-arrow-return-left me-2"></i>Thống Kê Đơn Hàng Hoàn Trả</h5>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+            <div class="card text-white bg-danger h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-white-50 mb-2" style="font-size: 0.875rem;">Tổng Yêu Cầu Hoàn Trả</h6>
+                    <div class="d-flex justify-content-between align-items-baseline flex-grow-1">
+                        <div class="revenue-card-value text-white">
+                            {{ number_format((int)($returnStats['total_returns'] ?? 0), 0, ',', '.') }}
+                        </div>
+                        <div class="revenue-card-icon ms-2">
+                            <i class="bi bi-arrow-return-left"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+            <div class="card text-white bg-secondary h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-white-50 mb-2" style="font-size: 0.875rem;">Đã Hoàn Tiền</h6>
+                    <div class="d-flex justify-content-between align-items-baseline flex-grow-1">
+                        <div class="revenue-card-value text-white">
+                            {{ number_format((int)($returnStats['refunded_returns'] ?? 0), 0, ',', '.') }}
+                        </div>
+                        <div class="revenue-card-icon ms-2">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+            <div class="card text-white bg-dark h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-white-50 mb-2" style="font-size: 0.875rem;">Tổng Giá Trị Hoàn Trả</h6>
+                    <div class="d-flex justify-content-between align-items-baseline flex-grow-1">
+                        <div class="revenue-card-value text-white">
+                            {{ number_format((float)($returnStats['total_refunded_amount'] ?? 0), 0, ',', '.') }} ₫
+                        </div>
+                        <div class="revenue-card-icon ms-2">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-white-50 mb-2" style="font-size: 0.875rem;">Đang Chờ Xử Lý</h6>
+                    <div class="d-flex justify-content-between align-items-baseline flex-grow-1">
+                        <div class="revenue-card-value text-white">
+                            {{ number_format((int)($returnStats['pending_returns'] ?? 0), 0, ',', '.') }}
+                        </div>
+                        <div class="revenue-card-icon ms-2">
+                            <i class="bi bi-clock-history"></i>
                         </div>
                     </div>
                 </div>
@@ -256,6 +323,70 @@
             </div>
         </div>
     </div>
+
+    {{-- Return Details Table --}}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Chi Tiết Đơn Hàng Hoàn Trả (10 đơn gần nhất)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Mã Hoàn Trả</th>
+                                    <th>ID Đơn Hàng</th>
+                                    <th>Giá Trị Đơn Hàng</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Ngày Hoàn Tiền</th>
+                                    <th>Ngày Tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($returnStats['return_details'] ?? [] as $index => $return)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            <a href="{{ route('admin.returns.show', $return['id']) }}" class="text-decoration-none">
+                                                {{ $return['return_code'] }}
+                                            </a>
+                                        </td>
+                                        <td>#{{ $return['order_id'] }}</td>
+                                        <td class="text-danger fw-bold">
+                                            {{ number_format($return['order_total'], 0, ',', '.') }} ₫
+                                        </td>
+                                        <td>
+                                            @php
+                                                $statusColors = [
+                                                    'Chưa giải quyết' => 'warning',
+                                                    'Thông qua' => 'info',
+                                                    'Từ chối' => 'danger',
+                                                    'Đang vận chuyển' => 'primary',
+                                                    'Đã nhận' => 'secondary',
+                                                    'Đã hoàn tiền' => 'success',
+                                                ];
+                                                $color = $statusColors[$return['status']] ?? 'secondary';
+                                            @endphp
+                                            <span class="badge bg-{{ $color }}">{{ $return['status'] }}</span>
+                                        </td>
+                                        <td>{{ $return['refunded_at'] ?? '-' }}</td>
+                                        <td>{{ $return['created_at'] }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">Không có dữ liệu hoàn trả</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Chart.js CDN --}}
@@ -267,6 +398,8 @@
     const dailyLabels = dailyRevenueData.map(item => item.date);
     const dailyRevenueValues = dailyRevenueData.map(item => item.revenue);
     const dailyOrdersValues = dailyRevenueData.map(item => item.orders);
+    const dailyRefundedAmountValues = dailyRevenueData.map(item => item.refunded_amount || 0);
+    const dailyRefundedCountValues = dailyRevenueData.map(item => item.refunded_count || 0);
 
     const dailyRevenueCtx = document.getElementById('dailyRevenueChart').getContext('2d');
     new Chart(dailyRevenueCtx, {
@@ -285,6 +418,22 @@
                 data: dailyOrdersValues,
                 borderColor: 'rgb(255, 99, 132)',
                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1,
+                yAxisID: 'y1'
+            }, {
+                label: 'Giá Trị Hoàn Trả (₫)',
+                data: dailyRefundedAmountValues,
+                borderColor: 'rgb(220, 53, 69)',
+                backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                borderDash: [5, 5],
+                tension: 0.1,
+                yAxisID: 'y'
+            }, {
+                label: 'Số Đơn Hoàn Trả',
+                data: dailyRefundedCountValues,
+                borderColor: 'rgb(255, 193, 7)',
+                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                borderDash: [5, 5],
                 tension: 0.1,
                 yAxisID: 'y1'
             }]
