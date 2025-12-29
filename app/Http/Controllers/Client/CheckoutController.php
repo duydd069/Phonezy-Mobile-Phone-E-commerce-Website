@@ -240,14 +240,19 @@ class CheckoutController extends Controller
         });
        
         if ($couponCode) {
-            // Lấy product IDs từ giỏ hàng để validate product-level coupons
-            $productIds = $items->pluck('variant.product_id')->unique()->toArray();
-            $coupon = Coupon::validateCode($couponCode, $userId, $productIds, $preliminarySubtotal);
+            // Validate mã khuyến mãi chi tiết, trả về đúng lý do lỗi nếu có
+            [$coupon, $couponError] = $this->validateCouponWithReason(
+                $couponCode,
+                $userId,
+                $items,
+                $preliminarySubtotal
+            );
+
             if (!$coupon) {
                 return redirect()
                     ->route('client.checkout', ['coupon_code' => $couponCode])
                     ->withInput()
-                    ->with('error', 'Mã khuyến mãi không hợp lệ, đã hết hạn, bạn không có quyền sử dụng, đã hết lượt sử dụng hoặc không đạt giá trị đơn hàng tối thiểu.');
+                    ->with('error', $couponError ?? 'Mã khuyến mãi không hợp lệ.');
             }
         }
 
@@ -646,9 +651,7 @@ class CheckoutController extends Controller
             });
         }
 
-
         $total = max($subtotal - $discount + $shippingFee, 0);
-
 
         return [
             'subtotal'     => $subtotal,
@@ -656,6 +659,80 @@ class CheckoutController extends Controller
             'discount'     => $discount,
             'total'        => $total,
         ];
+    }
+
+    /**
+     * Validate coupon chi tiết và trả về kèm lý do lỗi (nếu có)
+     *
+     * @param string $code
+     * @param int|null $userId
+     * @param \Illuminate\Support\Collection $items
+     * @param float $subtotal
+     * @return array [Coupon|null, string|null]  // [coupon hợp lệ hoặc null, thông báo lỗi hoặc null]
+     */
+    protected function validateCouponWithReason(string $code, ?int $userId, Collection $items, float $subtotal): array
+    {
+        $normalizedCode = strtoupper(trim($code));
+        $coupon = Coupon::where('code', $normalizedCode)->first();
+
+        if (!$coupon) {
+            return [null, 'Mã khuyến mãi không tồn tại.'];
+        }
+
+        // 1. Kiểm tra thời gian hiệu lực
+        if (!$coupon->hasStarted()) {
+            return [null, 'Mã khuyến mãi này chưa đến thời gian áp dụng.'];
+        }
+
+        if ($coupon->isExpired()) {
+            return [null, 'Mã khuyến mãi này đã hết hạn.'];
+        }
+
+        // 2. Kiểm tra quyền sử dụng theo loại mã
+        if (($coupon->type ?? 'public') === 'private') {
+            if (!$userId) {
+                return [null, 'Bạn cần đăng nhập để sử dụng mã khuyến mãi này.'];
+            }
+
+            $canUse = $coupon->users()
+                ->where('user_id', $userId)
+                ->exists();
+
+            if (!$canUse) {
+                return [null, 'Mã khuyến mãi này chỉ dành cho một số khách hàng nhất định, bạn không có quyền sử dụng.'];
+            }
+        }
+
+        // 3. Kiểm tra giới hạn số lần sử dụng
+        if ($coupon->hasReachedUsageLimit()) {
+            return [null, 'Mã khuyến mãi này đã được sử dụng hết số lượt cho phép.'];
+        }
+
+        if ($coupon->hasReachedUserUsageLimit($userId)) {
+            return [null, 'Bạn đã sử dụng hết số lần cho phép đối với mã khuyến mãi này.'];
+        }
+
+        // 4. Kiểm tra giá trị đơn hàng tối thiểu
+        if (!$coupon->canBeAppliedToSubtotal($subtotal)) {
+            $minOrder = $coupon->min_order_value ?? 0;
+            $minOrderText = number_format($minOrder, 0, ',', '.');
+            return [null, "Đơn hàng chưa đạt giá trị tối thiểu {$minOrderText} ₫ để sử dụng mã khuyến mãi này."];
+        }
+
+        // 5. Kiểm tra phạm vi áp dụng (sản phẩm)
+        if ($coupon->isForProduct()) {
+            $productIds = $items->pluck('variant.product_id')->unique()->toArray();
+            $applicableProducts = $coupon->products()
+                ->whereIn('product_id', $productIds)
+                ->count();
+
+            if ($applicableProducts === 0) {
+                return [null, 'Mã khuyến mãi này không áp dụng cho bất kỳ sản phẩm nào trong giỏ hàng của bạn.'];
+            }
+        }
+
+        // Nếu qua hết các bước trên thì coi như hợp lệ
+        return [$coupon, null];
     }
 
 
@@ -699,18 +776,21 @@ class CheckoutController extends Controller
             $variant = $item->variant;
             return $this->getVariantPrice($variant, $item) * $item->quantity;
         });
-       
-        // Lấy product IDs từ giỏ hàng để validate product-level coupons
-        $productIds = $items->pluck('variant.product_id')->unique()->toArray();
-        $coupon = Coupon::validateCode($code, $userId, $productIds, $subtotal);
 
+        // Validate mã khuyến mãi chi tiết, lấy cả lý do nếu lỗi
+        [$coupon, $couponError] = $this->validateCouponWithReason(
+            $code,
+            $userId,
+            $items,
+            $subtotal
+        );
 
         if (!$coupon) {
             // Vẫn trả về summary không có coupon khi coupon không hợp lệ
             $summary = $this->buildSummary($items, null);
             return response()->json([
                 'valid' => false,
-                'message' => 'Mã khuyến mãi không hợp lệ, đã hết hạn, bạn không có quyền sử dụng, đã hết lượt sử dụng, không đạt giá trị đơn hàng tối thiểu hoặc không áp dụng cho sản phẩm trong giỏ hàng',
+                'message' => $couponError ?? 'Mã khuyến mãi không hợp lệ.',
                 'summary' => $summary,
             ]);
         }

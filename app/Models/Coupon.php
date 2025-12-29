@@ -83,22 +83,37 @@ class Coupon extends Model
      */
     public function calculateDiscount(float $subtotal): float
     {
+        // 1. Check trạng thái & thời gian
         if (!$this->isValid()) {
             return 0;
         }
 
+        // 2. Check điều kiện đơn hàng tối thiểu (không gồm phí ship)
+        if (!$this->canBeAppliedToSubtotal($subtotal)) {
+            return 0;
+        }
+
+        // 3. Tính giá trị giảm
         if ($this->discount_type === 'percent') {
             $discount = ($subtotal * $this->discount_value) / 100;
-            // Áp dụng max_discount nếu có (quan trọng để tránh giảm quá nhiều)
-            if ($this->max_discount !== null && $this->max_discount > 0) {
-                $discount = min($discount, $this->max_discount);
+            // 4. Giảm % bắt buộc có max_discount để giới hạn
+            if ($this->max_discount === null || $this->max_discount <= 0) {
+                return 0;
             }
-            // Đảm bảo không giảm quá số tiền đơn hàng
-            return min($discount, $subtotal);
+
+            // 5. Giới hạn giảm tối đa theo max_discount
+            $discount = min($discount, $this->max_discount);
         } else {
-            // Fixed discount - đảm bảo không giảm quá số tiền đơn hàng
-            return min($this->discount_value, $subtotal);
+            // Giảm tiền cố định: nếu giá trị giảm >= subtotal -> reject voucher
+            if ($this->discount_value >= $subtotal) {
+                return 0;
+            }
+
+            $discount = $this->discount_value;
         }
+
+        // 6. Chặn bug giảm âm / vượt tiền đơn hàng
+        return min($discount, $subtotal);
     }
 
     /**
@@ -112,11 +127,23 @@ class Coupon extends Model
 
         if ($this->discount_type === 'percent') {
             $discount = ($productPrice * $this->discount_value) / 100;
-            return min($discount, $productPrice);
+            // Áp dụng max_discount nếu có cho logic an toàn (nếu không có thì reject)
+            if ($this->max_discount === null || $this->max_discount <= 0) {
+                return 0;
+            }
+
+            $discount = min($discount, $this->max_discount);
         } else {
-            // Fixed discount per product
-            return min($this->discount_value, $productPrice);
+            // Với giảm cố định theo sản phẩm: nếu discount_value >= giá sản phẩm -> reject
+            if ($this->discount_value >= $productPrice) {
+                return 0;
+            }
+
+            $discount = $this->discount_value;
         }
+
+        // Đảm bảo không bao giờ giảm vượt quá giá sản phẩm
+        return min($discount, $productPrice);
     }
 
     /**

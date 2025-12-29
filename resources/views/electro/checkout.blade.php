@@ -99,8 +99,13 @@
                                                     : "Giảm " . number_format($availableCoupon->discount_value, 0, ',', '.') . " ₫";
                                                 $expiresText = $availableCoupon->expires_at 
                                                     ? "Hết hạn: " . $availableCoupon->expires_at->format('d/m/Y')
-                                                    : "Không giới hạn";
-                                                $typeLabel = ($availableCoupon->type ?? 'public') === 'private' ? ' (Riêng tư)' : '';
+                                                    : "Không giới hạn thời gian";
+                                                $typeLabel = ($availableCoupon->type ?? 'public') === 'private' ? ' (Mã riêng)' : ' (Mã công khai)';
+                                                $minOrder = $availableCoupon->min_order_value;
+                                                $maxDiscount = $availableCoupon->max_discount;
+                                                $scopeText = ($availableCoupon->promotion_type ?? 'order') === 'order'
+                                                    ? 'Áp dụng cho toàn bộ đơn hàng'
+                                                    : 'Áp dụng cho một số sản phẩm trong giỏ hàng';
                                             @endphp
                                             <div class="coupon-item" 
                                                  data-code="{{ $availableCoupon->code }}"
@@ -123,6 +128,19 @@
                                                         <div style="margin-top: 2px; font-size: 12px; color: #999;">
                                                             {{ $expiresText }}
                                                         </div>
+                                                        <ul style="margin-top: 4px; margin-bottom: 0; padding-left: 18px; font-size: 12px; color: #777;">
+                                                            @if($minOrder)
+                                                                <li>Đơn tối thiểu: {{ number_format($minOrder, 0, ',', '.') }} ₫ (chưa gồm phí ship)</li>
+                                                            @else
+                                                                <li>Không yêu cầu đơn tối thiểu</li>
+                                                            @endif
+
+                                                            <li>{{ $scopeText }}</li>
+
+                                                            @if($availableCoupon->discount_type === 'percent' && $maxDiscount)
+                                                                <li>Giảm tối đa: {{ number_format($maxDiscount, 0, ',', '.') }} ₫ / đơn</li>
+                                                            @endif
+                                                        </ul>
                                                     </div>
                                                     @if($isSelected)
                                                         <span style="color: #4CAF50; font-weight: bold;">✓ Đã chọn</span>
@@ -148,7 +166,7 @@
                                        name="coupon_code" 
                                        id="coupon_code"
                                        value="{{ old('coupon_code', $prefill['coupon_code'] ?? '') }}"
-                                       placeholder="Hoặc nhập mã khuyến mãi khác"
+                                       placeholder="Nhập mã khuyến mãi khác (nếu có)"
                                        style="flex: 1;">
                                 <button type="button" 
                                         id="apply-coupon-btn" 

@@ -28,6 +28,11 @@
                         $discountText = $coupon->discount_type === 'percent' 
                             ? $coupon->discount_value . '%' 
                             : number_format($coupon->discount_value, 0, ',', '.') . ' ₫';
+                        $minOrder = $coupon->min_order_value;
+                        $maxDiscount = $coupon->max_discount;
+                        $scopeText = ($coupon->promotion_type ?? 'order') === 'order'
+                            ? 'Áp dụng cho toàn bộ đơn hàng'
+                            : 'Áp dụng cho một số sản phẩm nhất định';
                     @endphp
                     
                     <div class="col-md-6 col-lg-4 mb-5 pb-2" style="margin-bottom: 30px !important;">
@@ -80,6 +85,25 @@
                                         <span class="badge bg-success">Không giới hạn thời gian</span>
                                     </div>
                                 @endif
+
+                                <div class="mb-2">
+                                    <strong>Điều kiện sử dụng:</strong>
+                                    <ul class="list-unstyled" style="margin-bottom: 0; margin-top: 4px; font-size: 13px; color: #555;">
+                                        @if($minOrder)
+                                            <li>• Đơn tối thiểu: {{ number_format($minOrder, 0, ',', '.') }} ₫ (chưa gồm phí ship)</li>
+                                        @else
+                                            <li>• Không yêu cầu giá trị đơn hàng tối thiểu</li>
+                                        @endif
+
+                                        <li>• {{ $scopeText }}</li>
+
+                                        @if($coupon->discount_type === 'percent' && $maxDiscount)
+                                            <li>• Giảm tối đa: {{ number_format($maxDiscount, 0, ',', '.') }} ₫ mỗi đơn</li>
+                                        @endif
+
+                                        <li>• Mỗi đơn hàng chỉ áp dụng 1 mã khuyến mãi</li>
+                                    </ul>
+                                </div>
 
                                 @if($isExpired)
                                     <div class="alert alert-danger mb-0 mt-3">
