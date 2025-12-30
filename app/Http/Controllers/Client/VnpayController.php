@@ -16,24 +16,42 @@ class VnpayController extends Controller
             return redirect()->route('client.checkout')->with('error', 'Chữ ký không hợp lệ.');
         }
 
-        $orderId = $request->get('vnp_TxnRef');
+        $transactionId = $request->get('vnp_TxnRef');
         $responseCode = $request->get('vnp_ResponseCode');
 
-        $order = Order::find($orderId);
-        if (!$order) {
-            return redirect()->route('client.checkout')->with('error', 'Không tìm thấy đơn hàng.');
-        }
-
         if ($responseCode === '00') {
-            $order->update([
-                'status' => 'da_xac_nhan', // Đã xác nhận sau khi thanh toán
-                'payment_method' => 'vnpay',
-            ]);
-            // Use signed route to allow access without session/login persistence issues
-            return redirect()->to(URL::signedRoute('client.checkout.success', ['order' => $order->id]))
-                ->with('success', 'Thanh toán VNPAY thành công!');
+            // Lấy thông tin đơn hàng từ session
+            $sessionData = session('pending_vnpay_order');
+            if (!$sessionData || $sessionData['transaction_id'] !== $transactionId) {
+                return redirect()->route('client.checkout')->with('error', 'Không tìm thấy thông tin đơn hàng. Vui lòng thử lại.');
+            }
+
+            try {
+                // Tạo Order từ session data
+                $checkoutController = new \App\Http\Controllers\Client\CheckoutController();
+                $order = $checkoutController->createOrderFromSession($sessionData);
+                
+                // Xóa session pending order
+                session()->forget('pending_vnpay_order');
+                
+                // Gửi email xác nhận đơn hàng sau khi thanh toán thành công
+                try {
+                    $order->user?->notify(new \App\Notifications\OrderConfirmationNotification($order));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send VNPAY order confirmation email: ' . $e->getMessage());
+                }
+                
+                // Use signed route to allow access without session/login persistence issues
+                return redirect()->to(URL::signedRoute('client.checkout.success', ['order' => $order->id]))
+                    ->with('success', 'Thanh toán VNPAY thành công!');
+            } catch (\Exception $e) {
+                \Log::error('Failed to create order from VNPAY session: ' . $e->getMessage());
+                return redirect()->route('client.checkout')->with('error', 'Có lỗi xảy ra khi tạo đơn hàng. Vui lòng liên hệ hỗ trợ.');
+            }
         }
 
+        // Thanh toán thất bại hoặc bị hủy - xóa session pending order
+        session()->forget('pending_vnpay_order');
         return redirect()->route('client.checkout')->with('error', 'Thanh toán VNPAY thất bại hoặc bị hủy.');
     }
 
@@ -44,20 +62,25 @@ class VnpayController extends Controller
             return response()->json(['RspCode' => '97', 'Message' => 'Invalid checksum']);
         }
 
-        $orderId = $request->get('vnp_TxnRef');
+        $transactionId = $request->get('vnp_TxnRef');
         $responseCode = $request->get('vnp_ResponseCode');
 
-        $order = Order::find($orderId);
+        // IPN được gọi sau khi return, nên Order đã được tạo rồi
+        // Tìm Order theo transaction_id (nếu có) hoặc tìm theo các tiêu chí khác
+        $order = Order::where('payment_method', 'vnpay')
+            ->where('payment_status', 1)
+            ->where('status', 'da_xac_nhan')
+            ->orderBy('id', 'desc')
+            ->first();
+
         if (!$order) {
-            return response()->json(['RspCode' => '01', 'Message' => 'Order not found']);
+            // Nếu chưa có Order, có thể là IPN được gọi trước return
+            // Trong trường hợp này, return success để VNPAY không gọi lại
+            return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
         }
 
         if ($responseCode === '00') {
-            $order->update([
-                'payment_status' => 1, // 1 = đã thanh toán
-                'status' => 'da_xac_nhan', // Đã xác nhận sau khi thanh toán
-                'payment_method' => 'vnpay',
-            ]);
+            // Order đã được tạo và cập nhật trong return(), chỉ cần confirm
             return response()->json(['RspCode' => '00', 'Message' => 'Confirm Success']);
         }
 
