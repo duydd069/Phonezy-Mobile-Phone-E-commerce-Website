@@ -9,7 +9,7 @@
                 <i class="bi bi-list"></i>
               </a>
             </li>
-            <li class="nav-item d-none d-md-block"><a href="{{ url('/') }}" class="nav-link">Trang chủ</a></li>
+            <li class="nav-item d-none d-md-block"><a href="{{ route('admin.dashboard') }}" class="nav-link">Trang chủ</a></li>
             <li class="nav-item d-none d-md-block"><a href="#" class="nav-link">Liên hệ</a></li>
           </ul>
           <!--end::Start Navbar Links-->

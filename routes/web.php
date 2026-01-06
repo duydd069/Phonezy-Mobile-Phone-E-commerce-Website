@@ -24,7 +24,7 @@ Route::prefix('api')->group(function () {
 
 
 // Electro frontend routes (Client)
-Route::prefix('client')->name('client.')->group(function () {
+Route::middleware(['prevent.admin'])->prefix('client')->name('client.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Client\ProductController::class, 'index'])->name('index');
     Route::get('/search/suggest', [\App\Http\Controllers\Client\ProductController::class, 'suggest'])->name('search.suggest');
     Route::get('/p/{product}', [\App\Http\Controllers\Client\ProductController::class, 'show'])->name('product.show');
@@ -79,7 +79,7 @@ Route::middleware(['auth'])->group(function () {
 
 
 // Client Account - Yêu cầu đăng nhập
-Route::middleware(['auth'])->prefix('client')->name('client.')->group(function () {
+Route::middleware(['auth', 'prevent.admin'])->prefix('client')->name('client.')->group(function () {
     Route::get('/account', [\App\Http\Controllers\Client\AccountController::class, 'index'])->name('account.index');
     Route::post('/account', [\App\Http\Controllers\Client\AccountController::class, 'update'])->name('account.update');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

@@ -272,11 +272,15 @@ class RevenueReportController extends Controller
                 ->whereBetween('created_at', [$month['start'], $month['end']])
                 ->count();
 
+            $returns = OrderReturn::whereBetween('created_at', [$month['start'], $month['end']])
+                ->count();
+
             $stats[] = [
                 'month' => $month['month'],
                 'month_name' => $month['month_name'],
                 'revenue' => (float) $revenue,
                 'orders' => (int) $orders,
+                'returns' => (int) $returns,
             ];
         }
 

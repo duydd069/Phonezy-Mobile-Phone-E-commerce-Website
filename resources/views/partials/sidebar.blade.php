@@ -3,7 +3,7 @@
         <!--begin::Sidebar Brand-->
         <div class="sidebar-brand">
           <!--begin::Brand Link-->
-          <a href="{{ url('/') }}" class="brand-link">
+          <a href="{{ route('admin.dashboard') }}" class="brand-link">
             <!--begin::Brand Image-->
             @if(file_exists(public_path('storage/logos/logo.png')) || file_exists(public_path('storage/logos/logo.jpg')))
               <img

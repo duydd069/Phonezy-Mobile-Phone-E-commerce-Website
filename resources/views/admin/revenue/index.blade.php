@@ -243,6 +243,49 @@
         </div>
     </div>
 
+    {{-- Monthly Stats Table --}}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-table me-2"></i>Bảng Thống Kê Theo Tháng</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Tháng</th>
+                                    <th>Doanh Thu</th>
+                                    <th>Số Đơn Hàng</th>
+                                    <th>Hoàn Hàng</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($monthlyStats as $stat)
+                                    <tr>
+                                        <td>{{ $stat['month_name'] }}</td>
+                                        <td class="text-success fw-bold">
+                                            {{ number_format($stat['revenue'], 0, ',', '.') }} ₫
+                                        </td>
+                                        <td>{{ number_format($stat['orders'], 0, ',', '.') }}</td>
+                                        <td class="text-warning fw-bold">
+                                            {{ number_format($stat['returns'], 0, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Không có dữ liệu</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Revenue by Product and Category --}}
     <div class="row mb-4">
         {{-- Top Products --}}
