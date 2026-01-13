@@ -51,12 +51,6 @@
         </div>
 
         <!-- Success message -->
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show">
-                <button type="button" class="close" data-dismiss="alert">&times;</button>
-                <i class="icon fas fa-check"></i> {{ session('success') }}
-            </div>
-        @endif
 
         <!-- Comments list -->
         <div class="card">

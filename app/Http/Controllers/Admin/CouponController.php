@@ -57,6 +57,7 @@ class CouponController extends Controller
             'discount_value.required' => 'Vui lòng nhập :attribute.',
             'discount_value.numeric'  => ':attribute phải là một số.',
             'discount_value.min'      => ':attribute phải lớn hơn 0.',
+            'discount_value.max'      => ':attribute không được vượt quá :max%.',
             'discount_value.lt'       => 'Giá trị giảm phải nhỏ hơn giá trị đơn hàng tối thiểu để tránh giảm vượt quá giới hạn cho phép.',
 
             'min_order_value.required' => 'Vui lòng nhập :attribute.',
@@ -66,6 +67,7 @@ class CouponController extends Controller
             'max_discount.required' => 'Vui lòng nhập :attribute cho mã giảm theo %.',
             'max_discount.numeric'  => ':attribute phải là một số.',
             'max_discount.min'      => ':attribute phải lớn hơn hoặc bằng 0.',
+            'max_discount.max'      => ':attribute không được vượt quá 5.000.000đ.',
             'max_discount.lt'       => ':attribute phải nhỏ hơn :value để đảm bảo không giảm vượt tổng tiền đơn.',
 
             'product_ids.required_if' => 'Vui lòng chọn ít nhất một sản phẩm áp dụng khi tạo khuyến mãi cho từng sản phẩm.',
@@ -94,10 +96,11 @@ class CouponController extends Controller
         if ($request->input('discount_type') === 'percent') {
             // Giảm theo %: bắt buộc có max_discount, có min_order_value
             $typeSpecificRules = [
-                'discount_value'   => 'required|numeric|min:1|max:100',
+                'discount_value'   => 'required|numeric|min:1|max:40',
                 'min_order_value'  => 'required|numeric|min:0',
                 // max_discount < min_order_value để đảm bảo không có case giảm ≥ min_order
-                'max_discount'     => 'required|numeric|min:1|lt:min_order_value',
+                // Giới hạn max_discount không quá 5 triệu
+                'max_discount'     => 'required|numeric|min:1|max:5000000|lt:min_order_value',
             ];
         } else {
             // Giảm tiền cố định: discount_value < min_order_value
@@ -181,6 +184,7 @@ class CouponController extends Controller
             'discount_value.required' => 'Vui lòng nhập :attribute.',
             'discount_value.numeric'  => ':attribute phải là một số.',
             'discount_value.min'      => ':attribute phải lớn hơn 0.',
+            'discount_value.max'      => ':attribute không được vượt quá :max%.',
             'discount_value.lt'       => 'Giá trị giảm phải nhỏ hơn giá trị đơn hàng tối thiểu để tránh giảm vượt quá giới hạn cho phép.',
 
             'min_order_value.required' => 'Vui lòng nhập :attribute.',
@@ -190,6 +194,7 @@ class CouponController extends Controller
             'max_discount.required' => 'Vui lòng nhập :attribute cho mã giảm theo %.',
             'max_discount.numeric'  => ':attribute phải là một số.',
             'max_discount.min'      => ':attribute phải lớn hơn hoặc bằng 0.',
+            'max_discount.max'      => ':attribute không được vượt quá 5.000.000đ.',
             'max_discount.lt'       => ':attribute phải nhỏ hơn :value để đảm bảo không giảm vượt tổng tiền đơn.',
 
             'product_ids.required_if' => 'Vui lòng chọn ít nhất một sản phẩm áp dụng khi tạo khuyến mãi cho từng sản phẩm.',
@@ -216,9 +221,9 @@ class CouponController extends Controller
 
         if ($request->input('discount_type') === 'percent') {
             $typeSpecificRules = [
-                'discount_value'   => 'required|numeric|min:1|max:100',
+                'discount_value'   => 'required|numeric|min:1|max:40',
                 'min_order_value'  => 'required|numeric|min:0',
-                'max_discount'     => 'required|numeric|min:1|lt:min_order_value',
+                'max_discount'     => 'required|numeric|min:1|max:5000000|lt:min_order_value',
             ];
         } else {
             $typeSpecificRules = [

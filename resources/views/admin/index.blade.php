@@ -5,9 +5,6 @@
     <h2>Danh sách mã khuyến mãi</h2>
     <a href="{{ route('admin.coupons.create') }}" class="btn btn-success mb-3">+ Thêm khuyến mãi</a>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
 
     <table class="table table-bordered table-striped">
         <thead>

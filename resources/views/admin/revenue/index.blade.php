@@ -6,12 +6,6 @@
         <h2 class="m-0"><i class="bi bi-graph-up me-2"></i>Báo Cáo Doanh Thu</h2>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
 
     {{-- Filter Form --}}
     <div class="card mb-4">

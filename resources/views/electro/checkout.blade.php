@@ -61,18 +61,18 @@
                                        placeholder="Địa chỉ cụ thể">
                                 @error('address') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
-                            <div class="form-group">
-                                <select id="province" name="province" class="form-control" required>
+                           <div class="form-group">
+                                <select id="province" name="province" class="form-control" required data-old-value="{{ old('province') }}">
                                     <option value="">Chọn Tỉnh / Thành phố</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <select id="district" name="district" class="form-control" required disabled>
+                                <select id="district" name="district" class="form-control" required disabled data-old-value="{{ old('district') }}">
                                     <option value="">Chọn Quận / Huyện</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <select id="ward" name="ward" class="form-control" required disabled>
+                                <select id="ward" name="ward" class="form-control" required disabled data-old-value="{{ old('ward') }}">
                                     <option value="">Chọn Phường / Xã</option>
                                 </select>
                             </div>
@@ -499,13 +499,21 @@
 fetch(API + "/p/")
     .then(res => res.json())
     .then(data => {
+        const provinceSelect = $('#province');
+        const oldProvince = provinceSelect.data('old-value');
+
         data.forEach(p => {
-            $('#province').append(
-                `<option value="${p.name}" data-code="${p.code}">
+            provinceSelect.append(
+                `<option value="${p.name}" data-code="${p.code}" ${oldProvince === p.name ? 'selected' : ''}>
                     ${p.name}
                 </option>`
             );
         });
+
+        // Trigger change triggers if there's an old value
+        if (oldProvince) {
+            provinceSelect.trigger('change');
+        }
     });
 
 // Khi chọn tỉnh → load huyện
@@ -522,13 +530,20 @@ $('#province').on('change', function () {
     fetch(`${API}/p/${code}?depth=2`)
         .then(res => res.json())
         .then(data => {
+            const districtSelect = $('#district');
+            const oldDistrict = districtSelect.data('old-value');
+            
             data.districts.forEach(d => {
-                $('#district').append(
-                    `<option value="${d.name}" data-code="${d.code}">
+                districtSelect.append(
+                    `<option value="${d.name}" data-code="${d.code}" ${oldDistrict === d.name ? 'selected' : ''}>
                         ${d.name}
                     </option>`
                 );
             });
+
+             if (oldDistrict) {
+                districtSelect.trigger('change');
+            }
         });
 });
 
@@ -544,9 +559,12 @@ $('#district').on('change', function () {
     fetch(`${API}/d/${code}?depth=2`)
         .then(res => res.json())
         .then(data => {
+             const wardSelect = $('#ward');
+             const oldWard = wardSelect.data('old-value');
+
             data.wards.forEach(w => {
-                $('#ward').append(
-                    `<option value="${w.name}">
+                wardSelect.append(
+                    `<option value="${w.name}" ${oldWard === w.name ? 'selected' : ''}>
                         ${w.name}
                     </option>`
                 );
@@ -555,5 +573,4 @@ $('#district').on('change', function () {
 });
 
 
-    </script>
-@endsection
+    </script>@endsection

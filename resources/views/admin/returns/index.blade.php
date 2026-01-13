@@ -8,14 +8,6 @@
         </h3>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
     {{-- Status Filter Buttons --}}
     @php
         $allStatuses = ['Chưa giải quyết', 'Thông qua', 'Từ chối', 'Đang vận chuyển', 'Đã nhận', 'Đã hoàn tiền'];

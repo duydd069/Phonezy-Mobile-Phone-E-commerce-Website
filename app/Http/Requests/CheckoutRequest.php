@@ -45,6 +45,17 @@ class CheckoutRequest extends FormRequest
             'coupon_code'    => 'mã khuyến mãi',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'required' => 'Vui lòng nhập :attribute.',
+            'string'   => ':attribute phải là chuỗi ký tự.',
+            'max'      => ':attribute không được vượt quá :max ký tự.',
+            'email'    => ':attribute phải là địa chỉ email hợp lệ.',
+            'in'       => ':attribute không hợp lệ.',
+        ];
+    }
 }
 
 

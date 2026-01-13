@@ -785,7 +785,17 @@ class CheckoutController extends Controller
 
         // Lấy giỏ hàng để tính summary
         $cart = $this->getOrCreateActiveCart();
-        $items = $cart->items()->with(['variant.product', 'variant'])->get();
+        $allItems = $cart->items()->with(['variant.product', 'variant'])->get();
+
+        // Lọc items dựa trên session đã lưu ở method show()
+        $selectedItemIds = session('selected_cart_items');
+        if ($selectedItemIds && is_array($selectedItemIds)) {
+            $items = $allItems->filter(function($item) use ($selectedItemIds) {
+                return in_array($item->id, $selectedItemIds);
+            });
+        } else {
+            $items = $allItems;
+        }
 
 
         try {

@@ -18,9 +18,6 @@
   </form>
 
   {{-- Thông báo thành công --}}
-  @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-  @endif
 
   {{-- Bảng dữ liệu --}}
   <div class="table-responsive">

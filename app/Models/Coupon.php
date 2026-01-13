@@ -110,6 +110,11 @@ class Coupon extends Model
             }
 
             $discount = $this->discount_value;
+
+            // Apply max_discount if set for fixed amount
+            if ($this->max_discount !== null && $this->max_discount > 0) {
+                $discount = min($discount, $this->max_discount);
+            }
         }
 
         // 6. Chặn bug giảm âm / vượt tiền đơn hàng
@@ -140,6 +145,11 @@ class Coupon extends Model
             }
 
             $discount = $this->discount_value;
+
+            // Apply max_discount if set for fixed amount
+            if ($this->max_discount !== null && $this->max_discount > 0) {
+                $discount = min($discount, $this->max_discount);
+            }
         }
 
         // Đảm bảo không bao giờ giảm vượt quá giá sản phẩm
