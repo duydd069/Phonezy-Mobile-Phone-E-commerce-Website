@@ -98,7 +98,17 @@
                                         <td>
                                             <div class="d-flex align-items-center">
                                                 @if($item->product_image)
-                                                    <img src="{{ $item->product_image }}" 
+                                                    @php
+                                                        $imageUrl = $item->product_image;
+                                                        if (!filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                                                            if (file_exists(public_path($imageUrl))) {
+                                                                $imageUrl = asset($imageUrl);
+                                                            } else {
+                                                                $imageUrl = asset(\Illuminate\Support\Str::startsWith($imageUrl, 'storage/') ? $imageUrl : 'storage/' . $imageUrl);
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    <img src="{{ $imageUrl }}" 
                                                          alt="{{ $item->product_name }}"
                                                          class="rounded me-2"
                                                          style="width: 60px; height: 60px; object-fit: cover; border: 1px solid #dee2e6;">

@@ -59,16 +59,31 @@
                                     {{ $order->created_at->format('d/m/Y H:i') }}
                                 </td>
                                 <td>
-                                    <small>
-                                        {{ $order->items->count() }} sản phẩm
+                                    <div class="d-flex align-items-center">
                                         @if($order->items->count() > 0)
-                                            <br>
-                                            <span class="text-muted">{{ $order->items->first()->product_name }}</span>
-                                            @if($order->items->count() > 1)
-                                                <span class="text-muted">và {{ $order->items->count() - 1 }} sản phẩm khác</span>
+                                            @php $firstItem = $order->items->first(); @endphp
+                                            @if($firstItem->product_image)
+                                                <img src="{{ asset($firstItem->product_image) }}" 
+                                                     alt="{{ $firstItem->product_name }}" 
+                                                     class="img-thumbnail me-2" 
+                                                     style="width: 50px; height: 50px; object-fit: cover; border: none; padding: 0;">
                                             @endif
+                                            <div>
+                                                <span class="d-block text-truncate" style="max-width: 200px;" title="{{ $firstItem->product_name }}">
+                                                    {{ $firstItem->product_name }}
+                                                </span>
+                                                <small class="text-muted">
+                                                    @if($order->items->count() > 1)
+                                                        và {{ $order->items->count() - 1 }} sản phẩm khác
+                                                    @else
+                                                        x {{ $firstItem->quantity }}
+                                                    @endif
+                                                </small>
+                                            </div>
+                                        @else
+                                            <span class="text-muted">Không có sản phẩm</span>
                                         @endif
-                                    </small>
+                                    </div>
                                 </td>
                                 <td>
                                     <strong>{{ number_format($order->total, 0, ',', '.') }} ₫</strong>
@@ -100,10 +115,11 @@
                                     @endphp
 
                                     <button type="button"
-                                        class="btn btn-sm btn-cancel-order mt-1 {{ !$canCancel ? 'btn-disabled' : '' }}"
+                                        class="btn btn-sm {{ !$canCancel ? 'btn-secondary disabled' : 'btn-danger' }} btn-cancel-order mt-1"
                                         data-allowed="{{ $canCancel ? 1 : 0 }}"
                                         data-url="{{ route('client.orders.cancel', $order->id) }}"
-                                        title="{{ !$canCancel ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}">
+                                        title="{{ !$canCancel ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}"
+                                        {{ !$canCancel ? 'disabled' : '' }}>
                                         <i class="fas fa-times me-1"></i> Hủy đơn
                                     </button>
 
@@ -149,7 +165,9 @@
             <div class="modal-content">
                 <div class="modal-header border-bottom-0">
                     <h5 class="modal-title">Đánh giá sản phẩm</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <div class="modal-body" id="reviewModalBody">
                     <!-- Dynamic Content -->
@@ -168,7 +186,9 @@
                     <h5 class="modal-title fw-semibold text-danger">
                         <i class="fas fa-times-circle me-2"></i> Hủy đơn hàng
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
 
                 <!-- BODY -->
@@ -182,7 +202,7 @@
                         <label class="form-label fw-semibold">
                             Lý do hủy đơn <span class="text-danger">*</span>
                         </label>
-                        <select class="form-select" id="cancelReason" required>
+                        <select class="form-select form-control" id="cancelReason" required>
                             <option value="">-- Chọn lý do --</option>
                             <option value="Đổi ý, không muốn mua nữa">Đổi ý, không muốn mua nữa</option>
                             <option value="Đặt nhầm sản phẩm">Đặt nhầm sản phẩm</option>
@@ -211,7 +231,7 @@
 
                 <!-- FOOTER -->
                 <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
                     <button type="button" id="confirmCancelOrder" class="btn btn-danger px-4">
                         <i class="fas fa-check me-1"></i> Xác nhận hủy
                     </button>
@@ -263,7 +283,17 @@
             }
 
             items.forEach(function(item) {
-                const imageUrl = item.image ? (item.image.startsWith('http') ? item.image : '/storage/' + item.image) : '/electro/img/product01.png';
+                let imageUrl = '/electro/img/product01.png';
+                if (item.image) {
+                    if (item.image.startsWith('http')) {
+                        imageUrl = item.image;
+                    } else if (item.image.startsWith('storage/') || item.image.startsWith('/storage/')) {
+                        imageUrl = item.image.startsWith('/') ? item.image : '/' + item.image;
+                    } else {
+                        imageUrl = '/storage/' + item.image;
+                    }
+                }
+                
                 const productUrl = `/client/p/${item.slug}`; 
                 
                 const itemHtml = `
@@ -350,6 +380,7 @@
         });
     });
 </script>
+<script>
 let cancelUrl = null;
 
 $(document).on('click', '.btn-cancel-order', function () {
@@ -410,36 +441,9 @@ $(document).on('click', '#confirmCancelOrder', function (){
 
 @endpush
 <style>
-    .btn-cancel-order {
-    border-color: #dc3545;
-    color: #dc3545;
-    background-color: transparent;
-    transition: all 0.2s ease-in-out;
-}
-
-.btn-cancel-order:hover {
-    background-color: #dc3545;
-    color: #fff;
-    transform: translateY(-1px);
-}
-
-.btn-cancel-order.btn-disabled {
-    opacity: 0.45;
-    cursor: pointer;
-    background-color: transparent;
-    color: #dc3545;
-    border-color: #dc3545;
-}
-
-.btn-cancel-order.btn-disabled:hover {
-    background-color: transparent;
-    color: #dc3545;
-    transform: none;
-}
-
-.btn-cancel-order i {
-    font-size: 0.9rem;
-    vertical-align: middle;
+/* Button styles for consistency */
+.btn-sm {
+    border-radius: 4px;
 }
 .modal-content {
     animation: fadeInScale .2s ease-in-out;

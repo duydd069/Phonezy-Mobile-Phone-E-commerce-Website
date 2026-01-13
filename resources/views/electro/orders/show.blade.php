@@ -199,9 +199,19 @@
                                     <strong>{{ $item->quantity }} x {{ $item->product_name }}</strong>
                                     @if($item->product_image)
                                         <br>
-                                        <img src="{{ asset($item->product_image) }}" 
-                                             alt="{{ $item->product_name }}" 
-                                             style="max-width: 60px; max-height: 60px; margin-top: 5px;">
+                                        @php
+                                        $imageUrl = $item->product_image;
+                                        if (!filter_var($imageUrl, FILTER_VALIDATE_URL)) {
+                                            if (file_exists(public_path($imageUrl))) {
+                                                $imageUrl = asset($imageUrl);
+                                            } else {
+                                                $imageUrl = asset(\Illuminate\Support\Str::startsWith($imageUrl, 'storage/') ? $imageUrl : 'storage/' . $imageUrl);
+                                            }
+                                        }
+                                    @endphp
+                                    <img src="{{ $imageUrl }}" 
+                                         alt="{{ $item->product_name }}" 
+                                         style="max-width: 60px; max-height: 60px; margin-top: 5px;">
                                     @endif
                                 </div>
                                 <div>
