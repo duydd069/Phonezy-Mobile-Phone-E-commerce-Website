@@ -96,14 +96,14 @@
                                     </a>
 
                                     @php
-                                        $isPending = $order->isPending();
+                                        $canCancel = $order->canBeCancelled();
                                     @endphp
 
                                     <button type="button"
-                                        class="btn btn-sm btn-cancel-order mt-1 {{ !$isPending ? 'btn-disabled' : '' }}"
-                                        data-allowed="{{ $isPending ? 1 : 0 }}"
-                                        data-url="{{ route('client.client.orders.cancel', $order->id) }}"
-                                        title="{{ !$isPending ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}">
+                                        class="btn btn-sm btn-cancel-order mt-1 {{ !$canCancel ? 'btn-disabled' : '' }}"
+                                        data-allowed="{{ $canCancel ? 1 : 0 }}"
+                                        data-url="{{ route('client.orders.cancel', $order->id) }}"
+                                        title="{{ !$canCancel ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}">
                                         <i class="fas fa-times me-1"></i> Hủy đơn
                                     </button>
 
@@ -124,65 +124,7 @@
                                             <i class="fa fa-star me-1"></i> Đánh giá
                                         </button>
                                     @endif
-                                    <div class="modal fade" id="cancelOrderModal" tabindex="-1">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content shadow-lg border-0 rounded-4">
 
-                                            <!-- HEADER -->
-                                            <div class="modal-header border-0 pb-2">
-                                                <h5 class="modal-title fw-semibold text-danger">
-                                                    <i class="fas fa-times-circle me-2"></i> Hủy đơn hàng
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-
-                                            <!-- BODY -->
-                                            <div class="modal-body pt-1">
-                                                <p class="text-muted mb-3">
-                                                    Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng.
-                                                </p>
-
-                                                <!-- Reason select -->
-                                                <div class="mb-3">
-                                                    <label class="form-label fw-semibold">
-                                                        Lý do hủy đơn <span class="text-danger">*</span>
-                                                    </label>
-                                                    <select class="form-select" id="cancelReason" required>
-                                                        <option value="">-- Chọn lý do --</option>
-                                                        <option value="Đổi ý, không muốn mua nữa">Đổi ý, không muốn mua nữa</option>
-                                                        <option value="Đặt nhầm sản phẩm">Đặt nhầm sản phẩm</option>
-                                                        <option value="Giá sản phẩm không phù hợp">Giá sản phẩm không phù hợp</option>
-                                                        <option value="Thời gian giao hàng quá lâu">Thời gian giao hàng quá lâu</option>
-                                                        <option value="Khác">Khác</option>
-                                                    </select>
-                                                </div>
-
-                                                <!-- Other reason -->
-                                                <div class="mb-3 d-none" id="otherReasonWrapper">
-                                                    <label class="form-label fw-semibold">
-                                                        Lý do khác
-                                                    </label>
-                                                    <textarea class="form-control" rows="3"
-                                                        placeholder="Nhập lý do cụ thể..."></textarea>
-                                                </div>
-
-                                                <div class="alert alert-warning small">
-                                                    <i class="fas fa-info-circle me-1"></i>
-                                                    Đơn hàng chỉ có thể hủy khi chưa được xác nhận xử lý.
-                                                </div>
-                                            </div>
-
-                                            <!-- FOOTER -->
-                                            <div class="modal-footer border-0 pt-0">
-                                                <a href="{{ route('client.orders.index') }}" class="btn btn-secondary">
-                                                        <i class="fa fa-arrow-left"></i> Quay lại </a>
-                                                <button type="button" id="confirmCancelOrder" class="btn btn-danger px-4">
-                                                    <i class="fas fa-check me-1"></i> Xác nhận hủy
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                                 </td>
                             </tr>
                             @endforeach
@@ -211,6 +153,68 @@
                 </div>
                 <div class="modal-body" id="reviewModalBody">
                     <!-- Dynamic Content -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Order Modal (Shared) -->
+    <div class="modal fade" id="cancelOrderModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0 rounded-4">
+
+                <!-- HEADER -->
+                <div class="modal-header border-0 pb-2">
+                    <h5 class="modal-title fw-semibold text-danger">
+                        <i class="fas fa-times-circle me-2"></i> Hủy đơn hàng
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body pt-1">
+                    <p class="text-muted mb-3">
+                        Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng.
+                    </p>
+
+                    <!-- Reason select -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            Lý do hủy đơn <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="cancelReason" required>
+                            <option value="">-- Chọn lý do --</option>
+                            <option value="Đổi ý, không muốn mua nữa">Đổi ý, không muốn mua nữa</option>
+                            <option value="Đặt nhầm sản phẩm">Đặt nhầm sản phẩm</option>
+                            <option value="Giá sản phẩm không phù hợp">Giá sản phẩm không phù hợp</option>
+                            <option value="Thời gian giao hàng quá lâu">Thời gian giao hàng quá lâu</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+
+                    <!-- Other reason -->
+                    <div class="mb-3 d-none" id="cancelReasonOtherWrapper">
+                        <label class="form-label fw-semibold">
+                            Lý do khác
+                        </label>
+                        <textarea class="form-control" id="cancelReasonOther" rows="3"
+                            placeholder="Nhập lý do cụ thể..."></textarea>
+                    </div>
+                    
+                    <div id="cancelError" class="alert alert-danger d-none small"></div>
+
+                    <div class="alert alert-warning small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Đơn hàng chỉ có thể hủy khi chưa được xác nhận xử lý hoặc chưa thanh toán.
+                    </div>
+                </div>
+
+                <!-- FOOTER -->
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" id="confirmCancelOrder" class="btn btn-danger px-4">
+                        <i class="fas fa-check me-1"></i> Xác nhận hủy
+                    </button>
                 </div>
             </div>
         </div>
@@ -368,9 +372,9 @@ $(document).on('click', '.btn-cancel-order', function () {
 // Hiện textarea khi chọn "Khác"
 $('#cancelReason').on('change', function () {
     if ($(this).val() === 'Khác') {
-        $('#cancelReasonOther').removeClass('d-none');
+        $('#cancelReasonOtherWrapper').removeClass('d-none');
     } else {
-        $('#cancelReasonOther').addClass('d-none');
+        $('#cancelReasonOtherWrapper').addClass('d-none');
     }
 });
 

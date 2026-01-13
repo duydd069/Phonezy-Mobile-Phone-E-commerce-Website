@@ -217,18 +217,26 @@ class ProductVariantController extends Controller
      */
     public function generateSku(Request $request, int $productId)
     {
-        $product = Product::findOrFail($productId);
+        try {
+            $product = Product::findOrFail($productId);
 
-        $versionId = $request->input('version_id');
-        $storageId = $request->input('storage_id');
-        $colorId = $request->input('color_id');
+            $versionId = $request->input('version_id');
+            $storageId = $request->input('storage_id');
+            $colorId = $request->input('color_id');
 
-        $sku = ProductVariant::generateSku($product, $versionId, $storageId, $colorId);
+            $sku = ProductVariant::generateSku($product, $versionId, $storageId, $colorId);
 
-        return response()->json([
-            'success' => true,
-            'sku' => $sku,
-        ]);
+            return response()->json([
+                'success' => true,
+                'sku' => $sku,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error generating SKU: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

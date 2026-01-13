@@ -164,17 +164,17 @@ class ProductVariant extends Model
 
         // Version
         if ($versionId && ($version = Version::find($versionId))) {
-            $name = strtoupper($version->name);
+            $name = mb_strtoupper($version->name, 'UTF-8');
             $parts[] = str_contains($name, 'PRO') ? 'PRO'
                     : (str_contains($name, 'MAX') ? 'MAX'
                     : (str_contains($name, 'PLUS') ? 'PLUS'
-                    : substr($name, 0, 3)));
+                    : mb_substr($name, 0, 3, 'UTF-8')));
         }
 
         // Storage
         if ($storageId && ($storage = Storage::find($storageId))) {
             preg_match('/(\d+)/', $storage->storage, $m);
-            $parts[] = $m[1] ?? substr($storage->storage, 0, 3);
+            $parts[] = $m[1] ?? mb_substr($storage->storage, 0, 3, 'UTF-8');
         }
 
         // Color
@@ -187,8 +187,19 @@ class ProductVariant extends Model
                 'GOLD'  => 'GLD', 'VÀNG' => 'GLD',
                 'SILVER'=> 'SLV', 'BẠC' => 'SLV',
             ];
-            $name = strtoupper($color->name);
-            $parts[] = $map[$name] ?? substr($name, 0, 3);
+            $name = mb_strtoupper($color->name, 'UTF-8');
+            
+            // Tìm trong map, nếu không thấy thì lấy 3 ký tự đầu
+            // Cần check kỹ hơn vì $map keys có thể có tiếng Việt
+            $code = null;
+            foreach ($map as $key => $val) {
+                if (mb_strtoupper($key, 'UTF-8') === $name) {
+                    $code = $val;
+                    break;
+                }
+            }
+            
+            $parts[] = $code ?? mb_substr($name, 0, 3, 'UTF-8');
         }
 
         $base = implode('-', $parts);

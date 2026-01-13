@@ -56,6 +56,15 @@
                                     </a>
                                 </div>
                             @endif
+
+                            {{-- Cancel Button --}}
+                            @if($order->canBeCancelled())
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-danger" data-toggle="modal" data-target="#cancelOrderModal">
+                                        <i class="fa fa-times"></i> Hủy đơn hàng
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                         <div class="col-md-6">
                             <strong>Thanh toán:</strong><br>
@@ -261,6 +270,34 @@
             <div class="modal-body text-center p-0">
                 <img id="modalImage" src="" class="img-fluid w-100" alt="Ảnh" style="max-height: 80vh; object-fit: contain;">
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Cancel Order Modal --}}
+<div class="modal fade" id="cancelOrderModal" tabindex="-1" role="dialog" aria-labelledby="cancelOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelOrderModalLabel">Xác nhận hủy đơn hàng</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ route('client.orders.cancel', $order) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.</p>
+                    <div class="form-group">
+                        <label for="cancel_reason" class="col-form-label">Lý do hủy đơn:</label>
+                        <textarea class="form-control" id="cancel_reason" name="cancel_reason" rows="3" required placeholder="Vui lòng cho biết lý do bạn muốn hủy đơn hàng..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger">Xác nhận hủy</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

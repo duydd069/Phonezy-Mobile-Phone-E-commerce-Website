@@ -84,9 +84,7 @@ Route::middleware(['auth', 'prevent.admin'])->prefix('client')->name('client.')-
     Route::post('/account', [\App\Http\Controllers\Client\AccountController::class, 'update'])->name('account.update');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-    Route::middleware('auth')->prefix('client')->name('client.')->group(function () {
-        Route::post('/orders/{order}/cancel',[OrderController::class, 'cancel'])->name('orders.cancel');
-    });
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     Route::get('/coupons', [\App\Http\Controllers\Client\CouponController::class, 'index'])->name('coupons.index');
    
     // Order return routes

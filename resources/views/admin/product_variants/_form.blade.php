@@ -197,12 +197,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 skuInput.classList.add('border-success');
                 setTimeout(() => skuInput.classList.remove('border-success'), 2000);
             } else {
-                alert('Không thể tạo SKU. Vui lòng thử lại.');
+                alert(data.message || 'Không thể tạo SKU. Vui lòng thử lại.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Có lỗi xảy ra khi tạo SKU.');
+            alert('Có lỗi xảy ra khi tạo SKU: ' + (error.message || error));
         })
         .finally(() => {
             generateSkuBtn.disabled = false;

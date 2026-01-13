@@ -52,8 +52,8 @@ class OrderController extends Controller
         abort(403);
     }
 
-    if ($order->status !== Order::STATUS_PENDING) {
-        return back()->with('error', 'Đơn hàng này không thể hủy.');
+    if (!$order->canBeCancelled()) {
+        return back()->with('error', 'Đơn hàng này không thể hủy. Chỉ có thể hủy khi đơn hàng đang chờ xác nhận hoặc chờ thanh toán.');
     }
 
     // Hoàn trả stock trước khi hủy đơn
