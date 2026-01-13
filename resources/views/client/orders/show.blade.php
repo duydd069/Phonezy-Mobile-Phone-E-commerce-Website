@@ -157,6 +157,65 @@
                                 Yêu cầu hoàn hàng
                             </a>
                         @endif
+
+                        {{-- Cancel & Refund (VNPay only) inline form --}}
+                        @php
+                            // Show only for orders paid via VNPAY
+                            $isPaid = $order->payment_status == 1 || $order->payment_status === 'paid';
+                            $showCancelRefund = $order->payment_method === 'vnpay' && $isPaid;
+                        @endphp
+
+                        @if($showCancelRefund)
+                            <div class="mt-3">
+                                <button class="btn btn-danger btn-minimal" type="button" data-bs-toggle="collapse" data-bs-target="#cancelRefundForm" aria-expanded="false" aria-controls="cancelRefundForm">
+                                    <i class="fa fa-times me-1"></i> Hủy đơn & Hoàn tiền
+                                </button>
+
+                                <div class="collapse mt-3" id="cancelRefundForm">
+                                    <div class="card p-3 border">
+                                        <form action="{{ route('client.orders.cancel-refund', $order) }}" method="POST">
+                                            @csrf
+                                            <div class="mb-2">
+                                                <label class="form-label small">Số điện thoại liên hệ *</label>
+                                                <input type="text" name="contact_phone" class="form-control" value="{{ old('contact_phone', $order->shipping_phone) }}" required>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label small">Tên ngân hàng *</label>
+                                                <input type="text" name="bank_name" class="form-control" required>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6 mb-2">
+                                                    <label class="form-label small">Số tài khoản *</label>
+                                                    <input type="text" name="bank_account_number" class="form-control" required>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <label class="form-label small">Tên chủ tài khoản *</label>
+                                                    <input type="text" name="bank_account_name" class="form-control" required>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label small">Lý do hủy *</label>
+                                                <select name="reason" class="form-select" required>
+                                                    <option value="">-- Chọn lý do --</option>
+                                                    <option value="Không muốn mua nữa">Không muốn mua nữa</option>
+                                                    <option value="Phát hiện giá tốt hơn">Phát hiện giá tốt hơn</option>
+                                                    <option value="Đặt nhầm">Đặt nhầm</option>
+                                                    <option value="Khác">Khác</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-secondary me-2" data-bs-toggle="collapse" data-bs-target="#cancelRefundForm">Hủy</button>
+                                                <button type="submit" class="btn btn-danger">Gửi yêu cầu</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Active Return Info --}}

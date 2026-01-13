@@ -59,7 +59,11 @@ class OrderReturnController extends Controller
 
         $return->approve();
 
-        return back()->with('success', 'Đã phê duyệt yêu cầu hoàn trả. Khách hàng có thể gửi hàng.');
+        $message = $return->isCancelRefund() 
+            ? 'Đã phê duyệt yêu cầu hủy & hoàn tiền. Đơn hàng đã được hủy. Vui lòng xử lý hoàn tiền.' 
+            : 'Đã phê duyệt yêu cầu hoàn trả. Khách hàng có thể gửi hàng.';
+
+        return back()->with('success', $message);
     }
 
     /**

@@ -112,16 +112,40 @@
 
                                     @php
                                         $canCancel = $order->canBeCancelled();
+                                        $isPaid = $order->payment_status == 1 || $order->payment_status === 'paid';
+                                        $isCOD = $order->payment_method === 'cod';
+                                        // Tất cả payment method khác COD được coi là online payment (vnpay, momo, etc.)
+                                        $isOnlinePayment = !$isCOD;
+                                        
+                                        // Kiểm tra xem đã có yêu cầu hủy & hoàn tiền chưa
+                                        $hasCancelRefundRequest = $order->returns()->whereIn('status', ['Chưa giải quyết', 'Thông qua', 'Đang vận chuyển', 'Đã nhận', 'Đã hoàn tiền'])->exists();
+                                        
+                                        // Chỉ hiển thị "Hủy & Hoàn tiền" nếu: online payment, đã thanh toán, chưa được admin xác nhận, và chưa có request
+                                        $showCancelRefund = $isOnlinePayment && $isPaid && in_array($order->status, ['cho_xac_nhan', 'cho_thanh_toan']) && !$hasCancelRefundRequest;
+                                        // Chỉ hiển thị "Hủy" nếu: COD và có thể hủy
+                                        $showCancel = $isCOD && $canCancel;
                                     @endphp
 
-                                    <button type="button"
-                                        class="btn btn-sm {{ !$canCancel ? 'btn-secondary disabled' : 'btn-danger' }} btn-cancel-order mt-1"
-                                        data-allowed="{{ $canCancel ? 1 : 0 }}"
-                                        data-url="{{ route('client.orders.cancel', $order->id) }}"
-                                        title="{{ !$canCancel ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}"
-                                        {{ !$canCancel ? 'disabled' : '' }}>
-                                        <i class="fas fa-times me-1"></i> Hủy đơn
-                                    </button>
+                                    @if($showCancel)
+                                        <button type="button"
+                                            class="btn btn-sm btn-cancel-order mt-1 {{ !$canCancel ? 'btn-disabled' : '' }}"
+                                            data-allowed="{{ $canCancel ? 1 : 0 }}"
+                                            data-url="{{ route('client.orders.cancel', $order->id) }}"
+                                            title="{{ !$canCancel ? 'Đơn hàng đã được xử lý nên không thể hủy' : 'Hủy đơn hàng' }}">
+                                            <i class="fas fa-times me-1"></i> Hủy đơn
+                                        </button>
+                                    @endif
+
+                                    @if($showCancelRefund)
+                                        <a href="{{ route('client.orders.cancel-refund.create', $order->id) }}" 
+                                           class="btn btn-sm btn-danger mt-1">
+                                            <i class="fa fa-undo me-1"></i> Hủy & Hoàn tiền
+                                        </a>
+                                    @elseif($isOnlinePayment && $isPaid && in_array($order->status, ['cho_xac_nhan', 'cho_thanh_toan']) && $hasCancelRefundRequest)
+                                        <span class="badge bg-info mt-1" title="Đã gửi yêu cầu hủy & hoàn tiền">
+                                            <i class="fa fa-check-circle me-1"></i> Đã gửi yêu cầu
+                                        </span>
+                                    @endif
 
                                     @if(in_array($order->status, ['giao_thanh_cong', 'hoan_thanh']))
                                         @php

@@ -85,6 +85,9 @@ Route::middleware(['auth', 'prevent.admin'])->prefix('client')->name('client.')-
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    // Cancel & refund request (bank transfer) - creates a refund request for admin to approve
+    Route::get('/orders/{order}/cancel-refund', [OrderController::class, 'showCancelRefundForm'])->name('orders.cancel-refund.create');
+    Route::post('/orders/{order}/cancel-refund', [OrderController::class, 'cancelAndRefund'])->name('orders.cancel-refund');
     Route::get('/coupons', [\App\Http\Controllers\Client\CouponController::class, 'index'])->name('coupons.index');
    
     // Order return routes

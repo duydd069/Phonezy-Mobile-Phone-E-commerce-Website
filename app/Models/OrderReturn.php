@@ -94,10 +94,37 @@ class OrderReturn extends Model
     }
 
     /**
+     * Check if this is a cancel & refund request (not a return request)
+     * Cancel & refund applies when order is still pending confirmation
+     * Also check if order is already cancelled (da_huy) and status is approved - that's also cancel & refund
+     */
+    public function isCancelRefund(): bool
+    {
+        $this->load('order'); // Ensure order is loaded
+        $orderStatus = $this->order->status;
+        
+        // If order is cancelled (da_huy) and return is approved, it's a cancel & refund request
+        if ($orderStatus === 'da_huy' && $this->status === 'Thông qua') {
+            return true;
+        }
+        
+        // If order status is pending confirmation, it's a cancel & refund request
+        return in_array($orderStatus, ['cho_xac_nhan', 'cho_thanh_toan', 'da_xac_nhan']);
+    }
+
+    /**
      * Check if admin can process refund
+     * For cancel & refund: can process after approval (status = 'Thông qua')
+     * For return: can process after receiving goods (status = 'Đã nhận')
      */
     public function canProcessRefund(): bool
     {
+        // Cancel & refund: can process immediately after approval
+        if ($this->isCancelRefund()) {
+            return $this->status === 'Thông qua';
+        }
+        
+        // Return: can process after receiving goods
         return $this->status === 'Đã nhận';
     }
 
@@ -142,9 +169,18 @@ class OrderReturn extends Model
             return false;
         }
 
-        return $this->update([
+        $updated = $this->update([
             'status' => 'Thông qua',
         ]);
+
+        // If this is a cancel & refund request, automatically cancel the order
+        if ($updated && $this->isCancelRefund()) {
+            $this->load('order'); // Reload order relationship
+            $this->order->update(['status' => 'da_huy']);
+            $this->order->restoreStock();
+        }
+
+        return $updated;
     }
 
     /**

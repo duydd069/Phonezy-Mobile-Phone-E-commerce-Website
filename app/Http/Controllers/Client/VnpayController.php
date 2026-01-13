@@ -66,10 +66,9 @@ class VnpayController extends Controller
         $responseCode = $request->get('vnp_ResponseCode');
 
         // IPN được gọi sau khi return, nên Order đã được tạo rồi
-        // Tìm Order theo transaction_id (nếu có) hoặc tìm theo các tiêu chí khác
+        // Tìm Order theo transaction_id (nếu có) hoặc tìm order mới nhất đã thanh toán
         $order = Order::where('payment_method', 'vnpay')
             ->where('payment_status', 1)
-            ->where('status', 'da_xac_nhan')
             ->orderBy('id', 'desc')
             ->first();
 

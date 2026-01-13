@@ -1000,7 +1000,7 @@ class CheckoutController extends Controller
                 'total' => $sessionData['summary']['total'],
                 'payment_method' => 'vnpay',
                 'payment_status' => 1, // Đã thanh toán
-                'status' => 'da_xac_nhan',
+                'status' => 'cho_xac_nhan', // Chờ admin xác nhận
                 'shipping_full_name' => $sessionData['shipping_data']['full_name'],
                 'shipping_email' => $sessionData['shipping_data']['email'] ?? null,
                 'shipping_phone' => $sessionData['shipping_data']['phone'],

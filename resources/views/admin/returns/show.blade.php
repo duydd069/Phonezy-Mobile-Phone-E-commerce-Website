@@ -4,7 +4,8 @@
 <div class="container-fluid p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="m-0">
-            <i class="fa fa-undo"></i> Chi tiết yêu cầu hoàn trả: {{ $return->return_code }}
+            <i class="fa {{ $return->isCancelRefund() ? 'fa-times-circle' : 'fa-undo' }}"></i> 
+            Chi tiết yêu cầu {{ $return->isCancelRefund() ? 'hủy & hoàn tiền' : 'hoàn trả' }}: {{ $return->return_code }}
         </h3>
         <a href="{{ route('admin.returns.index') }}" class="btn btn-secondary">
             <i class="fa fa-arrow-left"></i> Quay lại
@@ -18,7 +19,7 @@
             {{-- Return Information --}}
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white">
-                    <strong>Thông tin yêu cầu hoàn trả</strong>
+                    <strong>Thông tin yêu cầu {{ $return->isCancelRefund() ? 'hủy & hoàn tiền' : 'hoàn trả' }}</strong>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -94,7 +95,7 @@
             {{-- Reason --}}
             <div class="card mb-3">
                 <div class="card-header bg-secondary text-white">
-                    <strong>Lý do hoàn trả</strong>
+                    <strong>Lý do {{ $return->isCancelRefund() ? 'hủy đơn' : 'hoàn trả' }}</strong>
                 </div>
                 <div class="card-body">
                     <p>{{ $return->reason }}</p>
@@ -169,7 +170,7 @@
                         {{-- Pending - Show Approve/Reject --}}
                         <form action="{{ route('admin.returns.approve', $return) }}" method="POST" class="mb-2">
                             @csrf
-                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('Xác nhận phê duyệt yêu cầu hoàn trả?')">
+                            <button type="submit" class="btn btn-success w-100" onclick="return confirm('Xác nhận phê duyệt yêu cầu {{ $return->isCancelRefund() ? 'hủy & hoàn tiền' : 'hoàn trả' }}?')">
                                 <i class="fa fa-check"></i> Phê duyệt
                             </button>
                         </form>
@@ -179,10 +180,18 @@
                         </button>
 
                     @elseif($return->status === 'Thông qua')
-                        {{-- Approved - Waiting for customer to ship --}}
-                        <div class="alert alert-info">
-                            <i class="fa fa-info-circle"></i> Đang chờ khách hàng gửi hàng
-                        </div>
+                        {{-- Approved --}}
+                        @if($return->isCancelRefund())
+                            {{-- Cancel & Refund: Can process refund immediately --}}
+                            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#refundModal" onclick="event.preventDefault();">
+                                <i class="fa fa-money-bill"></i> Xử lý hoàn tiền
+                            </button>
+                        @else
+                            {{-- Return: Waiting for customer to ship --}}
+                            <div class="alert alert-info">
+                                <i class="fa fa-info-circle"></i> Đang chờ khách hàng gửi hàng
+                            </div>
+                        @endif
 
                     @elseif($return->canConfirmReceived())
                         {{-- Shipping - Show Confirm Received --}}
